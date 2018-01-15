@@ -1,0 +1,23 @@
+main: rpgcore.main.RPGCore
+version: 1.0
+name: RPGCore
+
+commands:
+  sound:
+    description: Plays a sound
+  skills:
+    description: Opens up your skillbook
+  class:
+    description: Opens up your class manager
+  bgm:
+    description: Plays a song
+  item:
+    description: Edits attributes/stats of an item
+  party:
+    description: Manages your party
+  stats:
+    description: Checks your stats
+  spawnmob:
+    description: Spawns a mob for testing
+  crystal:
+    description: Spawns crystals for testing
