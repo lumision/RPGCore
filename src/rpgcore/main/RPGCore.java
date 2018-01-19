@@ -1,6 +1,7 @@
 package rpgcore.main;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.Timer;
 
@@ -8,7 +9,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Skeleton;
 import org.bukkit.entity.Zombie;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -19,8 +22,13 @@ import rpgcore.classes.RPGClass;
 import rpgcore.entities.bosses.Astrea;
 import rpgcore.entities.bosses.UndeadEmperor;
 import rpgcore.entities.mobs.CasterEntity;
+import rpgcore.entities.mobs.MageZombie;
+import rpgcore.entities.mobs.ReinforcedSkeleton;
+import rpgcore.entities.mobs.ReinforcedZombie;
+import rpgcore.entities.mobs.WarriorZombie;
 import rpgcore.item.BonusStat.BonusStatCrystal;
 import rpgcore.item.RItem;
+import rpgcore.npc.NPCManager;
 import rpgcore.party.Party;
 import rpgcore.party.RPartyManager;
 import rpgcore.player.RPlayer;
@@ -38,9 +46,15 @@ public class RPGCore extends JavaPlugin
 	public RSongManager songManager;
 	public RPartyManager partyManager;
 	public File pluginFolder = new File("plugins/RPGCore");
+	public File itemsFolder = new File("plugins/RPGCore/items");
+	public ArrayList<RItem> itemDatabase = new ArrayList<RItem>();
 	public static RPGCore instance;
 	public static Random rand = new Random();
 	public static Timer timer = new Timer();
+	public static NPCManager npcManager = new NPCManager();
+
+	public static void main(String[] args) {}
+
 	@Override
 	public void onEnable()
 	{
@@ -53,10 +67,95 @@ public class RPGCore extends JavaPlugin
 		listener = new RPGListener(this);
 		getServer().getPluginManager().registerEvents(listener, this);
 		events = new RPGEvents(this);
+		readItemDatabase();
 
 		RPGEvents.scheduleRunnable(new RPGEvents.ConsoleCommand("gamerule sendCommandFeedback false"), 1);
 		RPGEvents.scheduleRunnable(new RPGEvents.ConsoleCommand("gamerule mobGriefing false"), 1);
 		RPGEvents.scheduleRunnable(new RPGEvents.ConsoleCommand("gamerule doFireTick false"), 1);
+		RPGEvents.scheduleRunnable(new RPGEvents.ConsoleCommand("gamerule keepInventory true"), 1);
+	}
+
+	public void readItemFolder(File folder)
+	{
+		if (folder == null)
+			return;
+		if (folder.listFiles() == null)
+			return;
+		for (File file: folder.listFiles())
+		{
+			if (!file.getName().contains("."))
+			{
+				readItemFolder(file);
+				continue;
+			}
+			try
+			{
+				int id = 0;
+				int amount = 0;
+				short durability = 0;
+
+				String name = null;
+				ArrayList<String> lore = new ArrayList<String>();
+
+				ArrayList<Enchantment> enchs = new ArrayList<Enchantment>();
+				ArrayList<Integer> levels = new ArrayList<Integer>();
+
+				ArrayList<String> lines = CakeLibrary.readFile(file);
+				String header = "";
+				for (String line: lines)
+				{
+					String[] split = line.split(": ");
+					if (line.startsWith(" "))
+					{
+						split[0] = split[0].substring(1);
+						line = line.substring(1);
+						if (header.equals("lore: "))
+							lore.add(line);
+						else if (header.equals("enchantments: "))
+						{
+							enchs.add(Enchantment.getById(Integer.valueOf(split[0])));
+							levels.add(Integer.valueOf(split[1]));
+						}
+					} else
+					{
+						header = line;
+						if (line.startsWith("id: "))
+							id = Integer.valueOf(split[1]);
+						if (line.startsWith("amount: "))
+							amount = Integer.valueOf(split[1]);
+						if (line.startsWith("durability: "))
+							durability = Short.valueOf(split[1]);
+
+						if (line.startsWith("name: "))
+							name = split[1];
+					}
+				}
+
+				ItemStack item = new ItemStack(id, amount, durability);
+
+				ItemMeta im = item.getItemMeta();
+				if (name != null)
+					im.setDisplayName(name);
+				if (lore.size() > 0)
+					im.setLore(lore);
+				item.setItemMeta(im);
+
+				for (int i = 0; i < enchs.size(); i++)
+					item.addUnsafeEnchantment(enchs.get(i), levels.get(i));
+
+				RItem ri = new RItem(item, file.getName().substring(0, file.getName().length() - 4));
+				itemDatabase.add(ri);
+
+			} catch (Exception e) {
+				msgConsole("&4Unable to read item file: " + file.getName());
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public void readItemDatabase()
+	{
+		readItemFolder(itemsFolder);
 	}
 
 	@Override
@@ -68,20 +167,88 @@ public class RPGCore extends JavaPlugin
 			ce.entity.remove();
 	}
 
+	public RItem getItemFromDatabase(String databaseName)
+	{
+		for (RItem run: itemDatabase)
+			if (run.databaseName.equalsIgnoreCase(databaseName))
+				return run;
+		return null;
+	}
+
 	@Override
 	public boolean onCommand(CommandSender sender, Command command, String cmd, String[] args)
 	{
 		if (sender instanceof Player)
 		{
 			Player p = (Player) sender;
-			if (CakeAPI.hasColor(p.getOpenInventory().getTitle()))
+			if (CakeLibrary.hasColor(p.getOpenInventory().getTitle()))
 			{
-				msg(p, ":^)");
+				msg(p, "You're currently in an inventory and commands cannot be executed.");
 				return true;
 			}
-			RPlayer rp = playerManager.getRPlayer(p.getName());
+			RPlayer rp = playerManager.getRPlayer(p.getUniqueId());
 			if (rp == null)
 				return false;
+			if (command.getName().equalsIgnoreCase("si"))
+			{
+				if (!p.hasPermission("rpgcore.item"))
+				{
+					msg(p, "You do not have permissions to do this.");
+					return true;
+				}
+				ItemStack is = p.getItemInHand();
+				if (is == null)
+				{
+					msg(p, "Hold an item to save.");
+					return true;
+				}
+				if (args.length < 1)
+				{
+					msg(p, "Usage: /si [filename]");
+					return true;
+				}
+				RItem ri = new RItem(is, args[0]);
+				ri.saveItemToFile(args[0]);
+				itemDatabase.add(ri);
+				msg(p, "Item saved");
+				return true;
+			}
+			if (command.getName().equalsIgnoreCase("gi"))
+			{
+				if (!p.hasPermission("rpgcore.item"))
+				{
+					msg(p, "You do not have permissions to do this.");
+					return true;
+				}
+				if (args.length < 1)
+				{
+					p.sendMessage(CakeLibrary.recodeColorCodes("&4Item Database List:"));
+					for (RItem ri: itemDatabase)
+						p.sendMessage(CakeLibrary.recodeColorCodes("&c - " + ri.databaseName));
+					return true;
+				}
+				RItem ri = getItemFromDatabase(args[0]);
+				if (ri == null)
+				{
+					msg(p, "This item does not exist in the database");
+					return true;
+				}
+				if (args.length > 1)
+					ri.itemVanilla.setAmount(Math.min(64, Integer.valueOf(args[1])));
+				p.getInventory().addItem(ri.createItem());
+				msg(p, "Item obtained");
+				return true;
+			}
+			if (command.getName().equalsIgnoreCase("npc"))
+			{
+				if (!p.hasPermission("rpgcore.npc"))
+				{
+					msg(p, "You do not have permissions to do this.");
+					return true;
+				}
+				npcManager.createNPC(p.getLocation(), args[0], args[1]);
+				return true;
+			}
 			if (command.getName().equalsIgnoreCase("crystal"))
 			{
 				if (!p.hasPermission("rpgcore.crystal"))
@@ -180,7 +347,7 @@ public class RPGCore extends JavaPlugin
 						Party.msg(p, "Use &5/party leave &dto leave.");
 						return true;
 					}
-					RPlayer target = playerManager.getRPlayer(CakeAPI.completeName(args[1]));
+					RPlayer target = playerManager.getRPlayer(CakeLibrary.completeName(args[1]));
 					if (target == null)
 					{
 						Party.msg(p, "No player by that name was found.");
@@ -251,7 +418,7 @@ public class RPGCore extends JavaPlugin
 						Party.msg(p, "You are not the host, try asking &5" + party.host.getPlayerName() + " &dto do it.");
 						return true;
 					}
-					RPlayer target = playerManager.getRPlayer(CakeAPI.completeName(args[1]));
+					RPlayer target = playerManager.getRPlayer(CakeLibrary.completeName(args[1]));
 					if (target == null)
 					{
 						Party.msg(p, "No player by that name was found.");
@@ -297,7 +464,7 @@ public class RPGCore extends JavaPlugin
 						Party.msg(p, "You are not the host, try asking &5" + party.host.getPlayerName() + " &dto do it.");
 						return true;
 					}
-					RPlayer target = playerManager.getRPlayer(CakeAPI.completeName(args[1]));
+					RPlayer target = playerManager.getRPlayer(CakeLibrary.completeName(args[1]));
 					if (target == null)
 					{
 						Party.msg(p, "No player by that name was found.");
@@ -339,7 +506,7 @@ public class RPGCore extends JavaPlugin
 						Party.msg(p, "You are not the host, try asking &5" + party.host.getPlayerName() + " &dto do it.");
 						return true;
 					}
-					RPlayer target = playerManager.getRPlayer(CakeAPI.completeName(args[1]));
+					RPlayer target = playerManager.getRPlayer(CakeLibrary.completeName(args[1]));
 					if (target == null)
 					{
 						Party.msg(p, "No player by that name was found.");
@@ -401,15 +568,15 @@ public class RPGCore extends JavaPlugin
 					}
 				}
 				msgNoTag(p, "&b---[ Stats for &3" + target.getPlayerName() + "&b ]---");
-				msgNoTag(p, "&b * Class: &3" + target.currentClass.toString());
-				msgNoTag(p, "&b * Level: &3" + target.getCurrentClass().getLevel() + 
-						" &b(&3" + target.getCurrentClass().xp + "&b/&3" + RPGClass.getXPRequiredForLevel(target.getCurrentClass().lastCheckedLevel + 1) + "XP&b)");
-				msgNoTag(p, "&b * Magic Damage: &3" + target.calculateMagicDamage());
-				msgNoTag(p, "&b * Brute Damage: &3" + target.calculateBruteDamage());
-				msgNoTag(p, "&b * Crit Chance: &3" + target.calculateCritChance() + "%");
-				msgNoTag(p, "&b * Crit Damage: &3" + (int) (target.calculateCritDamageMultiplier() * 100.0D) + "%");
-				msgNoTag(p, "&b * Attack Speed: &3x" + (1.0D / target.calculateCastDelayMultiplier()));
-				msgNoTag(p, "&b * Cooldowns: &3-" + target.calculateCooldownReduction() + "%");
+				msgNoTag(p, "&6 * Class: &e" + target.currentClass.getClassName());
+				msgNoTag(p, "&6 * Level: &e" + target.getCurrentClass().getLevel() + 
+						" &6(&e" + target.getCurrentClass().xp + "&6/&e" + RPGClass.getXPRequiredForLevel(target.getCurrentClass().lastCheckedLevel + 1) + "XP&6)");
+				msgNoTag(p, "&4 * Magic Damage: &c" + target.calculateMagicDamage());
+				msgNoTag(p, "&4 * Brute Damage: &c" + target.calculateBruteDamage());
+				msgNoTag(p, "&4 * Crit Chance: &c" + target.calculateCritChance() + "%");
+				msgNoTag(p, "&4 * Crit Damage: &c" + (int) (target.calculateCritDamageMultiplier() * 100.0D) + "%");
+				msgNoTag(p, "&2 * Attack Speed: &ax" + (1.0D / target.calculateCastDelayMultiplier()));
+				msgNoTag(p, "&2 * Cooldowns: &a-" + target.calculateCooldownReduction() + "%");
 				return true;
 			}
 			if (command.getName().equalsIgnoreCase("item"))
@@ -425,14 +592,17 @@ public class RPGCore extends JavaPlugin
 					msgNoTag(p, "&6/item magicdamage <damage>");
 					msgNoTag(p, "&6/item brutedamage <damage>");
 					msgNoTag(p, "&6/item attackspeed <multiplier>");
+					msgNoTag(p, "&6/item critchance <percentage>");
+					msgNoTag(p, "&6/item critdamage <percentage>");
 					msgNoTag(p, "&6/item cooldowns <percentage>");
+					msgNoTag(p, "&6/item dmgreduction <percentage>");
 					msgNoTag(p, "&6/item unbreakable");
 					msgNoTag(p, "&6===[&e /item Commands &6]===");
 					return true;
 				}
 				ItemStack is = p.getItemInHand();
 				RItem ri = new RItem(is);
-				if (CakeAPI.isItemStackNull(is))
+				if (CakeLibrary.isItemStackNull(is))
 				{
 					msg(p, "Hold the item you want to edit.");
 					return true;
@@ -557,6 +727,26 @@ public class RPGCore extends JavaPlugin
 					msg(p, "Cooldown reduction attribute edited.");
 					return true;
 				}
+				if (args[0].equalsIgnoreCase("dmgreduction"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /item dmgreduction <percentage>");
+						return true;
+					}
+					int amt = -1;
+					try
+					{
+						amt = Integer.parseInt(args[1]);
+					} catch (Exception e) {
+						msg(p, "Enter a number.");
+						return true;
+					}
+					ri.damageReduction = amt;
+					p.setItemInHand(ri.createItem());
+					msg(p, "Cooldown reduction attribute edited.");
+					return true;
+				}
 				if (args[0].equalsIgnoreCase("settier"))
 				{
 					if (args.length < 2)
@@ -596,21 +786,82 @@ public class RPGCore extends JavaPlugin
 				msgNoTag(p, "&6/item magicdamage <damage>");
 				msgNoTag(p, "&6/item brutedamage <damage>");
 				msgNoTag(p, "&6/item attackspeed <multiplier>");
+				msgNoTag(p, "&6/item critchance <percentage>");
+				msgNoTag(p, "&6/item critdamage <percentage>");
 				msgNoTag(p, "&6/item cooldowns <percentage>");
+				msgNoTag(p, "&6/item dmgreduction <percentage>");
 				msgNoTag(p, "&6/item unbreakable");
 				msgNoTag(p, "&6===[&e /item Commands &6]===");
 				return true;
 			}
-			if (command.getName().equalsIgnoreCase("spawnmob"))
+			if (command.getName().equalsIgnoreCase("mob"))
 			{
-				if (args.length < 1)
-				{
-					msg(p, "Usage: /spawnmob <mobname>");
-					return true;
-				}
 				if (!p.hasPermission("rpgcore.spawnmob"))
 				{
 					msg(p, "No access to this command lul");
+					return true;
+				}
+				if (args.length < 1)
+				{
+					msg(p, "Usage: /mob <mobname>");
+					return true;
+				}
+				int count = 1;
+				if (args.length > 1)
+					count = Math.min(10, Integer.parseInt(args[1]));
+				if (args[0].equalsIgnoreCase("reinforcedzombie"))
+				{
+					for (int i = 0; i < count; i++)
+					{
+						Zombie z = p.getWorld().spawn(p.getLocation(), Zombie.class);
+						new ReinforcedZombie(z);
+					}
+					msg(p, "Spawned.");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("reinforcedskeleton"))
+				{
+					for (int i = 0; i < count; i++)
+					{
+						Skeleton z = p.getWorld().spawn(p.getLocation(), Skeleton.class);
+						new ReinforcedSkeleton(z);
+					}
+					msg(p, "Spawned.");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("magezombie"))
+				{
+					for (int i = 0; i < count; i++)
+					{
+						Zombie z = p.getWorld().spawn(p.getLocation(), Zombie.class);
+						new MageZombie(z);
+					}
+					msg(p, "Spawned.");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("warriorzombie"))
+				{
+					for (int i = 0; i < count; i++)
+					{
+						Zombie z = p.getWorld().spawn(p.getLocation(), Zombie.class);
+						new WarriorZombie(z);
+					}
+					msg(p, "Spawned.");
+					return true;
+				}
+				msg(p, "No such mob available for spawning.");
+				return true;
+			}
+			if (command.getName().equalsIgnoreCase("boss"))
+			{
+				if (!p.hasPermission("rpgcore.spawnmob"))
+				{
+					msg(p, "No access to this command lul");
+					return true;
+				}
+				if (args.length < 1)
+				{
+					msg(p, "Usage: /boss <bossname>");
 					return true;
 				}
 				if (args[0].equalsIgnoreCase("undeademperor"))
@@ -800,16 +1051,16 @@ public class RPGCore extends JavaPlugin
 
 	public static void msgNoTag(CommandSender p, String msg)
 	{
-		p.sendMessage(CakeAPI.recodeColorCodes(msg));
+		p.sendMessage(CakeLibrary.recodeColorCodes(msg));
 	}
 
 	public static void msg(CommandSender p, String msg)
 	{
-		p.sendMessage(CakeAPI.recodeColorCodes("&6[&eRPGCore&6] &e" + msg));
+		p.sendMessage(CakeLibrary.recodeColorCodes("&6[&eRPGCore&6] &e" + msg));
 	}
 
 	public static void msgConsole(String msg)
 	{
-		Bukkit.getConsoleSender().sendMessage(CakeAPI.recodeColorCodes("&6[&eRPGCore&6] &e" + msg));
+		Bukkit.getConsoleSender().sendMessage(CakeLibrary.recodeColorCodes("&6[&eRPGCore&6] &e" + msg));
 	}
 }

@@ -3,7 +3,7 @@ package rpgcore.skills;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 import rpgcore.player.RPlayer;
 import rpgcore.skillinventory.SkillInventory;
 
@@ -15,7 +15,7 @@ public class BladeMastery
 		int level = player.getSkillLevel(skillName);
 		boolean unlocked = level > 0;
 		level += unlocked ? 0 : 1;
-		return CakeAPI.addLore(CakeAPI.renameItem(unlocked ? new ItemStack(Material.IRON_SWORD) : SkillInventory.locked.clone(), 
+		return CakeLibrary.addLore(CakeLibrary.renameItem(unlocked ? new ItemStack(Material.IRON_SWORD) : SkillInventory.locked.clone(), 
 				"&4Blade Mastery"),
 				"&7Skill Level: " + (unlocked ? level : 0),
 				"&7Passive Skill:",

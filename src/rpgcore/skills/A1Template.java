@@ -4,15 +4,15 @@ import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
 import rpgcore.classes.RPGClass.ClassType;
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 import rpgcore.player.RPlayer;
 import rpgcore.skillinventory.SkillInventory;
 
 public class A1Template extends RPGSkill
 {
-	public final static String skillName = ""; //TODO
-	public final static int castDelay = 0; //TODO
-	public final static ClassType classType = ClassType.WARRIOR; //TODO
+	public final static String skillName = ""; //Change
+	public final static int castDelay = 0; //Change
+	public final static ClassType classType = ClassType.WARRIOR; //Change
 	public A1Template(RPlayer caster)
 	{
 		super(skillName, caster, castDelay, calculateDamage(caster.getSkillLevel(skillName)), classType);
@@ -26,7 +26,7 @@ public class A1Template extends RPGSkill
 	@Override
 	public void insantiate(RPlayer rp)
 	{
-		new A1Template(rp); //TODO
+		new A1Template(rp); //Change
 	}
 	
 	@Override 
@@ -35,12 +35,12 @@ public class A1Template extends RPGSkill
 		return getSkillItem(player);
 	}
 
-	public static ItemStack getSkillItem(RPlayer player) //TODO
+	public static ItemStack getSkillItem(RPlayer player) //Change
 	{
 		int level = player.getSkillLevel(skillName);
 		boolean unlocked = level > 0;
 		level += unlocked ? 0 : 1;
-		return CakeAPI.addLore(CakeAPI.renameItem(unlocked ? new ItemStack(Material.BRICK, 1) : SkillInventory.locked.clone(), 
+		return CakeLibrary.addLore(CakeLibrary.renameItem(unlocked ? new ItemStack(Material.BRICK, 1) : SkillInventory.locked.clone(), 
 				"&f"),
 				"&7Skill Level: " + (unlocked ? level : 0),
 				"&7Damage: " + (int) (calculateDamage(level) * 100) + "%",
@@ -52,11 +52,11 @@ public class A1Template extends RPGSkill
 
 	public static double calculateDamage(int level)
 	{
-		return 1.0D + (level / 1.0D); //TODO
+		return 1.0D + (level / 1.0D); //Change
 	}
 
 	@Override
-	public void activate() //TODO
+	public void activate() //Change
 	{
 	}
 }

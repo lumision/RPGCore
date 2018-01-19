@@ -8,6 +8,7 @@ import org.bukkit.Effect;
 import org.bukkit.FireworkEffect;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
@@ -26,6 +27,7 @@ import rpgcore.entities.mobs.CasterEntity;
 import rpgcore.external.InstantFirework;
 import rpgcore.item.BonusStat.BonusStatCrystal;
 import rpgcore.item.RItem;
+import rpgcore.npc.NPCManager.CustomNPC;
 import rpgcore.player.RPlayer;
 import rpgcore.skills.effect.ArmageddonE;
 import rpgcore.songs.RSongManager;
@@ -47,6 +49,8 @@ public class RPGEvents implements Runnable
 	public void run()
 	{
 		instance.playerManager.playersTick();
+		for (CustomNPC n: RPGCore.npcManager.npcs)
+			n.tick();
 		for (CasterEntity ce: CasterEntity.entities)
 			ce.tick();
 		CasterEntity.entities.removeAll(CasterEntity.remove);
@@ -133,6 +137,11 @@ public class RPGEvents implements Runnable
 					FixedMetadataValue meta = new FixedMetadataValue(RPGCore.instance, p.getName());
 					damagee.setMetadata("RPGCore.Killer", meta);
 				}
+			if (damagee instanceof Player)
+			{
+				RPlayer rp = RPGCore.instance.playerManager.getRPlayer(((Player) damagee).getUniqueId());
+				damage = (int) (damage - (damage / 100D * rp.calculateDamageReduction()));
+			}
 			damagee.setNoDamageTicks(0);
 			damagee.damage(damage);
 		}
@@ -188,7 +197,7 @@ public class RPGEvents implements Runnable
 	}
 
 	/**
-	public static class delayedColoredParticleSpawn implements Runnable
+	public static class ColoredParticle implements Runnable
 	{
 		public Location l;
 		public Entity e;
@@ -199,7 +208,7 @@ public class RPGEvents implements Runnable
 		public int g;
 		public int b;
 
-		public delayedColoredParticleSpawn(Location l, float range, EnumParticle particleType, int r, int g, int b, int particles)
+		public ColoredParticle(Location l, float range, EnumParticle particleType, int r, int g, int b, int particles)
 		{
 			this.l = l;
 			this.e = null;
@@ -211,7 +220,7 @@ public class RPGEvents implements Runnable
 			this.b = b;
 		}
 
-		public delayedColoredParticleSpawn(Entity e, float range, EnumParticle particleType, int r, int g, int b, int particles)
+		public ColoredParticle(Entity e, float range, EnumParticle particleType, int r, int g, int b, int particles)
 		{
 			this.e = e;
 			this.l = null;
@@ -228,17 +237,66 @@ public class RPGEvents implements Runnable
 		{
 			if (e != null)
 				this.l = e.getLocation();
-			ParticleEffect.valueOf(particleType.name()).display(new ParticleEffect.OrdinaryColor(r, g, b), l, 64);
+			ParticleEffects.valueOf(particleType.name()).display(new ParticleEffects.OrdinaryColor(r, g, b), l, 64);
 			if (this.e != null && e instanceof LivingEntity)
 				for (int i = 0; i < ((LivingEntity) e).getEyeHeight(); i++)
 				{
 					l.setY(l.getY() + 1);
-					ParticleEffect.valueOf(particleType.name()).display(new ParticleEffect.OrdinaryColor(r, g, b), l, 64);
+					ParticleEffects.valueOf(particleType.name()).display(new ParticleEffects.OrdinaryColor(r, g, b), l, 64);
 				}
 		}
-	}
-	 */
+	}**/
+		
+	public static class ColoredParticle implements Runnable
+	{
+		public Location l;
+		public Entity e;
+		public Particle particleType;
+		public float range;
+		public int particles = 1;
+		public int r;
+		public int g;
+		public int b;
 
+		public ColoredParticle(Location l, float range, Particle particleType, int r, int g, int b, int particles)
+		{
+			this.l = l;
+			this.e = null;
+			this.range = range;
+			this.particles = particles;
+			this.particleType = particleType;
+			this.r = r;
+			this.g = g;
+			this.b = b;
+		}
+
+		public ColoredParticle(Entity e, float range, Particle particleType, int r, int g, int b, int particles)
+		{
+			this.e = e;
+			this.l = null;
+			this.range = range;
+			this.particles = particles;
+			this.particleType = particleType;
+			this.r = r;
+			this.g = g;
+			this.b = b;
+		}
+
+		@Override
+		public void run()
+		{
+			if (e != null)
+				this.l = e.getLocation();
+			//PacketPlayOutWorldParticles packet = new PacketPlayOutWorldParticles(particleType, true, (float) l.getX(), (float) l.getY(), (float) l.getZ(), r / 255F, g / 255F, b / 255F, 0, particles, 0);
+			//PacketPlayOutWorldParticles packet = new PacketPlayOutWorldParticles(particleType, true, (float) l.getX(), (float) l.getY(), (float) l.getZ(), range, range, range, 255, particles, 0, 128, 128);
+			
+			for (Player p: CakeLibrary.getNearbyPlayers(l, 16))
+				//p.spawnParticle(Particle.REDSTONE, l.getX(), l.getY(), l.getZ(), 0, r / 255D, g / 255D, b / 255D, 1);
+				p.spawnParticle(particleType, l, particles, r / 255D, g / 255D, b / 255D, 1);
+				//((CraftPlayer) p).getHandle().playerConnection.sendPacket(packet);
+		}
+	}
+	
 	public static class CrystalInvCheck implements Runnable
 	{
 		public Player player;
@@ -255,9 +313,9 @@ public class RPGEvents implements Runnable
 		public void run()
 		{
 			ItemStack mid = inv.getItem(4);
-			if (CakeAPI.isItemStackNull(mid))
+			if (CakeLibrary.isItemStackNull(mid))
 				return;
-			if (!CakeAPI.playerHasVacantSlots(player))
+			if (!CakeLibrary.playerHasVacantSlots(player))
 			{
 				RPGCore.msg(player, "You do not have inventory space.");
 				return;
@@ -278,7 +336,7 @@ public class RPGEvents implements Runnable
 			{
 				inv.setItem(4, new ItemStack(Material.AIR));
 				player.getInventory().addItem(ri.createItem());
-				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, player, 20), 0);
+				new RPGEvents.PlayEffect(Effect.STEP_SOUND, player, 20).run();
 
 				ItemStack crystal = inv.getItem(0);
 				if (crystal.getAmount() == 1)
@@ -422,7 +480,7 @@ public class RPGEvents implements Runnable
 			boolean player = damager instanceof Player;
 			boolean monster = damager instanceof Monster;
 			Location o = damager.getLocation();
-			for (LivingEntity e: CakeAPI.getNearbyLivingEntities(l, radius))
+			for (LivingEntity e: CakeLibrary.getNearbyLivingEntities(l, radius))
 			{
 				if (e == damager)
 					continue;
@@ -433,8 +491,9 @@ public class RPGEvents implements Runnable
 				if (hit.contains(e))
 					continue;
 				hit.add(e);
-				damage = RPlayer.varyDamage(damage);
-				RPGEvents.scheduleRunnable(new RPGEvents.ApplyDamage(damager, e, damage), 0);
+				if (damager instanceof Player)
+					damage = RPlayer.varyDamage(damage);
+				new RPGEvents.ApplyDamage(damager, e, damage).run();
 				if (knockback > 0)
 				{
 					Location p = e.getLocation();
@@ -470,7 +529,7 @@ public class RPGEvents implements Runnable
 		{
 			boolean player = damager instanceof Player;
 			boolean monster = damager instanceof Monster;
-			for (LivingEntity e: CakeAPI.getNearbyLivingEntities(l, radius))
+			for (LivingEntity e: CakeLibrary.getNearbyLivingEntities(l, radius))
 			{
 				if (e == damager)
 					continue;
@@ -482,8 +541,8 @@ public class RPGEvents implements Runnable
 					continue;
 				hit.add(e);
 				damage = RPlayer.varyDamage(damage);
-				RPGEvents.scheduleRunnable(new RPGEvents.ApplyDamage(damager, e, damage), 0);
-				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, e, blockID), 0);
+				new RPGEvents.ApplyDamage(damager, e, damage).run();
+				new RPGEvents.PlayEffect(Effect.STEP_SOUND, e, blockID).run();
 			}
 		}
 	}
@@ -512,7 +571,7 @@ public class RPGEvents implements Runnable
 		{
 			boolean player = damager instanceof Player;
 			boolean monster = damager instanceof Monster;
-			for (LivingEntity e: CakeAPI.getNearbyLivingEntities(l, radius))
+			for (LivingEntity e: CakeLibrary.getNearbyLivingEntities(l, radius))
 			{
 				if (e == damager)
 					continue;
@@ -524,7 +583,7 @@ public class RPGEvents implements Runnable
 					continue;
 				hit.add(e);
 				damage = RPlayer.varyDamage(damage);
-				RPGEvents.scheduleRunnable(new RPGEvents.ApplyDamage(damager, e, damage), 0);
+				new RPGEvents.ApplyDamage(damager, e, damage).run();
 				new InstantFirework(fe, e.getLocation());
 			}
 		}
@@ -598,8 +657,8 @@ public class RPGEvents implements Runnable
 		@Override
 		public void run()
 		{
-			for (Player p: CakeAPI.getNearbyPlayers(l, 16))
-				CakeAPI.spawnParticle(EnumParticle.FIREWORKS_SPARK, l, range, p, particles, speed);
+			for (Player p: CakeLibrary.getNearbyPlayers(l, 16))
+				CakeLibrary.spawnParticle(EnumParticle.FIREWORKS_SPARK, l, range, p, particles, speed);
 		}
 	}
 
@@ -610,7 +669,7 @@ public class RPGEvents implements Runnable
 		public float speed = 0.0F;
 		public float range = 0.0F;
 		public EnumParticle type;
-
+		public int[] data;
 		public ParticleEffect(EnumParticle type, Location l, float range, int particles)
 		{
 			this.type = type;
@@ -636,11 +695,21 @@ public class RPGEvents implements Runnable
 			this.range = range;
 		}
 
+		public ParticleEffect(EnumParticle type, Location l, float range, int particles, float speed, int... data)
+		{
+			this.type = type;
+			this.l = l;
+			this.particles = particles;
+			this.speed = speed;
+			this.range = range;
+			this.data = data;
+		}
+
 		@Override
 		public void run()
 		{
-			for (Player p: CakeAPI.getNearbyPlayers(l, 16))
-				CakeAPI.spawnParticle(type, l, range, p, particles, speed);
+			for (Player p: CakeLibrary.getNearbyPlayers(l, 16))
+				CakeLibrary.spawnParticle(type, l, range, p, particles, speed, data);
 		}
 	}
 

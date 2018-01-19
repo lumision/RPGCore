@@ -10,7 +10,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.SpawnEgg;
 
 import rpgcore.classes.RPGClass.ClassType;
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 import rpgcore.player.RPlayer;
 import rpgcore.skills.ArcaneBarrage;
 import rpgcore.skills.ArcaneBolt;
@@ -34,29 +34,29 @@ import rpgcore.skills.Wisdom;
 public class SkillInventory 
 {
 	public static ItemStack locked = new SpawnEgg(EntityType.ENDERMAN).toItemStack(1);
-	public static ItemStack levelSkills = CakeAPI.editNameAndLore(new ItemStack(Material.WOOL, 1, (short) 5),
+	public static ItemStack levelSkills = CakeLibrary.editNameAndLore(new ItemStack(Material.WOOL, 1, (short) 5),
 			"&a&nSpend skill points",
 			"&7Level up or unlock skills by",
 			"&7using your own skill points.");
-	public static ItemStack delevelSkills = CakeAPI.editNameAndLore(new ItemStack(Material.WOOL, 1, (short) 14), 
+	public static ItemStack delevelSkills = CakeLibrary.editNameAndLore(new ItemStack(Material.WOOL, 1, (short) 14), 
 			"&c&nReclaim skill points",
 			"&7Individually retract each skill's level",
 			"&7to earn back skill points.");
-	public static ItemStack returnToBook = CakeAPI.renameItem(new ItemStack(Material.WOOL, 1, (short) 0), 
+	public static ItemStack returnToBook = CakeLibrary.renameItem(new ItemStack(Material.WOOL, 1, (short) 0), 
 			"&f&nReturn to skill selection");
-	public static ItemStack skillPoints = CakeAPI.renameItem(new ItemStack(Material.PAPER), 
+	public static ItemStack skillPoints = CakeLibrary.renameItem(new ItemStack(Material.PAPER), 
 			"&6Skill Points: &e");
-	public static ItemStack adminCommands = CakeAPI.editNameAndLore(new ItemStack(Material.SIGN), 
+	public static ItemStack adminCommands = CakeLibrary.editNameAndLore(new ItemStack(Material.SIGN), 
 			"&f&nYou have sufficient permissions to use these:",
 			"&7/skills setsp <amt> [player]:",
 			"  &7Sets the skill points of the active class.",
 			"&7/skills addsp <(-)amt> [player]",
 			"  &7Adds to the skill points of the active class.",
-			"&cOr you can click this sign to add 1 skill point.");
+			"&cOr you can click this sign to add 10 skill points.");
 
-	public static ItemStack modeLevel = CakeAPI.renameItem(new ItemStack(Material.WOOL, 1, (short) 5), "&aMode: Spending Skillpoints");
-	public static ItemStack modeDelevel = CakeAPI.renameItem(new ItemStack(Material.WOOL, 1, (short) 14), "&cMode: Reclaiming Skillpoints");
-	public static ItemStack modeSelect = CakeAPI.renameItem(new ItemStack(Material.WOOL, 1, (short) 0), "&fMode: Selecting Skills");
+	public static ItemStack modeLevel = CakeLibrary.renameItem(new ItemStack(Material.WOOL, 1, (short) 5), "&aMode: Spending Skillpoints");
+	public static ItemStack modeDelevel = CakeLibrary.renameItem(new ItemStack(Material.WOOL, 1, (short) 14), "&cMode: Reclaiming Skillpoints");
+	public static ItemStack modeSelect = CakeLibrary.renameItem(new ItemStack(Material.WOOL, 1, (short) 0), "&fMode: Selecting Skills");
 
 	public static Inventory getSkillInventory(RPlayer player, int mode) //mode == 0: skillbook, 1: use skillPoints, 2: reclaim skillPoints
 	{
@@ -67,25 +67,25 @@ public class SkillInventory
 		//tier 1
 		case THIEF:
 			size = 9 * (player.currentClass.getTier() + 1);
-			inv = Bukkit.createInventory(null, size, CakeAPI.recodeColorCodes("&9Skillbook: Thief"));
+			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Thief"));
 			setThiefSkills(inv, player, 0);
 			setUI(inv, size / 9, player, mode);
 			return inv;
 		case PRIEST:
 			size = 9 * (player.currentClass.getTier() + 1);
-			inv = Bukkit.createInventory(null, size, CakeAPI.recodeColorCodes("&9Skillbook: Priest"));
+			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Priest"));
 			setPriestSkills(inv, player, 0);
 			setUI(inv, size / 9, player, mode);
 			return inv;
 		case WARRIOR:
 			size = 9 * (player.currentClass.getTier() + 1);
-			inv = Bukkit.createInventory(null, size, CakeAPI.recodeColorCodes("&9Skillbook: Warrior"));
+			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Warrior"));
 			setWarriorSkills(inv, player, 0);
 			setUI(inv, size / 9, player, mode);
 			return inv;
 		case MAGE:
 			size = 9 * (player.currentClass.getTier() + 1);
-			inv = Bukkit.createInventory(null, size, CakeAPI.recodeColorCodes("&9Skillbook: Mage"));
+			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Mage"));
 			setMageSkills(inv, player, 0);
 			setUI(inv, size / 9, player, mode);
 			return inv;
@@ -93,42 +93,42 @@ public class SkillInventory
 		//tier 2
 		case SORCERER:
 			size = 9 * (player.currentClass.getTier() + 1);
-			inv = Bukkit.createInventory(null, size, CakeAPI.recodeColorCodes("&9Skillbook: Sorcerer"));
+			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Sorcerer"));
 			setMageSkills(inv, player, 1);
 			setSorcererSkills(inv, player, 0);
 			setUI(inv, size / 9, player, mode);
 			return inv;
 		case SHAMAN:
 			size = 9 * (player.currentClass.getTier() + 1);
-			inv = Bukkit.createInventory(null, size, CakeAPI.recodeColorCodes("&9Skillbook: Shaman"));
+			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Shaman"));
 			setMageSkills(inv, player, 1);
 			setShamanSkills(inv, player, 0);
 			setUI(inv, size / 9, player, mode);
 			return inv;
 		case KNIGHT:
 			size = 9 * (player.currentClass.getTier() + 1);
-			inv = Bukkit.createInventory(null, size, CakeAPI.recodeColorCodes("&9Skillbook: Knight"));
+			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Knight"));
 			setWarriorSkills(inv, player, 1);
 			setKnightSkills(inv, player, 0);
 			setUI(inv, size / 9, player, mode);
 			return inv;
 		case PALADIN:
 			size = 9 * (player.currentClass.getTier() + 1);
-			inv = Bukkit.createInventory(null, size, CakeAPI.recodeColorCodes("&9Skillbook: Paladin"));
+			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Paladin"));
 			setWarriorSkills(inv, player, 1);
 			setPaladinSkills(inv, player, 0);
 			setUI(inv, size / 9, player, mode);
 			return inv;
 		case FRIAR:
 			size = 9 * (player.currentClass.getTier() + 1);
-			inv = Bukkit.createInventory(null, size, CakeAPI.recodeColorCodes("&9Skillbook: Friar"));
+			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Friar"));
 			setPriestSkills(inv, player, 1);
 			setFriarSkills(inv, player, 0);
 			setUI(inv, size / 9, player, mode);
 			return inv;
 		case ASSASSIN:
 			size = 9 * (player.currentClass.getTier() + 1);
-			inv = Bukkit.createInventory(null, size, CakeAPI.recodeColorCodes("&9Skillbook: Assassin"));
+			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Assassin"));
 			setThiefSkills(inv, player, 1);
 			setAssassinSkills(inv, player, 0);
 			setUI(inv, size / 9, player, mode);
@@ -137,7 +137,7 @@ public class SkillInventory
 		//tier 3
 		case ODIN:
 			size = 9 * (player.currentClass.getTier() + 1);
-			inv = Bukkit.createInventory(null, size, CakeAPI.recodeColorCodes("&9Skillbook: Odin"));
+			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Odin"));
 			setWarriorSkills(inv, player, 2);
 			setPaladinSkills(inv, player, 1);
 			setOdinSkills(inv, player, 0);
@@ -145,7 +145,7 @@ public class SkillInventory
 			return inv;
 		case HERO:
 			size = 9 * (player.currentClass.getTier() + 1);
-			inv = Bukkit.createInventory(null, size, CakeAPI.recodeColorCodes("&9Skillbook: Hero"));
+			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Hero"));
 			setWarriorSkills(inv, player, 2);
 			setPaladinSkills(inv, player, 1);
 			setHeroSkills(inv, player, 0);
@@ -153,7 +153,7 @@ public class SkillInventory
 			return inv;
 		case ARCHMAGE:
 			size = 9 * (player.currentClass.getTier() + 1);
-			inv = Bukkit.createInventory(null, size, CakeAPI.recodeColorCodes("&9Skillbook: Archmage"));
+			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Archmage"));
 			setMageSkills(inv, player, 2);
 			setSorcererSkills(inv, player, 1);
 			setArchmageSkills(inv, player, 0);
@@ -161,7 +161,7 @@ public class SkillInventory
 			return inv;
 		case THAUMATURGE:
 			size = 9 * (player.currentClass.getTier() + 1);
-			inv = Bukkit.createInventory(null, size, CakeAPI.recodeColorCodes("&9Skillbook: Thaumaturge"));
+			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Thaumaturge"));
 			setMageSkills(inv, player, 2);
 			setSorcererSkills(inv, player, 1);
 			setThaumaturgeSkills(inv, player, 0);
@@ -169,7 +169,7 @@ public class SkillInventory
 			return inv;
 		case DUALIST:
 			size = 9 * (player.currentClass.getTier() + 1);
-			inv = Bukkit.createInventory(null, size, CakeAPI.recodeColorCodes("&9Skillbook: Dualist"));
+			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Dualist"));
 			setThiefSkills(inv, player, 2);
 			setAssassinSkills(inv, player, 1);
 			setDualistSkills(inv, player, 0);
@@ -177,7 +177,7 @@ public class SkillInventory
 			return inv;
 		case BISHOP:
 			size = 9 * (player.currentClass.getTier() + 1);
-			inv = Bukkit.createInventory(null, size, CakeAPI.recodeColorCodes("&9Skillbook: Bishop"));
+			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Bishop"));
 			setPriestSkills(inv, player, 2);
 			setFriarSkills(inv, player, 1);
 			setBishopSkills(inv, player, 0);
@@ -189,7 +189,7 @@ public class SkillInventory
 
 	public static void updateSkillInventory(Inventory inv, RPlayer player)
 	{
-		String invName = CakeAPI.removeColorCodes(inv.getName());
+		String invName = CakeLibrary.removeColorCodes(inv.getName());
 		if (invName.contains("Warrior"))
 			setWarriorSkills(inv, player, 0);
 		if (invName.contains("Mage"))
@@ -272,9 +272,9 @@ public class SkillInventory
 		for (int i = 0; i < inv.getSize(); i++)
 		{
 			ItemStack is = inv.getItem(i);
-			if (CakeAPI.isItemStackNull(is))
+			if (CakeLibrary.isItemStackNull(is))
 				continue;
-			if (CakeAPI.removeColorCodes(CakeAPI.getItemName(is)).startsWith("Skill Points: "))
+			if (CakeLibrary.removeColorCodes(CakeLibrary.getItemName(is)).startsWith("Skill Points: "))
 				setSkillPointsIcon(inv, i, player);
 		}
 	}
@@ -284,7 +284,7 @@ public class SkillInventory
 		if (skillItem == null)
 			return null;
 		skillItem.setAmount(1);
-		skillItem = CakeAPI.setUnbreakable(CakeAPI.addLore(skillItem, "&cOwner: " + playerName));
+		skillItem = CakeLibrary.setUnbreakable(CakeLibrary.addLore(skillItem, "&cOwner: " + playerName));
 		if (skillItem.getTypeId() == 383)
 			skillItem = new ItemStack(Material.AIR);
 		return skillItem;
@@ -293,7 +293,7 @@ public class SkillInventory
 	public static void setSkillPointsIcon(Inventory inv, int slot, RPlayer player)
 	{
 		int points = player.getCurrentClass().skillPoints;
-		ItemStack sp = CakeAPI.renameItem(skillPoints.clone(), "&6Skill Points: &e" + points);
+		ItemStack sp = CakeLibrary.renameItem(skillPoints.clone(), "&6Skill Points: &e" + points);
 		sp.setAmount(points < 1 ? 1 : points > 64 ? 1 : points);
 		inv.setItem(slot, sp);
 	}
@@ -316,37 +316,37 @@ public class SkillInventory
 		switch (classType)
 		{
 		case WARRIOR:
-			return CakeAPI.renameItem(new ItemStack(Material.IRON_SWORD), "&fClass: " + getClassColor(classType) + "Warrior");
+			return CakeLibrary.renameItem(new ItemStack(Material.IRON_SWORD), "&fClass: " + getClassColor(classType) + "Warrior");
 		case KNIGHT:
-			return CakeAPI.renameItem(new ItemStack(Material.IRON_CHESTPLATE), "&fClass: " + getClassColor(classType) + "Knight");
+			return CakeLibrary.renameItem(new ItemStack(Material.IRON_CHESTPLATE), "&fClass: " + getClassColor(classType) + "Knight");
 		case HERO:
-			return CakeAPI.renameItem(new ItemStack(Material.DIAMOND_CHESTPLATE), "&fClass: " + getClassColor(classType) + "Hero");
+			return CakeLibrary.renameItem(new ItemStack(Material.DIAMOND_CHESTPLATE), "&fClass: " + getClassColor(classType) + "Hero");
 		case PALADIN:
-			return CakeAPI.renameItem(new ItemStack(Material.GOLD_SWORD), "&fClass: " + getClassColor(classType) + "Paladin");
+			return CakeLibrary.renameItem(new ItemStack(Material.GOLD_SWORD), "&fClass: " + getClassColor(classType) + "Paladin");
 		case ODIN:
-			return CakeAPI.renameItem(new ItemStack(Material.DIAMOND_SWORD), "&fClass: " + getClassColor(classType) + "Odin");
+			return CakeLibrary.renameItem(new ItemStack(Material.DIAMOND_SWORD), "&fClass: " + getClassColor(classType) + "Odin");
 		case MAGE:
-			return CakeAPI.renameItem(new ItemStack(Material.STICK), "&fClass: " + getClassColor(classType) + "Mage");
+			return CakeLibrary.renameItem(new ItemStack(Material.STICK), "&fClass: " + getClassColor(classType) + "Mage");
 		case SHAMAN:
-			return CakeAPI.renameItem(new ItemStack(Material.PAPER), "&fClass: " + getClassColor(classType) + "Shaman");
+			return CakeLibrary.renameItem(new ItemStack(Material.PAPER), "&fClass: " + getClassColor(classType) + "Shaman");
 		case THAUMATURGE:
-			return CakeAPI.renameItem(new ItemStack(Material.BOOK), "&fClass: " + getClassColor(classType) + "Thaumaturge");
+			return CakeLibrary.renameItem(new ItemStack(Material.BOOK), "&fClass: " + getClassColor(classType) + "Thaumaturge");
 		case SORCERER:
-			return CakeAPI.renameItem(new ItemStack(Material.SUGAR), "&fClass: " + getClassColor(classType) + "Sorcerer");
+			return CakeLibrary.renameItem(new ItemStack(Material.SUGAR), "&fClass: " + getClassColor(classType) + "Sorcerer");
 		case ARCHMAGE:
-			return CakeAPI.renameItem(new ItemStack(Material.GLOWSTONE_DUST), "&fClass: " + getClassColor(classType) + "Archmage");
+			return CakeLibrary.renameItem(new ItemStack(Material.GLOWSTONE_DUST), "&fClass: " + getClassColor(classType) + "Archmage");
 		case PRIEST:
-			return CakeAPI.renameItem(new ItemStack(38, 1, (short) 3), "&fClass: " + getClassColor(classType) + "Priest");
+			return CakeLibrary.renameItem(new ItemStack(38, 1, (short) 3), "&fClass: " + getClassColor(classType) + "Priest");
 		case FRIAR:
-			return CakeAPI.renameItem(new ItemStack(38, 1, (short) 6), "&fClass: " + getClassColor(classType) + "Friar");
+			return CakeLibrary.renameItem(new ItemStack(38, 1, (short) 6), "&fClass: " + getClassColor(classType) + "Friar");
 		case BISHOP:
-			return CakeAPI.renameItem(new ItemStack(38, 1, (short) 8), "&fClass: " + getClassColor(classType) + "Bishop");
+			return CakeLibrary.renameItem(new ItemStack(38, 1, (short) 8), "&fClass: " + getClassColor(classType) + "Bishop");
 		case THIEF:
-			return CakeAPI.renameItem(new ItemStack(Material.ENDER_PEARL), "&fClass: " + getClassColor(classType) + "Thief");
+			return CakeLibrary.renameItem(new ItemStack(Material.ENDER_PEARL), "&fClass: " + getClassColor(classType) + "Thief");
 		case ASSASSIN:
-			return CakeAPI.renameItem(new ItemStack(Material.EYE_OF_ENDER), "&fClass: " + getClassColor(classType) + "Assassin");
+			return CakeLibrary.renameItem(new ItemStack(Material.EYE_OF_ENDER), "&fClass: " + getClassColor(classType) + "Assassin");
 		case DUALIST:
-			return CakeAPI.renameItem(new ItemStack(Material.NETHER_STAR), "&fClass: " + getClassColor(classType) + "Dualist");
+			return CakeLibrary.renameItem(new ItemStack(Material.NETHER_STAR), "&fClass: " + getClassColor(classType) + "Dualist");
 		}
 		return null;
 	}
@@ -404,12 +404,12 @@ case DUALIST:
 		for (int i = 0; i < inv.getSize(); i++)
 		{
 			ItemStack is = inv.getItem(i);
-			if (CakeAPI.isItemStackNull(is))
+			if (CakeLibrary.isItemStackNull(is))
 				continue;
-			String name = CakeAPI.getItemName(is);
-			if (!CakeAPI.hasColor(name))
+			String name = CakeLibrary.getItemName(is);
+			if (!CakeLibrary.hasColor(name))
 				continue;
-			name = CakeAPI.removeColorCodes(name);
+			name = CakeLibrary.removeColorCodes(name);
 			ItemStack change = null;
 			
 			for (RPGSkill skill: RPGSkill.skillList)

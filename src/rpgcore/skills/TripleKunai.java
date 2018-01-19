@@ -9,7 +9,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
 import rpgcore.classes.RPGClass.ClassType;
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGEvents;
 import rpgcore.player.RPlayer;
 import rpgcore.skillinventory.SkillInventory;
@@ -46,7 +46,7 @@ public class TripleKunai extends RPGSkill
 		int level = player.getSkillLevel(skillName);
 		boolean unlocked = level > 0;
 		level += unlocked ? 0 : 1;
-		return CakeAPI.addLore(CakeAPI.renameItem(unlocked ? new ItemStack(Material.GOLDEN_CARROT, 1) : SkillInventory.locked.clone(), 
+		return CakeLibrary.addLore(CakeLibrary.renameItem(unlocked ? new ItemStack(Material.GOLDEN_CARROT, 1) : SkillInventory.locked.clone(), 
 				"&cTriple Kunai"),
 				"&7Skill Level: " + (unlocked ? level : 0),
 				"&7Damage: " + (int) (calculateDamage(level) * 100) + "%",
@@ -80,7 +80,7 @@ public class TripleKunai extends RPGSkill
 				{
 					multiplier++;
 					Location point = player.getEyeLocation().add(vector.clone().multiply(multiplier));
-					if (!CakeAPI.getPassableBlocks().contains(point.getBlock().getType()))
+					if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
 						break;
 					RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0, 1), multiplier / 3);
 					if (i == 0)

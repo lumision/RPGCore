@@ -5,7 +5,7 @@ import java.util.ArrayList;
 
 import org.bukkit.Sound;
 
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
 
 public class RSongManager
@@ -44,7 +44,7 @@ public class RSongManager
 		songs.clear();
 		for (File file: songsFolder.listFiles())
 		{
-			ArrayList<String> lines = CakeAPI.readFile(file);
+			ArrayList<String> lines = CakeLibrary.readFile(file);
 			if (lines.size() < 2)
 				continue;
 			String name = file.getName().substring(0, file.getName().length() - 4);

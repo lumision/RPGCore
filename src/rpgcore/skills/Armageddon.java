@@ -4,7 +4,7 @@ import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
 import rpgcore.classes.RPGClass.ClassType;
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 import rpgcore.player.RPlayer;
 import rpgcore.skillinventory.SkillInventory;
 import rpgcore.skills.effect.ArmageddonE;
@@ -41,11 +41,10 @@ public class Armageddon extends RPGSkill
 		int level = player.getSkillLevel(skillName);
 		boolean unlocked = level > 0;
 		level += unlocked ? 0 : 1;
-		return CakeAPI.addLore(CakeAPI.renameItem(unlocked ? new ItemStack(Material.FIREBALL, 1) : SkillInventory.locked.clone(), 
+		return CakeLibrary.addLore(CakeLibrary.renameItem(unlocked ? new ItemStack(Material.FIREBALL, 1) : SkillInventory.locked.clone(), 
 				"&9A&br&fm&9a&bg&fe&9d&bd&fo&9n"),
 				"&7Skill Level: " + (unlocked ? level : 0),
 				"&7Damage/Projectile: " + (int) (calculateDamage(level) * 100) + "%",
-				"&7Interval: 1s",
 				"&7Cooldown: 60s",
 				"&f",
 				"&8&oUnleashes a barrage of arcane",
@@ -55,7 +54,7 @@ public class Armageddon extends RPGSkill
 
 	public static double calculateDamage(int level)
 	{
-		return 10.4D + (level * 5.2D);
+		return 5.4D + (level * 2.2D);
 	}
 
 	@Override

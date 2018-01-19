@@ -10,12 +10,12 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 import rpgcore.entities.mobs.CasterEntity;
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 
 public class KingZombie extends CasterEntity
 {
 	public static double maxHealth = 8000.0D;
-	public static String name = CakeAPI.recodeColorCodes("&2&lKing Zombie&7 Lv. ??");
+	public static String name = CakeLibrary.recodeColorCodes("&2&lKing Zombie&7 Lv. ??");
 	public Random rand = new Random();
 
 	public KingZombie(Monster m)

@@ -7,7 +7,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
 import rpgcore.classes.RPGClass.ClassType;
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 import rpgcore.player.RPlayer;
 import rpgcore.skillinventory.SkillInventory;
 
@@ -37,7 +37,7 @@ public class Dash extends RPGSkill
 		int level = player.getSkillLevel(skillName);
 		boolean unlocked = level > 0;
 		level += unlocked ? 0 : 1;
-		return CakeAPI.addLore(CakeAPI.renameItem(unlocked ? new ItemStack(Material.ARROW, 1) : SkillInventory.locked.clone(), 
+		return CakeLibrary.addLore(CakeLibrary.renameItem(unlocked ? new ItemStack(Material.ARROW, 1) : SkillInventory.locked.clone(), 
 				"&eDash"),
 				"&7Skill Level: " + (unlocked ? level : 0),
 				"&7Distance: " + (int) (3 + (level / 2)) + " blocks",
@@ -62,20 +62,20 @@ public class Dash extends RPGSkill
 			{
 				Location point = player.getLocation().add(vector.clone().multiply(i)).add(0.5f, 0, 0.5f);
 				Location b1 = point.clone().add(0.5f, 1, 0.5f);
-				if (!CakeAPI.getPassableBlocks().contains(point.getBlock().getType()) || !CakeAPI.getPassableBlocks().contains(b1.getBlock().getType()))
+				if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()) || !CakeLibrary.getPassableBlocks().contains(b1.getBlock().getType()))
 					break;
 				b = point.add(0, -1, 0);
 			}
 		} else {
-			b = player.getTargetBlock(CakeAPI.getPassableBlocks(), length).getLocation();
+			b = player.getTargetBlock(CakeLibrary.getPassableBlocks(), length).getLocation();
 		}
 		if (b == null)
 			return;
 		Location b1 = b.clone().add(0, 1, 0);
 		Location b2 = b.clone().add(0, 2, 0);
-		if (!CakeAPI.getPassableBlocks().contains(b1.getBlock().getType()) || !CakeAPI.getPassableBlocks().contains(b2.getBlock().getType()))
+		if (!CakeLibrary.getPassableBlocks().contains(b1.getBlock().getType()) || !CakeLibrary.getPassableBlocks().contains(b2.getBlock().getType()))
 		{
-			player.sendMessage(CakeAPI.recodeColorCodes("&c* You cannot dash into a block!"));
+			player.sendMessage(CakeLibrary.recodeColorCodes("&c* You cannot dash into a block!"));
 			return;
 		}
 		int yDiff = 0;
@@ -83,12 +83,12 @@ public class Dash extends RPGSkill
 		{
 			b.setY(y);
 			yDiff++;
-			if (!CakeAPI.getPassableBlocks().contains(b.getBlock().getType()))
+			if (!CakeLibrary.getPassableBlocks().contains(b.getBlock().getType()))
 				break;
 		}
 		if (yDiff > 5)
 		{
-			player.sendMessage(CakeAPI.recodeColorCodes("&c* The dropdown is too huge to dash to"));
+			player.sendMessage(CakeLibrary.recodeColorCodes("&c* The dropdown is too huge to dash to"));
 			return;
 		}
 		Location start = player.getLocation();

@@ -2,7 +2,7 @@ package rpgcore.songs;
 
 import org.bukkit.entity.Player;
 
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
 
 public class RunningTrack 
@@ -41,7 +41,7 @@ public class RunningTrack
 				String component = track.components.get(next);
 				if (!component.equals("."))
 				{
-					float pitch = CakeAPI.getPitchFromNote(component, track.offset);
+					float pitch = CakeLibrary.getPitchFromNote(component, track.offset);
 					if (pitch != 0.0F)
 						player.playSound(player.getEyeLocation(), track.note, 0.2F, pitch);
 				}
@@ -59,7 +59,7 @@ public class RunningTrack
 				int timestamp = (int) (Integer.parseInt(split[1]) / track.divisor);
 				if (tick < timestamp)
 					break;
-				float pitch = CakeAPI.getPitchFromNote(note, track.offset);
+				float pitch = CakeLibrary.getPitchFromNote(note, track.offset);
 				if (timestamp > lastTimestamp)
 				{
 					next = i;

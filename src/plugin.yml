@@ -17,7 +17,15 @@ commands:
     description: Manages your party
   stats:
     description: Checks your stats
-  spawnmob:
+  boss:
+    description: Spawns a boss for testing
+  mob:
     description: Spawns a mob for testing
   crystal:
     description: Spawns crystals for testing
+  npc:
+    description: Test npc
+  si:
+    description: Saves the item as an item
+  gi:
+    description: Gets a saved item

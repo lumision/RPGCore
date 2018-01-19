@@ -9,7 +9,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
 import rpgcore.classes.RPGClass.ClassType;
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGEvents;
 import rpgcore.player.RPlayer;
 import rpgcore.skillinventory.SkillInventory;
@@ -46,7 +46,7 @@ public class Propulsion extends RPGSkill
 		int level = player.getSkillLevel(skillName);
 		boolean unlocked = level > 0;
 		level += unlocked ? 0 : 1;
-		return CakeAPI.addLore(CakeAPI.renameItem(unlocked ? new ItemStack(Material.FEATHER, 1) : SkillInventory.locked.clone(), 
+		return CakeLibrary.addLore(CakeLibrary.renameItem(unlocked ? new ItemStack(Material.FEATHER, 1) : SkillInventory.locked.clone(), 
 				"&ePropulsion"),
 				"&7Skill Level: " + (unlocked ? level : 0),
 				"&7Radius: " + calculateRadius(level) + " blocks",
@@ -92,7 +92,7 @@ public class Propulsion extends RPGSkill
 		super.applyCooldown(8.0D);
 		double radius = calculateRadius(caster.getSkillLevel(skillName));
 		Location origin = player.getLocation();
-		for (LivingEntity e: CakeAPI.getNearbyLivingEntities(player.getLocation(), radius))
+		for (LivingEntity e: CakeLibrary.getNearbyLivingEntities(player.getLocation(), radius))
 		{
 			if (e instanceof Player)
 				continue;

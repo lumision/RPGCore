@@ -2,27 +2,32 @@ package rpgcore.player;
 
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scoreboard.DisplaySlot;
+import org.bukkit.scoreboard.Objective;
+import org.bukkit.scoreboard.Scoreboard;
 
 import rpgcore.classes.RPGClass;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.external.Title;
 import rpgcore.item.RItem;
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
 import rpgcore.skills.Buff;
 import rpgcore.skills.LightFeet;
 
 public class RPlayer 
 {
-	private String playerName;
+	private UUID uuid;
 	public ArrayList<RPGClass> classes;
 	public ClassType currentClass;
 	public int castDelay;
@@ -38,13 +43,16 @@ public class RPlayer
 	public int partyID;
 	public int recoverTicks;
 	public boolean checkLevel;
+	public Scoreboard scoreboard;
+	public Objective objective;
+	public int health, maxHealth;
 
 	public int sneakTicks;
 	public int heartspanTicks;
 
-	public RPlayer(String playerName)
+	public RPlayer(UUID uuid)
 	{
-		this.playerName = playerName;
+		this.uuid = uuid;
 		this.classes = new ArrayList<RPGClass>();
 		for (ClassType ct: ClassType.values())
 		{
@@ -63,10 +71,12 @@ public class RPlayer
 		this.lastSkill = "";
 		this.castDelay = 0;
 		this.partyID = -1;
+		initializeScoreboard();
 	}
-	public RPlayer(String playerName, ArrayList<RPGClass> classes, ClassType currentClass, ArrayList<String> skills, ArrayList<Integer> skillLevels)
+	
+	public RPlayer(UUID uuid, ArrayList<RPGClass> classes, ClassType currentClass, ArrayList<String> skills, ArrayList<Integer> skillLevels)
 	{
-		this.playerName = playerName;
+		this.uuid = uuid;
 		this.classes = classes;
 		this.skills = skills;
 		this.skillLevels = skillLevels;
@@ -94,6 +104,25 @@ public class RPlayer
 		this.lastSkill = "";
 		this.castDelay = 0;
 		this.partyID = -1;
+		initializeScoreboard();
+	}
+	
+	public void initializeScoreboard()
+	{
+		this.scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
+		Objective objective = scoreboard.registerNewObjective("xp", "test");
+		objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+		objective.setDisplayName(CakeLibrary.recodeColorCodes("&6Class: " + getCurrentClass().classType.getClassName()));
+		this.objective = objective;
+		updateScoreboard();
+	}
+	
+	public void updateScoreboard()
+	{
+		objective.setDisplayName(CakeLibrary.recodeColorCodes("&6" + currentClass.getClassName()));
+
+		objective.getScore(CakeLibrary.recodeColorCodes("&eLevel: ")).setScore(getLevel());
+		objective.getScore(CakeLibrary.recodeColorCodes("&e% EXP: ")).setScore(getPercentageToNextLevel());
 	}
 
 	public int getDamageOfClass()
@@ -138,14 +167,8 @@ public class RPlayer
 			int lightFeet = getSkillLevel("Light Feet");
 			if (lightFeet > 0) //Light Feet functionality
 			{
-				int speed = CakeAPI.getPotionEffectAmplifier(p, PotionEffectType.SPEED);
-				int jump = CakeAPI.getPotionEffectAmplifier(p, PotionEffectType.JUMP);
-				int speed1 = LightFeet.getSwiftnessLevel(lightFeet);
-				int jump1 = LightFeet.getJumpLevel(lightFeet);
-				if (speed <= speed1)
-					p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 19, LightFeet.getSwiftnessLevel(lightFeet)), true);
-				if (jump <= jump1)
-					p.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, 19, LightFeet.getJumpLevel(lightFeet)), true);
+				CakeLibrary.addPotionEffectIfBetterOrEquivalent(p, new PotionEffect(PotionEffectType.SPEED, 19, LightFeet.getSwiftnessLevel(lightFeet)));
+				CakeLibrary.addPotionEffectIfBetterOrEquivalent(p, new PotionEffect(PotionEffectType.JUMP, 19, LightFeet.getJumpLevel(lightFeet)));
 			}
 		}
 	}
@@ -163,7 +186,7 @@ public class RPlayer
 			{
 				heartspanTicks--;
 				if (heartspanTicks <= 0)
-					p.sendMessage(CakeAPI.recodeColorCodes("&c**HEARTSPAN DEACTIVATED**"));
+					p.sendMessage(CakeLibrary.recodeColorCodes("&c**HEARTSPAN DEACTIVATED**"));
 			}
 		}
 		ArrayList<Integer> cooldownRemove = new ArrayList<Integer>();
@@ -201,6 +224,7 @@ public class RPlayer
 		{
 			updateLevel();
 			checkLevel = false;
+			updateScoreboard();
 		}
 		int health = (int) p.getHealth();
 		int maxHealth = (int) p.getMaxHealth();
@@ -245,12 +269,25 @@ public class RPlayer
 
 	public String getPlayerName()
 	{
-		return playerName;
+		Player player = Bukkit.getPlayer(uuid);
+		if (player == null)
+		{
+			OfflinePlayer oplayer = Bukkit.getOfflinePlayer(uuid);
+			if (oplayer == null)
+				return null;
+			return oplayer.getName();
+		}
+		return player.getName();
+	}
+
+	public UUID getUniqueID()
+	{
+		return uuid;
 	}
 
 	public Player getPlayer()
 	{
-		return Bukkit.getPlayer(playerName);
+		return Bukkit.getPlayer(uuid);
 	}
 
 	public void addXP(int xp)
@@ -258,7 +295,7 @@ public class RPlayer
 		getCurrentClass().xp += xp;
 		Player p = getPlayer();
 		if (p != null)
-			titleQueue.add(new Title("", CakeAPI.recodeColorCodes("&7+" + xp + "XP (" + getPercentageToNextLevel() + "%)"), 4, 0, 16));
+			titleQueue.add(new Title("", CakeLibrary.recodeColorCodes("&7+" + xp + "XP (" + getPercentageToNextLevel() + "%)"), 4, 0, 16));
 		checkLevel = true;
 	}
 
@@ -268,7 +305,7 @@ public class RPlayer
 		double xpRaw = c.xp - RPGClass.getXPRequiredForLevel(c.lastCheckedLevel);
 		double nextXpRaw = RPGClass.getXPRequiredForLevel(c.lastCheckedLevel + 1) - RPGClass.getXPRequiredForLevel(c.lastCheckedLevel);
 		int percentage = (int) ((xpRaw / nextXpRaw) * 100.0D);
-		return percentage;
+		return percentage < 0 ? 0 : percentage;
 	}
 
 	public int getLevel()
@@ -291,7 +328,7 @@ public class RPlayer
 		if (p != null)
 		{
 			c.skillPoints += (2 * difference);
-			RPGCore.msg(p, "&bYou've leveled up to " + lv + "!");
+			RPGCore.msg(p, "&bYou've leveled your &3" + c.classType.getClassName() + " &bclass up to " + lv + "!");
 			if (lv <= 3)
 				RPGCore.msg(p, "&bUse &3/skills &bto spend your skill points!");
 			p.getWorld().playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.4F, 1.0F);
@@ -374,7 +411,7 @@ public class RPlayer
 		int equipment = 0;
 		for (RItem eq: rEquips)
 			equipment += eq.bruteDamage;
-		
+
 		int additions = 1;
 		if (currentClass.getAdvancementTree().contains(ClassType.THIEF))
 			additions += getSkillLevel("Blade Mastery");
@@ -392,15 +429,25 @@ public class RPlayer
 		int equipment = 0;
 		for (RItem eq: rEquips)
 			equipment += eq.cooldownReduction;
-		ItemStack is = getPlayer().getEquipment().getItemInOffHand();
 		int additions = 0;
+		
 		if (currentClass.getAdvancementTree().contains(ClassType.THIEF))
 			additions += getSkillLevel("Blade Mastery");
 
-		if (CakeAPI.isItemStackNull(is))
-			return additions;
-
 		return equipment + additions;
+	}
+
+	public int calculateDamageReduction()
+	{
+		int equipment = 0;
+		for (RItem eq: rEquips)
+			equipment += eq.damageReduction;
+		int additions = 0;
+		
+		if (currentClass.getAdvancementTree().contains(ClassType.WARRIOR))
+			additions += getSkillLevel("iron body") * 5;
+
+		return Math.min(100, equipment + additions);
 	}
 
 	public double calculateCastDelayMultiplier()

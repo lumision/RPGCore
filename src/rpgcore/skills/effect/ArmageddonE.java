@@ -12,8 +12,9 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import net.minecraft.server.v1_12_R1.EnumParticle;
 import rpgcore.external.InstantFirework;
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGEvents;
 import rpgcore.player.RPlayer;
 import rpgcore.skills.Armageddon;
@@ -32,37 +33,45 @@ public class ArmageddonE
 
 	private ArmageddonE(Armageddon skill)
 	{
+		ArrayList<LivingEntity> nearby = CakeLibrary.getNearbyLivingEntities(skill.player.getLocation(), 24);
 		this.skill = skill;
 		this.origin = skill.player.getLocation().clone().add(0, 3, 0);
-		ArrayList<LivingEntity> nearby = CakeAPI.getNearbyLivingEntities(skill.player.getLocation(), 16);
 		for (LivingEntity e: nearby)
 		{
-			if (hit.size() > 8)
+			if (hit.size() > 16)
 				break;
 			if (e instanceof Player)
 				continue;
 			if (hit.contains(e))
 				continue;
 			hit.add(e);
-			offset.add(new Location(skill.player.getWorld(), rand.nextInt(5) - 2, rand.nextInt(3) + 4, rand.nextInt(5) - 2));
+			offset.add(new Location(skill.player.getWorld(), rand.nextInt(5) - 2, rand.nextInt(3) + 8, rand.nextInt(5) - 2));
 		}
+		if (hit.size() <= 0)
+		{
+			skill.player.sendMessage(CakeLibrary.recodeColorCodes("&cNo nearby monsters."));
+			tick = 32767;
+			return;
+		}
+		skill.applyCooldown(60);
 	}
 
 	public void tick()
 	{
-		
 		if (tick <= 40 && tick % 2 == 0)
-			new RPGEvents.PlaySoundEffect(skill.player, Sound.BLOCK_ANVIL_LAND, 0.1F, 0.5F + (tick / 40F)).run();
+			new RPGEvents.PlaySoundEffect(skill.player, Sound.BLOCK_ANVIL_LAND, 0.2F, 0.5F + (tick / 40F)).run();
 		for (int index = 0; index < hit.size(); index++)
 		{
 			LivingEntity e = hit.get(index);
+			if (e.isDead() || e.getHealth() <= 0)
+				continue;
 			if (tick == 41)
 			{
 				for (int i = 0; i < 8; i++)
 				{
 					Vector movement = e.getLocation().add(offset.get(index)).subtract(e.getLocation()).toVector().multiply(i / 8D);
 					Location point = e.getLocation().add(movement);
-					new RPGEvents.FireworkTrail(point, 0.2F, 4).run();
+					new RPGEvents.ParticleEffect(EnumParticle.BLOCK_CRACK, point, 0.2F, 16, 0, 42).run();
 				}
 			} else if (tick == 43) {
 				int damage = RPlayer.varyDamage(skill.getUnvariedDamage());
@@ -72,7 +81,8 @@ public class ArmageddonE
 			} else if (tick % 2 == 0) {
 				Vector movement = e.getLocation().add(offset.get(index)).subtract(origin).toVector().multiply(tick / 40D);
 				Location point = origin.clone().add(movement);
-				new RPGEvents.FireworkTrail(point, 0.1F, 1).run();
+				new RPGEvents.ParticleEffect(EnumParticle.BLOCK_CRACK, point, 0.1F, 8, 0, 42).run();
+				//new RPGEvents.ParticleEffect(EnumParticle.REDSTONE, point, 0.1F, 4, 0, 1, 1, 1, 1).run();
 			}
 		}
 

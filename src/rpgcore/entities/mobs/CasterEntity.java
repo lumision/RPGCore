@@ -6,7 +6,7 @@ import org.bukkit.GameMode;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 
 public class CasterEntity 
 {
@@ -17,7 +17,7 @@ public class CasterEntity
 	public Monster entity;
 	public Player target;
 	public int castDelay;
-	public int aliveTicks;
+	public double aliveTicks;
 	public CasterEntity(Monster entity)
 	{
 		this.entity = entity;
@@ -61,7 +61,7 @@ public class CasterEntity
 				return;
 			}
 			return;
-		} else
+		} else if (aliveTicks % 5 == 0)
 			entity.setTarget(target);
 	}
 
@@ -69,7 +69,7 @@ public class CasterEntity
 	{
 		if (target != null)
 			return;
-		ArrayList<Player> players = CakeAPI.getNearbyPlayers(entity.getLocation(), reachDistance);
+		ArrayList<Player> players = CakeLibrary.getNearbyPlayers(entity.getLocation(), reachDistance);
 		if (players.size() < 1)
 			return;
 		for (Player player: players)

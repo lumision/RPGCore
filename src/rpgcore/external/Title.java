@@ -3,7 +3,7 @@ package rpgcore.external;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 
 public class Title 
 {
@@ -14,8 +14,8 @@ public class Title
 	public int fadeOut;
 	public Title(String main, String sub, int fadeIn, int show, int fadeOut)
 	{
-		this.main = CakeAPI.recodeColorCodes(main);
-		this.sub = CakeAPI.recodeColorCodes(sub);
+		this.main = CakeLibrary.recodeColorCodes(main);
+		this.sub = CakeLibrary.recodeColorCodes(sub);
 		this.fadeIn = fadeIn;
 		this.show = show;
 		this.fadeOut = fadeOut;

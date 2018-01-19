@@ -14,7 +14,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
 import rpgcore.classes.RPGClass.ClassType;
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGEvents;
 import rpgcore.player.RPlayer;
 import rpgcore.skillinventory.SkillInventory;
@@ -51,7 +51,7 @@ public class ArcaneBarrage extends RPGSkill
 		int level = player.getSkillLevel(skillName);
 		boolean unlocked = level > 0;
 		level += unlocked ? 0 : 1;
-		return CakeAPI.addLore(CakeAPI.renameItem(unlocked ? new ItemStack(Material.FEATHER, 1) : SkillInventory.locked.clone(), 
+		return CakeLibrary.addLore(CakeLibrary.renameItem(unlocked ? new ItemStack(Material.FEATHER, 1) : SkillInventory.locked.clone(), 
 				"&fA&7r&fc&7a&fn&7e &fB&7a&fr&7r&fa&7g&fe"),
 				"&7Skill Level: " + (unlocked ? level : 0),
 				"&7Damage/Projectile: " + (int) (calculateDamage(level) * 100) + "%",
@@ -73,7 +73,7 @@ public class ArcaneBarrage extends RPGSkill
 		Random rand = new Random();
 		player.getWorld().playSound(player.getEyeLocation(), Sound.BLOCK_ANVIL_LAND, 0.1F, 1.0F);
 		FireworkEffect fe = FireworkEffect.builder().with(Type.BURST).withColor(Color.WHITE).withColor(Color.GRAY).build();
-		Location a = player.getTargetBlock(CakeAPI.getPassableBlocks(), 16).getLocation();
+		Location a = player.getTargetBlock(CakeLibrary.getPassableBlocks(), 16).getLocation();
 		for (int i = 0; i < 4; i++)
 		{
 			ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
@@ -86,7 +86,7 @@ public class ArcaneBarrage extends RPGSkill
 			{
 				multiplier++;
 				Location point = start.clone().add(vector.clone().multiply(multiplier));
-				if (!CakeAPI.getPassableBlocks().contains(point.getBlock().getType()))
+				if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
 					break;
 				RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0.2F, 2), multiplier);
 				if (i == 0)

@@ -3,7 +3,7 @@ package rpgcore.skills;
 import org.bukkit.entity.Player;
 
 import rpgcore.classes.RPGClass.ClassType;
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 import rpgcore.player.RPlayer;
 
 public class Buff 
@@ -33,6 +33,6 @@ public class Buff
 	
 	public void removeBuff(Player p)
 	{
-		p.sendMessage(CakeAPI.recodeColorCodes(buffRunout));
+		p.sendMessage(CakeLibrary.recodeColorCodes(buffRunout));
 	}
 }

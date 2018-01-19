@@ -35,13 +35,14 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.MetadataValue;
+import org.bukkit.util.Vector;
 
 import net.minecraft.server.v1_12_R1.EnumParticle;
-import rpgcore.classes.ClassInventory;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.entities.mobs.MageZombie;
 import rpgcore.entities.mobs.ReinforcedSkeleton;
 import rpgcore.entities.mobs.ReinforcedZombie;
+import rpgcore.entities.mobs.WarriorZombie;
 import rpgcore.item.BonusStat.BonusStatCrystal;
 import rpgcore.player.RPlayer;
 import rpgcore.player.RPlayerManager;
@@ -53,10 +54,52 @@ public class RPGListener implements Listener
 {
 	public RPGCore instance;
 	public RPlayerManager playerManager;
+	public Random dropsRand = new Random();
 	public RPGListener(RPGCore instance)
 	{
 		this.instance = instance;
 		playerManager = instance.playerManager;
+	}
+
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void handleCreatureSpawn(EntitySpawnEvent event)
+	{
+		File file = new File("nospawn.txt");
+		if (file.exists())
+			event.setCancelled(true);
+
+		Random rand = RPGCore.rand;
+		Entity entity = event.getEntity();
+		if (!(entity instanceof LivingEntity))
+			return;
+		LivingEntity e = (LivingEntity) entity;
+
+		double spawnDistance = e.getWorld().getSpawnLocation().distance(e.getLocation());
+
+		if (e instanceof Zombie)
+		{
+			if (spawnDistance > 300.0D && rand.nextInt(10) == 0)
+			{
+				new WarriorZombie((Monster) e);
+				return;
+			} else if (spawnDistance > 250.0D && rand.nextInt(10) == 0)
+			{
+				new MageZombie((Monster) e);
+				return;
+			} else if (spawnDistance > 100.0D && rand.nextInt(5) == 0) 
+			{
+				new ReinforcedZombie((Monster) e);
+				return;
+			}
+		}
+		if (e instanceof Skeleton)
+		{
+			if (spawnDistance > 100.0D && rand.nextInt(5) == 0)
+			{
+				new ReinforcedSkeleton((Monster) e);
+				return;
+			}
+		}
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -73,12 +116,14 @@ public class RPGListener implements Listener
 	public void handlePlayerJoin(PlayerJoinEvent event)
 	{
 		Player p = event.getPlayer();
-		if (playerManager.getRPlayer(p.getName()) == null)
+		RPlayer rp = playerManager.getRPlayer(p.getUniqueId());
+		if (rp == null)
 		{
-			RPlayer rp = playerManager.addRPlayer(p.getName());
-			rp.updatePlayerREquips();
-			p.openInventory(ClassInventory.getClassInventory(rp));
+			rp = playerManager.addRPlayer(p.getUniqueId());
+			//p.openInventory(ClassInventory.getClassInventory(rp));
 		}
+		rp.updatePlayerREquips();
+		p.setScoreboard(rp.scoreboard);
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -86,9 +131,9 @@ public class RPGListener implements Listener
 	{
 		Inventory inv = event.getInventory();
 		String name = inv.getName();
-		if (!CakeAPI.hasColor(name))
+		if (!CakeLibrary.hasColor(name))
 			return;
-		name = CakeAPI.removeColorCodes(name);
+		name = CakeLibrary.removeColorCodes(name);
 		boolean crystal = false;
 		for (BonusStatCrystal type: BonusStatCrystal.values())
 			if (name.equals(type.getItemName()))
@@ -108,6 +153,15 @@ public class RPGListener implements Listener
 	public void handleEntityDeath(EntityDeathEvent event)
 	{
 		LivingEntity e = event.getEntity();
+
+		String cn = e.getCustomName();
+		if (cn != null)
+			if (e.getCustomName().equals(MageZombie.name))
+			{
+				if (dropsRand.nextInt(10) == 0)
+					e.getWorld().dropItem(e.getLocation(), instance.getItemFromDatabase("ZombieStaff").createItem()).setVelocity(new Vector(0, 0.5F, 0));
+			}
+
 		if (e.hasMetadata("RPGCore.Killer"))
 		{
 			List<MetadataValue> mlist = e.getMetadata("RPGCore.Killer");
@@ -116,7 +170,6 @@ public class RPGListener implements Listener
 			if (rp == null)
 				return;
 			rp.addXP((int) e.getMaxHealth());
-			return;
 		}
 	}
 
@@ -126,9 +179,9 @@ public class RPGListener implements Listener
 		Player p = (Player) event.getPlayer();
 		Inventory inv = event.getInventory();
 		String name = inv.getName();
-		if (!CakeAPI.hasColor(name))
+		if (!CakeLibrary.hasColor(name))
 			return;
-		name = CakeAPI.removeColorCodes(name);
+		name = CakeLibrary.removeColorCodes(name);
 		for (BonusStatCrystal type: BonusStatCrystal.values())
 			if (name.equals(type.getItemName()))
 			{
@@ -136,9 +189,9 @@ public class RPGListener implements Listener
 				{
 					int slot = i == 0 ? 0 : 4;
 					ItemStack give = inv.getItem(slot);
-					if (CakeAPI.isItemStackNull(give))
+					if (CakeLibrary.isItemStackNull(give))
 						continue;
-					CakeAPI.givePlayerItem(p, give);
+					CakeLibrary.givePlayerItem(p, give);
 					inv.setItem(slot, new ItemStack(Material.AIR));
 				}
 			}
@@ -148,14 +201,14 @@ public class RPGListener implements Listener
 	public void handleInventoryClick(InventoryClickEvent event)
 	{
 		Player p = (Player) event.getWhoClicked();
-		RPlayer rp = instance.playerManager.getRPlayer(p.getName());
+		RPlayer rp = instance.playerManager.getRPlayer(p.getUniqueId());
 		if (rp == null)
 			return;
 		Inventory inv = event.getInventory();
 		String name = inv.getName();
-		if (!CakeAPI.hasColor(name))
+		if (!CakeLibrary.hasColor(name))
 			return;
-		name = CakeAPI.removeColorCodes(name);
+		name = CakeLibrary.removeColorCodes(name);
 		for (BonusStatCrystal type: BonusStatCrystal.values())
 			if (name.equals(type.getItemName()))
 			{
@@ -171,23 +224,24 @@ public class RPGListener implements Listener
 				event.setCancelled(true);
 			return;
 		}
-		RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 20), 0);
+		RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 20), 0);
 		if (name.equals("Class Selection"))
 		{
 			event.setCancelled(true);
 			ItemStack is = event.getCurrentItem();
-			if (CakeAPI.isItemStackNull(is))
+			if (CakeLibrary.isItemStackNull(is))
 				return;
-			String itemName = CakeAPI.removeColorCodes(CakeAPI.getItemName(is));
+			String itemName = CakeLibrary.removeColorCodes(CakeLibrary.getItemName(is));
 			ClassType change = rp.currentClass;
 			for (ClassType ct: ClassType.values())
 				if (itemName.toLowerCase().contains(ct.toString().toLowerCase()))
 					change = ct;
 			rp.currentClass = change;
 			instance.playerManager.writePlayerData(rp);
-			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 169), 0);
+			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 169), 0);
 			p.getWorld().playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.2F, 1.0F);
 			p.openInventory(SkillInventory.getSkillInventory(rp, 0));
+			rp.updateScoreboard();
 			return;
 		}
 		if (name.equals("Party Info"))
@@ -196,14 +250,14 @@ public class RPGListener implements Listener
 		{
 			event.setCancelled(true);
 			ItemStack is = event.getCurrentItem();
-			if (CakeAPI.isItemStackNull(is))
+			if (CakeLibrary.isItemStackNull(is))
 				return;
-			String itemName = CakeAPI.removeColorCodes(CakeAPI.getItemName(is));
+			String itemName = CakeLibrary.removeColorCodes(CakeLibrary.getItemName(is));
 			if (itemName.startsWith("You have sufficient permissions to use these:"))
 			{
-				rp.getCurrentClass().skillPoints++;
+				rp.getCurrentClass().skillPoints += 10;
 				SkillInventory.updateSkillInventory(event.getInventory(), rp);
-				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 169), 0);
+				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 169), 0);
 				return;
 			}
 			if (itemName.equals("Spend skill points"))
@@ -242,7 +296,7 @@ public class RPGListener implements Listener
 					return;
 				}
 				rp.offsetSkillLevel(itemName, 1);
-				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 169), 0);
+				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 169), 0);
 				rp.getCurrentClass().skillPoints--;
 				SkillInventory.updateSkillInventory(event.getInventory(), rp);
 				SkillInventory.updatePlayerInventorySkills(rp);
@@ -258,7 +312,7 @@ public class RPGListener implements Listener
 					return;
 				}
 				rp.offsetSkillLevel(itemName, -1);
-				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 169), 0);
+				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 169), 0);
 				rp.getCurrentClass().skillPoints++;
 				SkillInventory.updateSkillInventory(event.getInventory(), rp);
 				SkillInventory.updatePlayerInventorySkills(rp);
@@ -267,8 +321,8 @@ public class RPGListener implements Listener
 			}
 			if (is.getTypeId() == 383)
 				return;
-			for (String line: CakeAPI.getItemLore(is))
-				if (CakeAPI.removeColorCodes(line).startsWith("Passive Skill:"))
+			for (String line: CakeLibrary.getItemLore(is))
+				if (CakeLibrary.removeColorCodes(line).startsWith("Passive Skill:"))
 				{
 					RPGCore.msg(p, "Passive Skills do not require activation.");
 					return;
@@ -279,9 +333,9 @@ public class RPGListener implements Listener
 			for (int i = 0; i < p.getInventory().getSize(); i++)
 			{
 				ItemStack item = p.getInventory().getItem(i);
-				if (CakeAPI.isItemStackNull(item))
+				if (CakeLibrary.isItemStackNull(item))
 					continue;
-				if (CakeAPI.getItemName(item).equals(CakeAPI.getItemName(event.getCurrentItem())))
+				if (CakeLibrary.getItemName(item).equals(CakeLibrary.getItemName(event.getCurrentItem())))
 				{
 					p.getInventory().setItem(i, add.clone());
 					r = true;
@@ -290,50 +344,12 @@ public class RPGListener implements Listener
 			if (r)
 			{
 				RPGCore.msg(p, "Skill(s) in your inventory have been updated.");
-				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 169), 0);
+				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 169), 0);
 				return;
 			}
 			p.getInventory().addItem(add);
-			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 169), 0);
+			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 169), 0);
 			RPGCore.msg(p, "The skill has been added into your inventory.");
-		}
-	}
-
-	@EventHandler(priority = EventPriority.HIGHEST)
-	public void handleCreatureSpawn(EntitySpawnEvent event)
-	{
-		File file = new File("nospawn.txt");
-		if (file.exists())
-			event.setCancelled(true);
-
-		Random rand = RPGCore.rand;
-		Entity entity = event.getEntity();
-		if (!(entity instanceof LivingEntity))
-			return;
-		LivingEntity e = (LivingEntity) entity;
-
-		double spawnDistance = e.getWorld().getSpawnLocation().distance(e.getLocation());
-
-		if (e instanceof Zombie)
-		{
-			if (spawnDistance > 250.0D && rand.nextInt(10) == 0)
-			{
-				new MageZombie((Monster) e);
-				return;
-			}
-			if (spawnDistance > 100.0D && rand.nextInt(5) == 0)
-			{
-				new ReinforcedZombie((Monster) e);
-				return;
-			}
-		}
-		if (e instanceof Skeleton)
-		{
-			if (spawnDistance > 100.0D && rand.nextInt(5) == 0)
-			{
-				new ReinforcedSkeleton((Monster) e);
-				return;
-			}
 		}
 	}
 
@@ -341,16 +357,16 @@ public class RPGListener implements Listener
 	public void handleBlockBreak(BlockBreakEvent event)
 	{
 		Player p = event.getPlayer();
-		RPlayer rp = instance.playerManager.getRPlayer(p.getName());
+		RPlayer rp = instance.playerManager.getRPlayer(p.getUniqueId());
 		if (rp == null)
 			return;
 		ItemStack is = p.getItemInHand();
-		if (CakeAPI.isItemStackNull(is))
+		if (CakeLibrary.isItemStackNull(is))
 			return;
-		String name = CakeAPI.getItemName(is);
+		String name = CakeLibrary.getItemName(is);
 		if (!name.contains("§"))
 			return;
-		name = CakeAPI.removeColorCodes(name);
+		name = CakeLibrary.removeColorCodes(name);
 		for (String skill: rp.skills)
 			if (skill.equalsIgnoreCase(name))
 				event.setCancelled(true);
@@ -372,7 +388,7 @@ public class RPGListener implements Listener
 			event.setDamage(DamageModifier.ARMOR, 0);
 			event.setDamage(DamageModifier.ABSORPTION, 0);
 			Player p = (Player) event.getEntity();
-			RPlayer rp = instance.playerManager.getRPlayer(p.getName());
+			RPlayer rp = instance.playerManager.getRPlayer(p.getUniqueId());
 			if (rp == null)
 				return;
 			if (rp.currentClass.getTier1Class().equals(ClassType.THIEF))
@@ -382,13 +398,11 @@ public class RPGListener implements Listener
 				{
 					event.setCancelled(true);
 					RPGCore.msgNoTag(p, "&8--- DAMAGE EVADED ---");
-					CakeAPI.spawnParticle(EnumParticle.SMOKE_LARGE, p.getLocation().add(0, 1, 0), 0.5F, p, 8, 0);
+					CakeLibrary.spawnParticle(EnumParticle.SMOKE_LARGE, p.getLocation().add(0, 1, 0), 0.5F, p, 8, 0);
 				}
 			}
-			if (rp.currentClass.getTier1Class().equals(ClassType.WARRIOR))
-			{
-				event.setDamage(event.getDamage() - (event.getDamage() * (rp.getSkillLevel("iron body") / 20.0D)));
-			}
+
+			event.setDamage(event.getDamage() - (event.getDamage() / 100D * rp.calculateDamageReduction()));
 		}
 	}
 
@@ -396,14 +410,14 @@ public class RPGListener implements Listener
 	public void handleBlockPlace(BlockPlaceEvent event)
 	{
 		Player player = event.getPlayer();
-		RPlayer rp = instance.playerManager.getRPlayer(player.getName());
+		RPlayer rp = instance.playerManager.getRPlayer(player.getUniqueId());
 		if (rp == null)
 			return;
 		ItemStack is = player.getItemInHand();
-		if (CakeAPI.isItemStackNull(is))
+		if (CakeLibrary.isItemStackNull(is))
 			return;
-		String name = CakeAPI.getItemName(is);
-		if (!CakeAPI.hasColor(name))
+		String name = CakeLibrary.getItemName(is);
+		if (!CakeLibrary.hasColor(name))
 			return;
 		if (isSkill(name, rp))
 			event.setCancelled(true);
@@ -413,14 +427,14 @@ public class RPGListener implements Listener
 	public void handlePlayerEat(PlayerItemConsumeEvent event)
 	{
 		Player player = event.getPlayer();
-		RPlayer rp = instance.playerManager.getRPlayer(player.getName());
+		RPlayer rp = instance.playerManager.getRPlayer(player.getUniqueId());
 		if (rp == null)
 			return;
 		ItemStack is = player.getItemInHand();
-		if (CakeAPI.isItemStackNull(is))
+		if (CakeLibrary.isItemStackNull(is))
 			return;
-		String name = CakeAPI.getItemName(is);
-		if (!CakeAPI.hasColor(name))
+		String name = CakeLibrary.getItemName(is);
+		if (!CakeLibrary.hasColor(name))
 			return;
 		if (isSkill(name, rp))
 			event.setCancelled(true);
@@ -436,12 +450,12 @@ public class RPGListener implements Listener
 		//CRYSTALS
 		Player p = event.getPlayer();
 		ItemStack is = p.getItemInHand();
-		if (!CakeAPI.isItemStackNull(is))
+		if (!CakeLibrary.isItemStackNull(is))
 		{
-			String name = CakeAPI.getItemName(is);
-			if (CakeAPI.hasColor(name))
+			String name = CakeLibrary.getItemName(is);
+			if (CakeLibrary.hasColor(name))
 			{
-				name = CakeAPI.removeColorCodes(name);
+				name = CakeLibrary.removeColorCodes(name);
 				for (BonusStatCrystal crystal: BonusStatCrystal.values())
 				{
 					if (name.equals(crystal.getItemName()))
@@ -454,7 +468,7 @@ public class RPGListener implements Listener
 			}
 		}
 
-		RPlayer rp = playerManager.getRPlayer(p.getName());
+		RPlayer rp = playerManager.getRPlayer(p.getUniqueId());
 		if (rp.heartspanTicks > 0 && rp.castDelay <= 0)
 		{
 			Heartspan.strike(rp);
@@ -466,15 +480,15 @@ public class RPGListener implements Listener
 	public boolean handleSkillCast(Player p)
 	{
 		ItemStack is = p.getItemInHand();
-		if (CakeAPI.isItemStackNull(is))
+		if (CakeLibrary.isItemStackNull(is))
 			return false;
-		RPlayer rp = playerManager.getRPlayer(p.getName());
+		RPlayer rp = playerManager.getRPlayer(p.getUniqueId());
 		if (rp == null)
 			return false;
-		String name = CakeAPI.getItemName(is);
+		String name = CakeLibrary.getItemName(is);
 		if (!name.contains("§"))
 			return false;
-		name = CakeAPI.removeColorCodes(name);
+		name = CakeLibrary.removeColorCodes(name);
 		if (rp.castDelay > 0)
 		{
 			if (rp.instantCast.contains(name))
@@ -516,7 +530,7 @@ public class RPGListener implements Listener
 
 	public boolean isSkill(String itemName, RPlayer rp)
 	{
-		itemName = CakeAPI.removeColorCodes(itemName);
+		itemName = CakeLibrary.removeColorCodes(itemName);
 		for (String skill: rp.skills)
 			if (skill.equalsIgnoreCase(itemName))
 				return true;

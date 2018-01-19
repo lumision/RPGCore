@@ -12,7 +12,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
 import rpgcore.classes.RPGClass.ClassType;
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGEvents;
 import rpgcore.player.RPlayer;
 import rpgcore.skillinventory.SkillInventory;
@@ -49,7 +49,7 @@ public class ShadowStab extends RPGSkill
 		int level = player.getSkillLevel(skillName);
 		boolean unlocked = level > 0;
 		level += unlocked ? 0 : 1;
-		return CakeAPI.addLore(CakeAPI.renameItem(unlocked ? new ItemStack(Material.STONE_SWORD, 1) : SkillInventory.locked.clone(), 
+		return CakeLibrary.addLore(CakeLibrary.renameItem(unlocked ? new ItemStack(Material.STONE_SWORD, 1) : SkillInventory.locked.clone(), 
 				"&fShadow Stab"),
 				"&7Skill Level: " + (unlocked ? level : 0),
 				"&7Damage: " + (int) (calculateDamage(level) * 100) + "%",
@@ -79,11 +79,11 @@ public class ShadowStab extends RPGSkill
 		{
 			multiplier++;
 			Location point = player.getEyeLocation().add(vector.clone().multiply(multiplier));
-			if (!CakeAPI.getPassableBlocks().contains(point.getBlock().getType()))
+			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
 				break;
 			RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0, 1), 0);
 			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.1F, 1.25F), 0);
-			for (LivingEntity e: CakeAPI.getNearbyLivingEntities(point, 0.75D))
+			for (LivingEntity e: CakeLibrary.getNearbyLivingEntities(point, 0.75D))
 			{
 				if (e instanceof Player)
 					continue;

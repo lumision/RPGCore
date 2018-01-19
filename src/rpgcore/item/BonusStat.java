@@ -8,7 +8,7 @@ import org.bukkit.Material;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 
 public class BonusStat
 {
@@ -78,16 +78,16 @@ public class BonusStat
 
 	public static enum BonusStatCrystal
 	{
-		ALL_LINES_REROLL(CakeAPI.editNameAndLore(new ItemStack(Material.END_CRYSTAL), "&a&nAlchemy Crystal", "&aRerolls all bonus stat lines.", "&b", "&7&oHold and click to use.")),
-		TIER_REROLL(CakeAPI.editNameAndLore(new ItemStack(Material.END_CRYSTAL), "&e&nPassion Crystal", "&eIncreases the tier of a bonus", "&estat at a small chance.", "&eMax Tier: 5", "&b", "&7&oHold and click to use.")),
-		LINE_AMOUNT_REROLL(CakeAPI.editNameAndLore(new ItemStack(Material.END_CRYSTAL), "&b&nWisdom Crystal", "&bAdds a random bonus stat line.", "&bMax Lines: 3", "&b", "&7&oHold and click to use.")),
-		STAT_ADDER(CakeAPI.editNameAndLore(new ItemStack(Material.END_CRYSTAL), "&d&nSpirit Crystal", "&dAdds a bonus stat to an item.", "&b", "&7&oHold and click to use."));
+		ALL_LINES_REROLL(CakeLibrary.editNameAndLore(new ItemStack(Material.END_CRYSTAL), "&a&nAlchemy Crystal", "&aRerolls all bonus stat lines.", "&b", "&7&oHold and click to use.")),
+		TIER_REROLL(CakeLibrary.editNameAndLore(new ItemStack(Material.END_CRYSTAL), "&e&nPassion Crystal", "&eIncreases the tier of a bonus", "&estat at a small chance.", "&eMax Tier: 5", "&b", "&7&oHold and click to use.")),
+		LINE_AMOUNT_REROLL(CakeLibrary.editNameAndLore(new ItemStack(Material.END_CRYSTAL), "&b&nWisdom Crystal", "&bAdds a random bonus stat line.", "&bMax Lines: 3", "&b", "&7&oHold and click to use.")),
+		STAT_ADDER(CakeLibrary.editNameAndLore(new ItemStack(Material.END_CRYSTAL), "&d&nSpirit Crystal", "&dAdds a bonus stat to an item.", "&b", "&7&oHold and click to use."));
 
 		private String itemName;
 		private ItemStack item;
 		private BonusStatCrystal(ItemStack item)
 		{
-			this.itemName = CakeAPI.removeColorCodes(CakeAPI.getItemName(item));
+			this.itemName = CakeLibrary.removeColorCodes(CakeLibrary.getItemName(item));
 			this.item = item;
 		}
 
@@ -110,8 +110,8 @@ public class BonusStat
 		{
 			ItemStack crystal = type.getItemStack();
 			crystal.setAmount(amount);
-			Inventory inv = Bukkit.createInventory(null, 9, CakeAPI.getItemName(crystal));
-			ItemStack sign = CakeAPI.renameItem(new ItemStack(Material.STAINED_GLASS_PANE, 1, (short) 15), "&7Place the item in the middle.");
+			Inventory inv = Bukkit.createInventory(null, 9, CakeLibrary.getItemName(crystal));
+			ItemStack sign = CakeLibrary.renameItem(new ItemStack(Material.STAINED_GLASS_PANE, 1, (short) 15), "&7Place the item in the middle.");
 			for (int i = 1; i <= 8; i++)
 				if (i != 4)
 					inv.setItem(i, sign.clone());
@@ -134,14 +134,14 @@ public class BonusStat
 		int tier = 0;
 		if (is == null)
 			return null;
-		ArrayList<String> lore = CakeAPI.getItemLore(is);
+		ArrayList<String> lore = CakeLibrary.getItemLore(is);
 		if (lore.size() <= 0)
 			return null;
 		for (String line: lore)
 		{
-			if (!CakeAPI.hasColor(line))
+			if (!CakeLibrary.hasColor(line))
 				continue;
-			line = CakeAPI.removeColorCodes(line);
+			line = CakeLibrary.removeColorCodes(line);
 			if (tier == 0 && line.startsWith("  --- Tier "))
 			{
 				try
@@ -182,6 +182,6 @@ public class BonusStat
 			color = "&e";
 			break;
 		}
-		return CakeAPI.recodeColorCodes(color);
+		return CakeLibrary.recodeColorCodes(color);
 	}
 }

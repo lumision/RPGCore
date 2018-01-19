@@ -6,11 +6,13 @@ import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
+import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
+import rpgcore.main.RPGCore;
 import rpgcore.main.RPGEvents;
 
 public class MageZombie extends CasterEntity
@@ -27,6 +29,11 @@ public class MageZombie extends CasterEntity
 		entity.setCustomNameVisible(true);
 
 		entity.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, Integer.MAX_VALUE, 1));
+		entity.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, Integer.MAX_VALUE, 0));
+		
+		EntityEquipment eq = entity.getEquipment();
+		eq.setItemInHand(RPGCore.instance.getItemFromDatabase("ZombieMageStaff").createItem());
+		eq.setItemInHandDropChance(0);
 	}
 
 	@Override
@@ -43,19 +50,21 @@ public class MageZombie extends CasterEntity
 
 	public void castArcaneBolt()
 	{
+		if (target.getLocation().distance(entity.getLocation()) > 15)
+			return;
 		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
 		Vector vector = entity.getLocation().getDirection().normalize().multiply(0.5D);
 		int multiplier = 0;
 		entity.getWorld().playSound(entity.getEyeLocation(), Sound.BLOCK_ANVIL_LAND, 0.1F, 1.0F);
-		while (multiplier < 20)
+		while (multiplier < 30)
 		{
 			multiplier++;
 			Location point = entity.getEyeLocation().add(vector.clone().multiply(multiplier));
-			if (!CakeAPI.getPassableBlocks().contains(point.getBlock().getType()))
+			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
 				break;
 			RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0, 1), multiplier);
 			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.1F, 1.25F), multiplier);
-			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, 3, entity, 20), multiplier);
+			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, 4, entity, 20), multiplier);
 		}
 	}
 }

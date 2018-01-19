@@ -7,7 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
 import rpgcore.player.RPlayer;
 import rpgcore.skillinventory.SkillInventory;
@@ -32,7 +32,7 @@ public class Party
 
 	public void setPartyInventory()
 	{
-		this.partyInventory = Bukkit.createInventory(null, 9, CakeAPI.recodeColorCodes("&5Party Info"));
+		this.partyInventory = Bukkit.createInventory(null, 9, CakeLibrary.recodeColorCodes("&5Party Info"));
 		updatePartyInventory();
 	}
 
@@ -45,18 +45,18 @@ public class Party
 			RPlayer rp = players.get(i);
 			Player p = rp.getPlayer();
 			String color = SkillInventory.getClassColor(rp.currentClass);
-			ItemStack is = CakeAPI.editNameAndLore(SkillInventory.getClassIcon(rp.currentClass),
+			ItemStack is = CakeLibrary.editNameAndLore(SkillInventory.getClassIcon(rp.currentClass),
 					color + rp.getPlayerName(),
 					"&7Class: " + SkillInventory.getClassColor(rp.currentClass) + rp.currentClass.toString(),
 					"&7Level: " + color + rp.getCurrentClass().getLevel());
 
 			if (p != null)
-				is = CakeAPI.addLore(is, "&7Raw Damage: " + color + rp.getDamageOfClass(),
+				is = CakeLibrary.addLore(is, "&7Raw Damage: " + color + rp.getDamageOfClass(),
 						"&7Attack Speed: " + color + String.format("%.1f", 1.0D / rp.calculateCastDelayMultiplier()));
 			else
-				is = CakeAPI.addLore(is, "&7 * Offline");
+				is = CakeLibrary.addLore(is, "&7 * Offline");
 			if (rp == host)
-				is = CakeAPI.addLore(is, "&7 * Host");
+				is = CakeLibrary.addLore(is, "&7 * Host");
 			partyInventory.setItem(i, is);
 		}
 	}
@@ -85,7 +85,7 @@ public class Party
 
 	public static void msg(Player p, String msg)
 	{
-		p.sendMessage(CakeAPI.recodeColorCodes("&5[&dParties&5] &d" + msg));
+		p.sendMessage(CakeLibrary.recodeColorCodes("&5[&dParties&5] &d" + msg));
 	}
 
 	public void disbandParty()

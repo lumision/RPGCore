@@ -4,7 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.inventory.Inventory;
 
 import rpgcore.classes.RPGClass.ClassType;
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 import rpgcore.player.RPlayer;
 import rpgcore.skillinventory.SkillInventory;
 
@@ -19,13 +19,13 @@ public class ClassInventory
 		//tier 1 = 10 slots
 		//tier 2 = 12 slots
 		//tier 3 = 14 slots
-		Inventory inv = Bukkit.createInventory(null, 27, CakeAPI.recodeColorCodes("&1Class Selection"));
+		Inventory inv = Bukkit.createInventory(null, 27, CakeLibrary.recodeColorCodes("&1Class Selection"));
 		for (RPGClass c: rp.classes)
 		{
 			if (c.classType.equals(ClassType.WARRIOR))
 			{
 				String color = SkillInventory.getClassColor(c.classType);
-				inv.setItem(19, CakeAPI.addLore(SkillInventory.getClassIcon(c.classType),
+				inv.setItem(19, CakeLibrary.addLore(SkillInventory.getClassIcon(c.classType),
 						"&7Tier: " + c.classType.getTier(),
 						"&7DMG: &7[&e&ki!i!i!i!&7      ]",
 						"&7DEF: &7[&a&ki!i!i!i!i!i!&7    ]",
@@ -39,7 +39,7 @@ public class ClassInventory
 			if (c.classType.equals(ClassType.KNIGHT))
 			{
 				String color = SkillInventory.getClassColor(c.classType);
-				inv.setItem(10, CakeAPI.addLore(SkillInventory.getClassIcon(c.classType),
+				inv.setItem(10, CakeLibrary.addLore(SkillInventory.getClassIcon(c.classType),
 						"&7Tier: " + c.classType.getTier(),
 						"&7DMG: &7[&e&ki!i!i!i!i!&7     ]",
 						"&7DEF: &7[&a&ki!i!i!i!i!i!i!&7   ]",
@@ -52,7 +52,7 @@ public class ClassInventory
 			if (c.classType.equals(ClassType.HERO))
 			{
 				String color = SkillInventory.getClassColor(c.classType);
-				inv.setItem(1, CakeAPI.addLore(SkillInventory.getClassIcon(c.classType),
+				inv.setItem(1, CakeLibrary.addLore(SkillInventory.getClassIcon(c.classType),
 						"&7Tier: " + c.classType.getTier(),
 						"&7DMG: &7[&a&ki!i!i!i!i!i!&7    ]",
 						"&7DEF: &7[&2&ki!i!i!i!i!i!i!i!&7  ]",
@@ -64,7 +64,7 @@ public class ClassInventory
 			if (c.classType.equals(ClassType.PALADIN))
 			{
 				String color = SkillInventory.getClassColor(c.classType);
-				inv.setItem(9, CakeAPI.addLore(SkillInventory.getClassIcon(c.classType),
+				inv.setItem(9, CakeLibrary.addLore(SkillInventory.getClassIcon(c.classType),
 						"&7Tier: " + c.classType.getTier(),
 						"&7DMG: &7[&a&ki!i!i!i!i!i!&7    ]",
 						"&7DEF: &7[&a&ki!i!i!i!i!i!&7    ]",
@@ -77,7 +77,7 @@ public class ClassInventory
 			if (c.classType.equals(ClassType.ODIN))
 			{
 				String color = SkillInventory.getClassColor(c.classType);
-				inv.setItem(0, CakeAPI.addLore(SkillInventory.getClassIcon(c.classType),
+				inv.setItem(0, CakeLibrary.addLore(SkillInventory.getClassIcon(c.classType),
 						"&7Tier: " + c.classType.getTier(),
 						"&7DMG: &7[&2&ki!i!i!i!i!i!i!i!&7  ]",
 						"&7DEF: &7[&a&ki!i!i!i!i!i!&7    ]",
@@ -90,7 +90,7 @@ public class ClassInventory
 			if (c.classType.equals(ClassType.MAGE))
 			{
 				String color = SkillInventory.getClassColor(c.classType);
-				inv.setItem(25, CakeAPI.addLore(SkillInventory.getClassIcon(c.classType),
+				inv.setItem(25, CakeLibrary.addLore(SkillInventory.getClassIcon(c.classType),
 						"&7Tier: " + c.classType.getTier(),
 						"&7DMG: &7[&a&ki!i!i!i!i!i!&7    ]",
 						"&7DEF: &7[&e&ki!i!i!i!&7      ]",
@@ -103,7 +103,7 @@ public class ClassInventory
 			if (c.classType.equals(ClassType.SORCERER))
 			{
 				String color = SkillInventory.getClassColor(c.classType);
-				inv.setItem(17, CakeAPI.addLore(SkillInventory.getClassIcon(c.classType),
+				inv.setItem(17, CakeLibrary.addLore(SkillInventory.getClassIcon(c.classType),
 						"&7Tier: " + c.classType.getTier(),
 						"&7DMG: &7[&a&ki!i!i!i!i!i!i!i!&7  ]",
 						"&7DEF: &7[&e&ki!i!i!i!&7      ]",
@@ -116,7 +116,7 @@ public class ClassInventory
 			if (c.classType.equals(ClassType.ARCHMAGE))
 			{
 				String color = SkillInventory.getClassColor(c.classType);
-				inv.setItem(8, CakeAPI.addLore(SkillInventory.getClassIcon(c.classType),
+				inv.setItem(8, CakeLibrary.addLore(SkillInventory.getClassIcon(c.classType),
 						"&7Tier: " + c.classType.getTier(),
 						"&7DMG: &7[&2&ki!i!i!i!i!i!i!i!i!&7 ]",
 						"&7DEF: &7[&e&ki!i!i!i!i!&7     ]",
@@ -129,7 +129,7 @@ public class ClassInventory
 			if (c.classType.equals(ClassType.SHAMAN))
 			{
 				String color = SkillInventory.getClassColor(c.classType);
-				inv.setItem(16, CakeAPI.addLore(SkillInventory.getClassIcon(c.classType),
+				inv.setItem(16, CakeLibrary.addLore(SkillInventory.getClassIcon(c.classType),
 						"&7Tier: " + c.classType.getTier(),
 						"&7DMG: &7[&a&ki!i!i!i!i!i!i!&7   ]",
 						"&7DEF: &7[&e&ki!i!i!i!i!&7     ]",
@@ -142,7 +142,7 @@ public class ClassInventory
 			if (c.classType.equals(ClassType.THAUMATURGE))
 			{
 				String color = SkillInventory.getClassColor(c.classType);
-				inv.setItem(7, CakeAPI.addLore(SkillInventory.getClassIcon(c.classType),
+				inv.setItem(7, CakeLibrary.addLore(SkillInventory.getClassIcon(c.classType),
 						"&7Tier: " + c.classType.getTier(),
 						"&7DMG: &7[&a&ki!i!i!i!i!i!i!i!&7  ]",
 						"&7DEF: &7[&e&ki!i!i!i!i!i!&7    ]",
@@ -156,7 +156,7 @@ public class ClassInventory
 			if (c.classType.equals(ClassType.PRIEST))
 			{
 				String color = SkillInventory.getClassColor(c.classType);
-				inv.setItem(23, CakeAPI.addLore(SkillInventory.getClassIcon(c.classType),
+				inv.setItem(23, CakeLibrary.addLore(SkillInventory.getClassIcon(c.classType),
 						"&7Tier: " + c.classType.getTier(),
 						"&7DMG: &7[&e&ki!i!i!i!i!&7     ]",
 						"&7DEF: &7[&e&ki!i!i!i!i!&7     ]",
@@ -169,7 +169,7 @@ public class ClassInventory
 			if (c.classType.equals(ClassType.FRIAR))
 			{
 				String color = SkillInventory.getClassColor(c.classType);
-				inv.setItem(14, CakeAPI.addLore(SkillInventory.getClassIcon(c.classType),
+				inv.setItem(14, CakeLibrary.addLore(SkillInventory.getClassIcon(c.classType),
 						"&7Tier: " + c.classType.getTier(),
 						"&7DMG: &7[&e&ki!i!i!i!i!i!&7    ]",
 						"&7DEF: &7[&e&ki!i!i!i!i!i!&7    ]",
@@ -181,7 +181,7 @@ public class ClassInventory
 			if (c.classType.equals(ClassType.BISHOP))
 			{
 				String color = SkillInventory.getClassColor(c.classType);
-				inv.setItem(5, CakeAPI.addLore(SkillInventory.getClassIcon(c.classType),
+				inv.setItem(5, CakeLibrary.addLore(SkillInventory.getClassIcon(c.classType),
 						"&7Tier: " + c.classType.getTier(),
 						"&7DMG: &7[&a&ki!i!i!i!i!i!i!&7   ]",
 						"&7DEF: &7[&a&ki!i!i!i!i!i!i!&7   ]",
@@ -195,7 +195,7 @@ public class ClassInventory
 			if (c.classType.equals(ClassType.THIEF))
 			{
 				String color = SkillInventory.getClassColor(c.classType);
-				inv.setItem(21, CakeAPI.addLore(SkillInventory.getClassIcon(c.classType),
+				inv.setItem(21, CakeLibrary.addLore(SkillInventory.getClassIcon(c.classType),
 						"&7Tier: " + c.classType.getTier(),
 						"&7DMG: &7[&a&ki!i!i!i!i!i!i!&7   ]",
 						"&7DEF: &7[&c&ki!i!i!&7       ]",
@@ -208,7 +208,7 @@ public class ClassInventory
 			if (c.classType.equals(ClassType.ASSASSIN))
 			{
 				String color = SkillInventory.getClassColor(c.classType);
-				inv.setItem(12, CakeAPI.addLore(SkillInventory.getClassIcon(c.classType),
+				inv.setItem(12, CakeLibrary.addLore(SkillInventory.getClassIcon(c.classType),
 						"&7Tier: " + c.classType.getTier(),
 						"&7DMG: &7[&a&ki!i!i!i!i!i!i!i!&7  ]",
 						"&7DEF: &7[&e&ki!i!i!i!&7      ]",
@@ -221,7 +221,7 @@ public class ClassInventory
 			if (c.classType.equals(ClassType.DUALIST))
 			{
 				String color = SkillInventory.getClassColor(c.classType);
-				inv.setItem(3, CakeAPI.addLore(SkillInventory.getClassIcon(c.classType),
+				inv.setItem(3, CakeLibrary.addLore(SkillInventory.getClassIcon(c.classType),
 						"&7Tier: " + c.classType.getTier(),
 						"&7DMG: &7[&2&ki!i!i!i!i!i!i!i!i!&7 ]",
 						"&7DEF: &7[&e&ki!i!i!i!i!&7     ]",

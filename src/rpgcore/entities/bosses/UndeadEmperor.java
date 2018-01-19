@@ -20,13 +20,13 @@ import org.bukkit.util.Vector;
 
 import net.minecraft.server.v1_12_R1.EnumParticle;
 import rpgcore.entities.mobs.CasterEntity;
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGEvents;
 
 public class UndeadEmperor extends CasterEntity
 {
 	public static double maxHealth = 40000.0D;
-	public static String name = CakeAPI.recodeColorCodes("&e&lUndead Emperor&7 Lv. 31");
+	public static String name = CakeLibrary.recodeColorCodes("&e&lUndead Emperor&7 Lv. 31");
 	public Random rand = new Random();
 
 	public UndeadEmperor(Monster m)
@@ -79,7 +79,7 @@ public class UndeadEmperor extends CasterEntity
 		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
 		FireworkEffect fe = FireworkEffect.builder().with(Type.BURST).withColor(Color.WHITE).withColor(Color.RED).build();
 		int speed = 2;
-		for (Player p: CakeAPI.getNearbyPlayers(entity.getLocation(), 32.0D))
+		for (Player p: CakeLibrary.getNearbyPlayers(entity.getLocation(), 32.0D))
 		{
 			for (int i1 = 0; i1 < 3; i1++)
 			{
@@ -116,7 +116,7 @@ public class UndeadEmperor extends CasterEntity
 		{
 			multiplier++;
 			Location point = entity.getEyeLocation().add(vector.clone().multiply(multiplier));
-			if (!CakeAPI.getPassableBlocks().contains(point.getBlock().getType()))
+			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
 				break;
 			RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0, 1), multiplier / 2);
 			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.1F, 1.25F), multiplier / 2);

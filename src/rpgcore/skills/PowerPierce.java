@@ -10,7 +10,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
 import rpgcore.classes.RPGClass.ClassType;
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGEvents;
 import rpgcore.player.RPlayer;
 import rpgcore.skillinventory.SkillInventory;
@@ -47,7 +47,7 @@ public class PowerPierce extends RPGSkill
 		int level = player.getSkillLevel(skillName);
 		boolean unlocked = level > 0;
 		level += unlocked ? 0 : 1;
-		return CakeAPI.addLore(CakeAPI.renameItem(unlocked ? new ItemStack(Material.IRON_SWORD, 1) : SkillInventory.locked.clone(), 
+		return CakeLibrary.addLore(CakeLibrary.renameItem(unlocked ? new ItemStack(Material.IRON_SWORD, 1) : SkillInventory.locked.clone(), 
 				"&fPower Pierce"),
 				"&7Skill Level: " + (unlocked ? level : 0),
 				"&7Damage: " + (int) (calculateDamage(level) * 100) + "%",
@@ -73,7 +73,7 @@ public class PowerPierce extends RPGSkill
 		{
 			multiplier++;
 			Location point = player.getEyeLocation().add(vector.clone().multiply(multiplier));
-			if (!CakeAPI.getPassableBlocks().contains(point.getBlock().getType()))
+			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
 				break;
 			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, 20), multiplier);
 			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, getUnvariedDamage(), player, 20), multiplier);

@@ -6,7 +6,7 @@ import org.bukkit.inventory.ItemStack;
 
 import net.minecraft.server.v1_12_R1.EnumParticle;
 import rpgcore.classes.RPGClass.ClassType;
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
 import rpgcore.main.RPGEvents;
 import rpgcore.player.RPlayer;
@@ -44,7 +44,7 @@ public class Heal extends RPGSkill
 		int level = player.getSkillLevel(skillName);
 		boolean unlocked = level > 0;
 		level += unlocked ? 0 : 1;
-		return CakeAPI.addLore(CakeAPI.renameItem(unlocked ? new ItemStack(38, 1, (short) 6) : SkillInventory.locked.clone(), 
+		return CakeLibrary.addLore(CakeLibrary.renameItem(unlocked ? new ItemStack(38, 1, (short) 6) : SkillInventory.locked.clone(), 
 				"&cHeal"),
 				"&7Skill Level: " + (unlocked ? level : 0),
 				"&7Heal: " + getHealAmount(level) / 2.0D + " hearts",
@@ -94,7 +94,7 @@ public class Heal extends RPGSkill
 			return;
 		for (int i = 0; i < 3; i++)
 			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.2F, 0.8F + (i * 0.2F)), i * 2);
-		CakeAPI.spawnParticle(EnumParticle.BLOCK_CRACK, player.getLocation().add(0, 1.25D, 0), 0.5F, player, 32, 0, new int[]{35});
+		new RPGEvents.ParticleEffect(EnumParticle.BLOCK_CRACK, player.getLocation().add(0, 1.25D, 0), 0.5F, 32, 0, 35).run();
 		double health = player.getHealth();
 		health += healAmount;
 		player.setHealth(health > player.getMaxHealth() ? player.getMaxHealth() : health);

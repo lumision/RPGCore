@@ -10,12 +10,12 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 import rpgcore.entities.mobs.CasterEntity;
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 
 public class Astrea extends CasterEntity
 {
 	public static double maxHealth = 500000.0D;
-	public static String name = CakeAPI.recodeColorCodes("&6&lA&e&ls&6&lt&e&lr&6&le&e&la&7 Lv. ??");
+	public static String name = CakeLibrary.recodeColorCodes("&6&lA&e&ls&6&lt&e&lr&6&le&e&la&7 Lv. ??");
 	public Random rand = new Random();
 
 	public Astrea(Monster m)

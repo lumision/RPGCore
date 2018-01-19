@@ -6,7 +6,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import rpgcore.classes.RPGClass.ClassType;
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
 import rpgcore.main.RPGEvents;
 import rpgcore.player.RPlayer;
@@ -44,7 +44,7 @@ public class Enlightenment extends RPGSkill
 		int level = player.getSkillLevel(skillName);
 		boolean unlocked = level > 0;
 		level += unlocked ? 0 : 1;
-		return CakeAPI.addLore(CakeAPI.renameItem(unlocked ? new ItemStack(Material.GOLDEN_APPLE, 1) : SkillInventory.locked.clone(), 
+		return CakeLibrary.addLore(CakeLibrary.renameItem(unlocked ? new ItemStack(Material.GOLDEN_APPLE, 1) : SkillInventory.locked.clone(), 
 				"&eEnlightenment"),
 				"&7Skill Level: " + (unlocked ? level : 0),
 				"&7Buff:",
@@ -80,7 +80,7 @@ public class Enlightenment extends RPGSkill
 		if (player.getLocation().distance(castPlayer.getLocation()) > 16.0D)
 			return;
 		RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, player, 251), 0);
-		player.sendMessage(CakeAPI.recodeColorCodes("&e--- Buff &6[Enlightenment &7Lv. " + level + "&6] &ereceived ---"));
+		player.sendMessage(CakeLibrary.recodeColorCodes("&e--- Buff &6[Enlightenment &7Lv. " + level + "&6] &ereceived ---"));
 		rp.removeBuff("Enlightenment");
 		rp.buffs.add(new Buff(caster, level, "Enlightenment", 60 + (level * 6), "&e--- Buff &6[Enlightenment] &eran out ---"));
 	}

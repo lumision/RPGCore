@@ -5,7 +5,7 @@ import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
 import rpgcore.classes.RPGClass.ClassType;
-import rpgcore.main.CakeAPI;
+import rpgcore.main.CakeLibrary;
 import rpgcore.player.RPlayer;
 import rpgcore.skillinventory.SkillInventory;
 
@@ -41,7 +41,7 @@ public class ArcaneBlast extends RPGSkill
 		int level = player.getSkillLevel(skillName);
 		boolean unlocked = level > 0;
 		level += unlocked ? 0 : 1;
-		return CakeAPI.addLore(CakeAPI.renameItem(unlocked ? new ItemStack(Material.FEATHER, 1) : SkillInventory.locked.clone(), 
+		return CakeLibrary.addLore(CakeLibrary.renameItem(unlocked ? new ItemStack(Material.FEATHER, 1) : SkillInventory.locked.clone(), 
 				"&fArcane Blast"),
 				"&7Skill Level: " + (unlocked ? level : 0),
 				"&7Damage: " + (int) (calculateDamage(level) * 100.0D) + "%",
@@ -68,7 +68,7 @@ public class ArcaneBlast extends RPGSkill
 	{
 		super.applyCooldown(2.0D);
 
-		Location target = player.getTargetBlock(CakeAPI.getPassableBlocks(), 16).getLocation();
+		Location target = player.getTargetBlock(CakeLibrary.getPassableBlocks(), 16).getLocation();
 		
 	}
 }
