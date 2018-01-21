@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.List;
 import java.util.Random;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -33,6 +32,7 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.MetadataValue;
@@ -47,6 +47,7 @@ import rpgcore.entities.mobs.WarriorZombie;
 import rpgcore.item.BonusStat.BonusStatCrystal;
 import rpgcore.npc.ConversationData.ConversationPart;
 import rpgcore.npc.ConversationData.ConversationPartType;
+import rpgcore.npc.CustomNPC;
 import rpgcore.npc.NPCConversation;
 import rpgcore.player.RPlayer;
 import rpgcore.player.RPlayerManager;
@@ -117,6 +118,14 @@ public class RPGListener implements Listener
 		if (event.getRegainReason().equals(RegainReason.CUSTOM))
 			return;
 		event.setCancelled(true);
+	}
+
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void handlePlayerQuit(PlayerQuitEvent event)
+	{
+		Player p = event.getPlayer();
+		for (CustomNPC npc: RPGCore.npcManager.npcs)
+			npc.visiblePlayers.remove(p.getUniqueId());
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -254,7 +263,8 @@ public class RPGListener implements Listener
 				ShopItem si = shop.getShopItem(event.getSlot());
 				if (si == null)
 					return;
-				if (rp.getGold() < si.cost)
+				int cost = p.hasPermission("rpgcore.gold") ? 0 : si.cost;
+				if (rp.getGold() < cost)
 				{
 					RPGCore.msgNoTag(p, "&cYou need more money for that!");
 					return;
@@ -265,8 +275,8 @@ public class RPGListener implements Listener
 					return;
 				}
 				p.getInventory().addItem(si.item.createItem());
-				rp.addGold(-si.cost);
-				RPGCore.msgNoTag(p, "&6You've bought " + CakeLibrary.getItemName(si.item.createItem()) + "&6 for &e&n" + si.cost + " Gold&6.");
+				rp.addGold(-cost);
+				RPGCore.msgNoTag(p, "&6You've bought " + CakeLibrary.getItemName(si.item.createItem()) + "&6 for &e&n" + cost + " Gold&6.");
 				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 41), 0);
 				return;
 			}
@@ -305,6 +315,7 @@ public class RPGListener implements Listener
 						c.part = clicked.next.get(0);
 					} else if (clicked == c.part)
 						c.part = c.part.next.get(0);
+					c.lastClickedSlot = event.getSlot();
 					c.updateUI();
 				}
 		}

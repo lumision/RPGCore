@@ -1,5 +1,6 @@
 package rpgcore.npc;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.UUID;
 
@@ -7,29 +8,22 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.craftbukkit.v1_12_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
-import org.bukkit.scoreboard.DisplaySlot;
-import org.bukkit.scoreboard.Objective;
-import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.util.Vector;
 
 import com.mojang.authlib.GameProfile;
 
 import es.eltrueno.npc.skin.SkinData;
-import es.eltrueno.npc.skin.TruenoNPCSkin;
 import net.minecraft.server.v1_12_R1.EntityPlayer;
-import net.minecraft.server.v1_12_R1.IScoreboardCriteria;
 import net.minecraft.server.v1_12_R1.MinecraftServer;
+import net.minecraft.server.v1_12_R1.PacketPlayOutEntity.PacketPlayOutEntityLook;
 import net.minecraft.server.v1_12_R1.PacketPlayOutEntityDestroy;
 import net.minecraft.server.v1_12_R1.PacketPlayOutEntityHeadRotation;
 import net.minecraft.server.v1_12_R1.PacketPlayOutEntityTeleport;
 import net.minecraft.server.v1_12_R1.PacketPlayOutNamedEntitySpawn;
 import net.minecraft.server.v1_12_R1.PacketPlayOutPlayerInfo;
 import net.minecraft.server.v1_12_R1.PacketPlayOutPlayerInfo.EnumPlayerInfoAction;
-import net.minecraft.server.v1_12_R1.PacketPlayOutScoreboardDisplayObjective;
-import net.minecraft.server.v1_12_R1.PacketPlayOutScoreboardObjective;
 import net.minecraft.server.v1_12_R1.PlayerConnection;
 import net.minecraft.server.v1_12_R1.PlayerInteractManager;
-import net.minecraft.server.v1_12_R1.ScoreboardObjective;
 import net.minecraft.server.v1_12_R1.WorldServer;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
@@ -40,11 +34,13 @@ public class CustomNPC extends EntityPlayer
 	public static int globalID;
 	public String name;
 	public UUID uuid;
-	public TruenoNPCSkin skin;
 	public SkinData skinData;
 	public int id;
 	public int tick;
+	public int randomLookTicks;
 	public boolean removed;
+	public float targetYaw, targetPitch, lastUpdatedYaw, lastUpdatedPitch;
+	public static final float rotationStep = 30;
 	public ArrayList<UUID> visiblePlayers = new ArrayList<UUID>();
 	public CustomNPC(MinecraftServer srv, WorldServer world, GameProfile game, PlayerInteractManager interact, Location location)
 	{
@@ -75,7 +71,6 @@ public class CustomNPC extends EntityPlayer
 		checkForVisibility();
 	}
 
-
 	public void tick()
 	{
 		tick++;
@@ -89,22 +84,67 @@ public class CustomNPC extends EntityPlayer
 			tick20();
 			tick = 0;
 		}
+
+		while (yaw > 180 && targetYaw > 180)
+		{
+			yaw -= 360;
+			targetYaw -= 360;
+		}
+
+		while (yaw < -180 && targetYaw < -180)
+		{
+			yaw += 360;
+			targetYaw += 360;
+		}
+		
+		if (yaw < targetYaw)
+			if (targetYaw - yaw < rotationStep)
+				yaw = targetYaw;
+			else
+				yaw += rotationStep;
+		else if (yaw > targetYaw)
+			if (targetYaw - yaw > -rotationStep)
+				yaw = targetYaw;
+			else
+				yaw -= rotationStep;
+
+		if (pitch < targetPitch)
+			if (targetPitch - pitch < rotationStep)
+				pitch = targetPitch;
+			else
+				pitch += rotationStep;
+		else if (pitch > targetPitch)
+			if (targetPitch - pitch > -rotationStep)
+				pitch = targetPitch;
+			else
+				pitch -= rotationStep;
+
+		updateRotation();
 	}
 
 	public void tick2()
 	{
-		/**
 		ArrayList<Player> near = CakeLibrary.getNearbyPlayers(getBukkitLocation(), 5);
 		if (near.size() > 0)
 		{
 			lookAt(near.get(near.size() - 1).getLocation());
-			updateRotation();
-		}*/
+		} else {
+			randomLookTicks -= 2;
+			if (randomLookTicks <= 0)
+			{
+				randomLookTicks = 40 + RPGCore.rand.nextInt(40);
+				targetYaw += 50 - RPGCore.rand.nextInt(101);
+				targetPitch += 20 - RPGCore.rand.nextInt(41);
+				if (targetPitch < -45)
+					targetPitch = -45 - (targetPitch + 45);
+				if (targetPitch > 45)
+					targetPitch = 45 - (targetPitch - 45);
+			}
+		}
 	}
 
 	public void tick5()
 	{
-
 	}
 
 	public void tick20()
@@ -129,13 +169,22 @@ public class CustomNPC extends EntityPlayer
 
 	public void lookAt(Location point)
 	{
-		yaw = (getAngle(new Vector(locX, 0, locZ), point.toVector()));
+		//yaw = (getAngle(new Vector(locX, 0, locZ), point.toVector()));
 		/**
 		double dx = locX - point.getX();
 		double dy = locY - point.getY();
 		double dz = locZ - point.getZ();
 		pitch = (float) -Math.atan2(dy, Math.sqrt(dx * dx + dz * dz));
 		yaw = (float) Math.atan2(dz, dy) - 90F;*/
+
+		Location l = getBukkitLocation().setDirection(point.subtract(getBukkitLocation()).toVector().normalize());
+		targetYaw = l.getYaw();
+		targetPitch = l.getPitch();
+		
+		if (targetYaw > 180)
+			targetYaw -= 360;
+		if (targetYaw < -180)
+			targetYaw += 360;
 	}
 
 	public void setSkin(String name)
@@ -146,6 +195,8 @@ public class CustomNPC extends EntityPlayer
 
 	public void deleteNPC()
 	{
+		File file = new File("plugins/RPGCore/npcs/" + getName() + ".yml");
+		file.delete();
 		for (Player p: Bukkit.getOnlinePlayers())
 			despawnFor(p);
 		removed = true;
@@ -205,23 +256,48 @@ public class CustomNPC extends EntityPlayer
 
 	public void updateRotation()
 	{
-		for (Player p: CakeLibrary.getNearbyPlayers(getBukkitLocation(), 128))
+		if (lastUpdatedYaw == yaw && lastUpdatedPitch == pitch)
+			return;
+		
+		for (UUID uuid: visiblePlayers)
 		{
+			Player p = Bukkit.getPlayer(uuid);
 			PacketPlayOutEntityHeadRotation packet = new PacketPlayOutEntityHeadRotation(this, (byte) ((int) (yaw * 256.0F / 360.0F)));
+			PacketPlayOutEntityLook l = new PacketPlayOutEntityLook(getId(), (byte) ((int) (yaw * 256.0F / 360.0F)), (byte) pitch, true);
 
 			PlayerConnection co = ((CraftPlayer) p).getHandle().playerConnection;
+			co.sendPacket(l);
 			co.sendPacket(packet);
 		}
+		
+		lastUpdatedYaw = yaw;
+		lastUpdatedPitch = pitch;
 	}
 
 	public void updatePosition()
 	{
-		for (Player p: CakeLibrary.getNearbyPlayers(getBukkitLocation(), 128))
+		for (UUID uuid: visiblePlayers)
 		{
+			Player p = Bukkit.getPlayer(uuid);
 			PacketPlayOutEntityTeleport packet = new PacketPlayOutEntityTeleport(this);
 
 			PlayerConnection co = ((CraftPlayer) p).getHandle().playerConnection;
 			co.sendPacket(packet);
 		}
+	}
+	
+	public void saveNPC()
+	{
+		File file = new File("plugins/RPGCore/npcs/" + getName() + ".yml");
+		ArrayList<String> lines = new ArrayList<String>();
+		Location l = getBukkitLocation();
+		lines.add("name: " + getName());
+		lines.add("location:");
+		lines.add(" world: " + l.getWorld().getName());
+		lines.add(" position: " + l.getX() + ", " + l.getY() + ", " + l.getZ());
+		lines.add(" rotation: " + l.getYaw() + ", " + l.getPitch());
+		if (skinData != null)
+			lines.add("skin: " + skinData.skinName);
+		CakeLibrary.writeFile(lines, file);
 	}
 }

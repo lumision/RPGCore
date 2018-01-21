@@ -425,7 +425,11 @@ public class RPGCore extends JavaPlugin
 					String name = args[1];
 					for (int i = 2; i < args.length - 1; i++)
 						name += " " + args[i];
-					rp.selectedNPC = npcManager.createNPC(p.getLocation(), CakeLibrary.recodeColorCodes(name), args[args.length - 1]);
+					String npcName = CakeLibrary.recodeColorCodes(name);
+					if (npcName.length() > 16)
+						npcName = npcName.substring(0, 16);
+					rp.selectedNPC = npcManager.createNPC(p.getLocation(), npcName, args[args.length - 1]);
+					rp.selectedNPC.saveNPC();
 					msg(p, "NPC Created and selected.");
 					return true;
 				}
@@ -460,6 +464,7 @@ public class RPGCore extends JavaPlugin
 					rp.selectedNPC = prev.skinData != null ? npcManager.createNPC(prev.getBukkitLocation(), CakeLibrary.recodeColorCodes(name), prev.skinData.skinName)
 							: npcManager.createNPC(prev.getBukkitLocation(), CakeLibrary.recodeColorCodes(name));
 					prev.deleteNPC();
+					rp.selectedNPC.saveNPC();
 					msg(p, "NPC Renamed.");
 					return true;
 				}
@@ -478,6 +483,7 @@ public class RPGCore extends JavaPlugin
 					CustomNPC prev = rp.selectedNPC;
 					rp.selectedNPC = npcManager.createNPC(prev.getBukkitLocation(), prev.getName(), args[1]);
 					prev.deleteNPC();
+					rp.selectedNPC.saveNPC();
 					msg(p, "NPC Skin changed.");
 					return true;
 				}

@@ -10,10 +10,8 @@ import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.craftbukkit.v1_12_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_12_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.util.Vector;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
@@ -25,15 +23,7 @@ import es.eltrueno.npc.skin.TruenoNPCSkin;
 import es.eltrueno.npc.tinyprotocol.Reflection;
 import es.eltrueno.npc.tinyprotocol.TinyProtocol;
 import io.netty.channel.Channel;
-import net.minecraft.server.v1_12_R1.EntityPlayer;
 import net.minecraft.server.v1_12_R1.MinecraftServer;
-import net.minecraft.server.v1_12_R1.PacketPlayOutEntityDestroy;
-import net.minecraft.server.v1_12_R1.PacketPlayOutEntityHeadRotation;
-import net.minecraft.server.v1_12_R1.PacketPlayOutEntityTeleport;
-import net.minecraft.server.v1_12_R1.PacketPlayOutNamedEntitySpawn;
-import net.minecraft.server.v1_12_R1.PacketPlayOutPlayerInfo;
-import net.minecraft.server.v1_12_R1.PacketPlayOutPlayerInfo.EnumPlayerInfoAction;
-import net.minecraft.server.v1_12_R1.PlayerConnection;
 import net.minecraft.server.v1_12_R1.PlayerInteractManager;
 import net.minecraft.server.v1_12_R1.World;
 import net.minecraft.server.v1_12_R1.WorldServer;
@@ -47,6 +37,7 @@ public class NPCManager
 	public ArrayList<SkinData> skinDatas = new ArrayList<SkinData>();
 	public ArrayList<CustomNPC> npcs = new ArrayList<CustomNPC>();
 	public File skinDataFile = new File("plugins/RPGCore/SkinData.yml");
+	public File npcFolder = new File("plugins/RPGCore/npcs");
 
 	private static TinyProtocol protocol = null;
 
@@ -58,14 +49,78 @@ public class NPCManager
 	{
 		this.instance = instance;
 		readSkinDatas();
+		loadNPCs();
 		startListening(instance);
 	}
-	
+
 	public void onDisable()
 	{
 		for (CustomNPC npc: npcs)
-			npc.deleteNPC();	
+			for (Player p: Bukkit.getOnlinePlayers())
+				npc.despawnFor(p);
 		npcs.clear();
+	}
+
+	public void loadNPCs()
+	{
+		for (File file: npcFolder.listFiles())
+		{
+			Location location = new Location(null, 0, 0, 0);
+			String name = null;
+			String skin = null;
+			try
+			{
+				ArrayList<String> lines = CakeLibrary.readFile(file);
+				String header = "";
+				for (String line: lines)
+				{
+					if (line.startsWith(" "))
+					{
+						line = line.substring(1);
+						String[] split = line.split(": ");
+						if (header.equals("location:"))
+						{
+							if (split[0].equals("world"))
+								location.setWorld(Bukkit.getWorld(split[1]));
+							if (split[0].equals("position"))
+							{
+								String[] pos = split[1].split(", ");
+								location.setX(Double.valueOf(pos[0]));
+								location.setY(Double.valueOf(pos[1]));
+								location.setZ(Double.valueOf(pos[2]));
+							}
+							if (split[0].equals("rotation"))
+							{
+								String[] rot = split[1].split(", ");
+								location.setYaw(Float.valueOf(rot[0]));
+								location.setPitch(Float.valueOf(rot[1]));
+							}
+						}
+					} else
+					{
+						header = line;
+						String[] split = line.split(": ");
+						if (split[0].equals("skin"))
+							skin = split[1];
+						if (split[0].equals("name"))
+							name = split[1];
+					}
+				}
+			} catch (Exception e)
+			{
+				RPGCore.msgConsole("&4Error: Unable to read NPC File: " + file.getName());
+			}
+			if (skin == null)
+				createNPC(location, name);
+			else
+				createNPC(location, name, skin);
+		}
+	}
+
+	public void saveNPCs()
+	{
+		for (CustomNPC npc: npcs)
+			npc.saveNPC();
 	}
 
 	public void startListening(Plugin plugin)
@@ -83,7 +138,7 @@ public class NPCManager
 						{
 							interactDelay.add(p);
 							for(CustomNPC npc : npcs)
-								if(npc.getId() == EntityID.get(packet)) //NPC INTERACT EVENT
+								if(npc.getId() == EntityID.get(packet) && p.getEyeLocation().distance(npc.getBukkitLocation()) < 7) //NPC INTERACT EVENT
 								{
 									RPlayer rp = RPGCore.instance.playerManager.getRPlayer(p.getUniqueId());
 									if (p.hasPermission("rpgcore.npc") && p.isSneaking())
@@ -170,7 +225,10 @@ public class NPCManager
 		npcs.add(npc);
 		SkinData cached = getSkinData(skin);
 		if (cached != null)
+		{
+			npc.skinData = cached;
 			profile.getProperties().put("textures", new Property("textures", cached.getValue(), cached.getSignature()));
+		}
 		npcSkin.getSkinDataAsync(new SkinDataReply() 
 		{
 			@Override
@@ -196,6 +254,7 @@ public class NPCManager
 				npc.skinData = skinData;
 				profile.getProperties().put("textures", new Property("textures", skinData.getValue(), skinData.getSignature()));
 				npc.reloadForVisiblePlayers();
+				npc.saveNPC();
 			}
 		});
 		return npc;

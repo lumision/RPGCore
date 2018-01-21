@@ -502,6 +502,39 @@ public class CakeLibrary
 		}
 		return build;
 	}
+
+	public static String removeColorColorCodes(String s)
+	{
+		char[] c = s.toCharArray();
+		String build = "";
+		for (int i = 0; i < c.length; i++)
+		{
+			if (c[i] == '§' && i < c.length - 1)
+				if (c[i + 1] == '1'
+				|| c[i + 1] == '2'
+				|| c[i + 1] == '3'
+				|| c[i + 1] == '4'
+				|| c[i + 1] == '5'
+				|| c[i + 1] == '6'
+				|| c[i + 1] == '7'
+				|| c[i + 1] == '8'
+				|| c[i + 1] == '9'
+				|| c[i + 1] == '0'
+				|| c[i + 1] == 'a'
+				|| c[i + 1] == 'b'
+				|| c[i + 1] == 'c'
+				|| c[i + 1] == 'd'
+				|| c[i + 1] == 'e'
+				|| c[i + 1] == 'f')
+				{
+					i++;
+					continue;
+				}
+			
+			build += c[i];
+		}
+		return build;
+	}
 	
 	public static String getFinalColorCombination(String s)
 	{

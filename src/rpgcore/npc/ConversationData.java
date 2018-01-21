@@ -3,14 +3,8 @@ package rpgcore.npc;
 import java.io.File;
 import java.util.ArrayList;
 
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
-
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
-import rpgcore.player.RPlayer;
 
 public class ConversationData
 {
@@ -106,7 +100,8 @@ public class ConversationData
 							conversationParts[spacebars] = cp;
 							prevSpaces = spacebars;
 							
-							/**
+							/** this shit doesn't work
+							 * 
 							if (conversationParts[spacebars] != null && spacebars % 2 != 0)
 							{
 								if (spacebars > 1 && conversationParts[spacebars - 1].type == ConversationPartType.PLAYER)
@@ -132,7 +127,7 @@ public class ConversationData
 						npcName = CakeLibrary.recodeColorCodes(split[1]);
 					}
 				}
-				ConversationData cd = new ConversationData(npcName, openingLines, closingLines, master);
+				ConversationData cd = new ConversationData(CakeLibrary.recodeColorCodes(npcName), openingLines, closingLines, master);
 				dataList.add(cd);
 			} catch (Exception e) {
 				RPGCore.msgConsole("&4Error reading conversation data file: " + file.getName());

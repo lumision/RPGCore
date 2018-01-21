@@ -22,9 +22,11 @@ public class NPCConversation
 	public ConversationPart part;
 	public Inventory conversationUI;
 	public boolean closed;
+	public int lastClickedSlot = 4;
 	public static ArrayList<NPCConversation> conversations = new ArrayList<NPCConversation>();
 	public static ItemStack right = CakeLibrary.renameItem(new ItemStack(Material.STAINED_GLASS_PANE, 1, (short) 15), "&7<---");
 	public static ItemStack left = CakeLibrary.renameItem(new ItemStack(Material.STAINED_GLASS_PANE, 1, (short) 15), "&7--->");
+	public static ItemStack centre = CakeLibrary.renameItem(new ItemStack(Material.STAINED_GLASS_PANE, 1, (short) 15), "&7---");
 	public NPCConversation(RPlayer player, ConversationData conversationData)
 	{
 		this.player = player;
@@ -35,13 +37,13 @@ public class NPCConversation
 
 	public Inventory getConversationUI()
 	{
-		Inventory inv = Bukkit.createInventory(null, 9, CakeLibrary.recodeColorCodes("&0Conversation - " + conversationData.npcName));
+		Inventory inv = Bukkit.createInventory(null, 9, CakeLibrary.recodeColorCodes("&0Conversation - " + CakeLibrary.removeColorColorCodes(conversationData.npcName)));
 		this.conversationUI = inv;
 		updateUI();
 		return inv;
 	}
 
-	public static int getDecisionSlot(int index)
+	public int getDecisionSlot(int index)
 	{
 		/**
 		if (index % 2 == 0)
@@ -49,7 +51,7 @@ public class NPCConversation
 		else
 			return 5 + (index / 2);
 		 */
-		return 3 - index;
+		return lastClickedSlot >= 4 ? lastClickedSlot - 1 - index : lastClickedSlot + 1 + index;
 	}
 
 	public void updateUI()
@@ -60,10 +62,10 @@ public class NPCConversation
 			RPGEvents.scheduleRunnable(new RPGEvents.InventoryOpen(player.getPlayer(), shop.getShopInventory()), 1);
 			return;
 		}
-		
-		for (int i = 0; i < 4; i++)
+
+		for (int i = 0; i < lastClickedSlot; i++)
 			conversationUI.setItem(i, left);
-		for (int i = 5; i < 9; i++)
+		for (int i = lastClickedSlot + 1; i < 9; i++)
 			conversationUI.setItem(i, right);
 
 		ItemStack npc = new ItemStack(Material.SIGN);
@@ -73,6 +75,20 @@ public class NPCConversation
 		ArrayList<String> lines = new ArrayList<String>();
 		if (quotes.length > 1)
 		{
+			String[] split1 = quotes[0].split("##");
+			if (split1.length > 1)
+			{
+				name = CakeLibrary.recodeColorCodes("&7\"&f" + split1[0]);
+				for (int i = 1; i < split1.length; i++)
+				{
+					String s = "&f" + split1[i];
+					if (i == 0)
+						s = "&7\"" + s;
+					if (i == split1.length - 1)
+						s += "&7\"&f";
+					lines.add(CakeLibrary.recodeColorCodes(s));
+				}
+			}
 			for (int index = 1; index < quotes.length; index++)
 			{
 				lines.add(CakeLibrary.recodeColorCodes("&f "));	
@@ -90,16 +106,16 @@ public class NPCConversation
 			}
 		} else
 		{
-			String[] split = quotes[0].split("##");
-			if (split.length > 1)
+			String[] split1 = quotes[0].split("##");
+			if (split1.length > 1)
 			{
-				name = CakeLibrary.recodeColorCodes("&7\"&f" + split[0]);
-				for (int i = 1; i < split.length; i++)
+				name = CakeLibrary.recodeColorCodes("&7\"&f" + split1[0]);
+				for (int i = 1; i < split1.length; i++)
 				{
-					String s = "&f" + split[i];
+					String s = "&f" + split1[i];
 					if (i == 0)
 						s = "&7\"" + s;
-					if (i == split.length - 1)
+					if (i == split1.length - 1)
 						s += "&7\"&f";
 					lines.add(CakeLibrary.recodeColorCodes(s));
 				}
@@ -108,7 +124,10 @@ public class NPCConversation
 		
 		String suffix = CakeLibrary.recodeColorCodes("&c --> Exit <--");
 		if (part.next.size() > 0)
-				suffix = part.next.get(0).type == ConversationPartType.PLAYER ? CakeLibrary.recodeColorCodes("&e <-- Choose <-- ") : CakeLibrary.recodeColorCodes("&e --> Next -->");
+				suffix = part.next.get(0).type == ConversationPartType.PLAYER ? 
+						lastClickedSlot >= 4 ? CakeLibrary.recodeColorCodes("&e <-- Choose <-- ") : 
+							CakeLibrary.recodeColorCodes("&e --> Choose --> ") : 
+								CakeLibrary.recodeColorCodes("&a --> Next -->");
 		
 		lines.add(CakeLibrary.recodeColorCodes("&f "));
 		lines.add(suffix);
@@ -127,6 +146,6 @@ public class NPCConversation
 		npc = CakeLibrary.renameItem(npc, name);
 		if (lines.size() > 0)
 			npc = CakeLibrary.setItemLore(npc, lines);
-		conversationUI.setItem(4, npc);
+		conversationUI.setItem(lastClickedSlot, npc);
 	}
 }
