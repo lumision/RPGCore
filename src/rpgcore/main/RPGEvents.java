@@ -27,7 +27,7 @@ import rpgcore.entities.mobs.CasterEntity;
 import rpgcore.external.InstantFirework;
 import rpgcore.item.BonusStat.BonusStatCrystal;
 import rpgcore.item.RItem;
-import rpgcore.npc.NPCManager.CustomNPC;
+import rpgcore.npc.CustomNPC;
 import rpgcore.player.RPlayer;
 import rpgcore.skills.effect.ArmageddonE;
 import rpgcore.songs.RSongManager;
@@ -36,6 +36,7 @@ import rpgcore.songs.RunningTrack;
 public class RPGEvents implements Runnable
 {
 	public static RPGCore instance;
+	public static boolean stopped;
 	public RPGEvents(RPGCore instance)
 	{
 		RPGEvents.instance = instance;
@@ -49,8 +50,14 @@ public class RPGEvents implements Runnable
 	public void run()
 	{
 		instance.playerManager.playersTick();
+		ArrayList<CustomNPC> remove = new ArrayList<CustomNPC>();
 		for (CustomNPC n: RPGCore.npcManager.npcs)
+		{
 			n.tick();
+			if (n.removed)
+				remove.add(n);
+		}
+		RPGCore.npcManager.npcs.removeAll(remove);
 		for (CasterEntity ce: CasterEntity.entities)
 			ce.tick();
 		CasterEntity.entities.removeAll(CasterEntity.remove);
@@ -69,6 +76,8 @@ public class RPGEvents implements Runnable
 		@Override
 		public void run()
 		{
+			if (stopped)
+				return;
 			ArrayList<RunningTrack> remove = new ArrayList<RunningTrack>();
 			ArrayList<RunningTrack> run = (ArrayList<RunningTrack>) RSongManager.runningTracks.clone();
 			for (RunningTrack rt: run)

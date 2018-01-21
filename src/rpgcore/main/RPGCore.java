@@ -6,6 +6,7 @@ import java.util.Random;
 import java.util.Timer;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -28,11 +29,15 @@ import rpgcore.entities.mobs.ReinforcedZombie;
 import rpgcore.entities.mobs.WarriorZombie;
 import rpgcore.item.BonusStat.BonusStatCrystal;
 import rpgcore.item.RItem;
+import rpgcore.npc.ConversationData;
+import rpgcore.npc.CustomNPC;
 import rpgcore.npc.NPCManager;
 import rpgcore.party.Party;
 import rpgcore.party.RPartyManager;
 import rpgcore.player.RPlayer;
 import rpgcore.player.RPlayerManager;
+import rpgcore.shop.Shop;
+import rpgcore.shop.ShopManager;
 import rpgcore.skillinventory.SkillInventory;
 import rpgcore.songs.RPGSong;
 import rpgcore.songs.RSongManager;
@@ -51,7 +56,7 @@ public class RPGCore extends JavaPlugin
 	public static RPGCore instance;
 	public static Random rand = new Random();
 	public static Timer timer = new Timer();
-	public static NPCManager npcManager = new NPCManager();
+	public static NPCManager npcManager;
 
 	public static void main(String[] args) {}
 
@@ -66,13 +71,33 @@ public class RPGCore extends JavaPlugin
 		partyManager = new RPartyManager(this);
 		listener = new RPGListener(this);
 		getServer().getPluginManager().registerEvents(listener, this);
+		npcManager = new NPCManager(this);
 		events = new RPGEvents(this);
+		RPGEvents.stopped = false;
 		readItemDatabase();
+		ShopManager.readShopDatabase();
+		ConversationData.loadConversationData();
 
 		RPGEvents.scheduleRunnable(new RPGEvents.ConsoleCommand("gamerule sendCommandFeedback false"), 1);
 		RPGEvents.scheduleRunnable(new RPGEvents.ConsoleCommand("gamerule mobGriefing false"), 1);
 		RPGEvents.scheduleRunnable(new RPGEvents.ConsoleCommand("gamerule doFireTick false"), 1);
 		RPGEvents.scheduleRunnable(new RPGEvents.ConsoleCommand("gamerule keepInventory true"), 1);
+	}
+
+	@Override
+	public void onDisable()
+	{
+		RPGEvents.stopped = true;
+		npcManager.onDisable();
+		playerManager.writePlayerData();
+		for (CasterEntity ce: CasterEntity.entities)
+			ce.entity.remove();
+	}
+	
+	public static ItemStack getGoldItem(int amount)
+	{
+		ItemStack gold = new ItemStack(Material.GOLD_NUGGET);
+		return CakeLibrary.renameItem(gold, "&6Gold &e(" + amount + ")");
 	}
 
 	public void readItemFolder(File folder)
@@ -155,16 +180,8 @@ public class RPGCore extends JavaPlugin
 
 	public void readItemDatabase()
 	{
+		itemDatabase.clear();
 		readItemFolder(itemsFolder);
-	}
-
-	@Override
-	public void onDisable()
-	{
-		timer.cancel();
-		playerManager.writePlayerData();
-		for (CasterEntity ce: CasterEntity.entities)
-			ce.entity.remove();
 	}
 
 	public RItem getItemFromDatabase(String databaseName)
@@ -189,6 +206,158 @@ public class RPGCore extends JavaPlugin
 			RPlayer rp = playerManager.getRPlayer(p.getUniqueId());
 			if (rp == null)
 				return false;
+			if (command.getName().equalsIgnoreCase("rr"))
+			{
+				if (!p.hasPermission("rpgcore.rr"))
+				{
+					msg(p, "You do not have permissions to do this.");
+					return true;
+				}
+				readItemDatabase();
+				ShopManager.readShopDatabase();
+				songManager.readSongs();
+				ConversationData.loadConversationData();
+				msg(p, "Reloaded.");
+				return true;
+			}
+			if (command.getName().equalsIgnoreCase("gold"))
+			{
+				if (args.length == 0)
+				{
+					msgNoTag(p, "&6===[&e /gold Help &6]===");
+					msgNoTag(p, "&6/gold withdraw/w <amt>: &eWithdraws Gold into item form");
+					if (p.hasPermission("rpgcore.gold"))
+					{
+						msgNoTag(p, "&6/gold add/a <amt> [player]: &eAdds Gold to a player");
+						msgNoTag(p, "&6/gold remove/r <amt> [player]: &eRemoves Gold from a player");
+					}
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("withdraw") || args[0].equalsIgnoreCase("w"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /gold withdraw/w <amt>");
+						return true;
+					}
+					if (!CakeLibrary.playerHasVacantSlots(p))
+					{
+						msg(p, "You need inventory slots to withdraw Gold");
+						return true;
+					}
+					int amount = 0;
+					try
+					{
+						amount = Integer.parseInt(args[1]);
+					} catch (Exception e)
+					{
+						msg(p, "Enter a number.");
+						return true;
+					}
+					if (amount > rp.getGold())
+					{
+						msg(p, "You do not have that amount of money.");
+						return true;
+					}
+					p.getInventory().addItem(getGoldItem(amount));
+					rp.addGold(-amount);
+					msg(p, "You've withdrawn &6" + amount + " &6Gold&e.");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("add") || args[0].equalsIgnoreCase("a"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /gold add/a <amt> [player]");
+						return true;
+					}
+					int amount = 0;
+					try
+					{
+						amount = Integer.parseInt(args[1]);
+					} catch (Exception e)
+					{
+						msg(p, "Enter a number.");
+						return true;
+					}
+					RPlayer target = rp;
+					if (args.length > 2)
+					{
+						target = playerManager.getRPlayer(args[2]);
+						if (target == null)
+						{
+							msg(p, "That player does not exist");
+							return true;
+						}
+					}
+					target.addGold(amount);
+					msg(p, "You've added &6" + amount + " Gold &eto &6" + target.getPlayerName() + "&e's account.");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("remove") || args[0].equalsIgnoreCase("r"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /gold remove/r <amt> [player]");
+						return true;
+					}
+					int amount = 0;
+					try
+					{
+						amount = Integer.parseInt(args[1]);
+					} catch (Exception e)
+					{
+						msg(p, "Enter a number.");
+						return true;
+					}
+					RPlayer target = rp;
+					if (args.length > 2)
+					{
+						target = playerManager.getRPlayer(args[2]);
+						if (target == null)
+						{
+							msg(p, "That player does not exist");
+							return true;
+						}
+					}
+					target.addGold(-amount);
+					msg(p, "You've removed &6" + amount + " Gold &efrom &6" + target.getPlayerName() + "&e's account.");
+					return true;
+				}
+				msgNoTag(p, "&6===[&e /gold Help &6]===");
+				msgNoTag(p, "&6/gold withdraw/w <amt>: &eWithdraws gold into item form");
+				if (p.hasPermission("rpgcore.gold"))
+				{
+					msgNoTag(p, "&6/gold add/a <amt> [player]: &eAdds gold to a player");
+					msgNoTag(p, "&6/gold remove/r <amt> [player]: &eRemoves gold from a player");
+				}
+				return true;
+			}
+			if (command.getName().equalsIgnoreCase("shop"))
+			{
+				if (!p.hasPermission("rpgcore.shop"))
+				{
+					msg(p, "You do not have permissions to do this.");
+					return true;
+				}
+				if (args.length == 0)
+				{
+					msgNoTag(p, "&cShop list:");
+					for (Shop shop: ShopManager.shopDatabase)
+						msgNoTag(p, "&c - " + shop.dbName);
+					return true;
+				}
+				Shop shop = ShopManager.getShopWithDB(args[0]);
+				if (shop == null)
+				{
+					msgNoTag(p, "&cShop list:");
+					for (Shop shop1: ShopManager.shopDatabase)
+						msgNoTag(p, "&c - " + shop1.dbName);
+					return true;
+				}
+				p.openInventory(shop.getShopInventory());
+				return true;
+			}
 			if (command.getName().equalsIgnoreCase("si"))
 			{
 				if (!p.hasPermission("rpgcore.item"))
@@ -235,7 +404,7 @@ public class RPGCore extends JavaPlugin
 				}
 				if (args.length > 1)
 					ri.itemVanilla.setAmount(Math.min(64, Integer.valueOf(args[1])));
-				p.getInventory().addItem(ri.createItem());
+				p.getInventory().addItem(ri.createItem());	
 				msg(p, "Item obtained");
 				return true;
 			}
@@ -246,7 +415,73 @@ public class RPGCore extends JavaPlugin
 					msg(p, "You do not have permissions to do this.");
 					return true;
 				}
-				npcManager.createNPC(p.getLocation(), args[0], args[1]);
+				if (args.length == 0)
+				{
+					msg(p, "Usage: /npc <create/rename/delete/skin>");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("create"))
+				{
+					String name = args[1];
+					for (int i = 2; i < args.length - 1; i++)
+						name += " " + args[i];
+					rp.selectedNPC = npcManager.createNPC(p.getLocation(), CakeLibrary.recodeColorCodes(name), args[args.length - 1]);
+					msg(p, "NPC Created and selected.");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("delete"))
+				{
+					if (rp.selectedNPC == null)
+					{
+						msg(p, "Select an NPC by sneak-clicking it first");
+						return true;
+					}
+					rp.selectedNPC.deleteNPC();
+					rp.selectedNPC = null;
+					msg(p, "NPC Deleted.");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("rename"))
+				{
+					if (rp.selectedNPC == null)
+					{
+						msg(p, "Select an NPC by sneak-clicking it first");
+						return true;
+					}
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /npc rename [newName]");
+						return true;
+					}
+					String name = args[1];
+					for (int i = 2; i < args.length; i++)
+						name += " " + args[i];
+					CustomNPC prev = rp.selectedNPC;
+					rp.selectedNPC = prev.skinData != null ? npcManager.createNPC(prev.getBukkitLocation(), CakeLibrary.recodeColorCodes(name), prev.skinData.skinName)
+							: npcManager.createNPC(prev.getBukkitLocation(), CakeLibrary.recodeColorCodes(name));
+					prev.deleteNPC();
+					msg(p, "NPC Renamed.");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("skin"))
+				{
+					if (rp.selectedNPC == null)
+					{
+						msg(p, "Select an NPC by sneak-clicking it first");
+						return true;
+					}
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /npc skin [newSkinName]");
+						return true;
+					}
+					CustomNPC prev = rp.selectedNPC;
+					rp.selectedNPC = npcManager.createNPC(prev.getBukkitLocation(), prev.getName(), args[1]);
+					prev.deleteNPC();
+					msg(p, "NPC Skin changed.");
+					return true;
+				}
+				msg(p, "Usage: /npc <create/rename/delete/skin>");
 				return true;
 			}
 			if (command.getName().equalsIgnoreCase("crystal"))
@@ -583,12 +818,13 @@ public class RPGCore extends JavaPlugin
 			{
 				if (!p.hasPermission("rpgcore.item"))
 				{
-					msg(p, "You do not have permissions to use this godly command.");
+					msg(p, "You do not have permissions to use this command.");
 					return true;
 				}
 				if (args.length < 1)
 				{
 					msgNoTag(p, "&6===[&e /item Commands &6]===");
+					msgNoTag(p, "&6/item lvrequirement <level>");
 					msgNoTag(p, "&6/item magicdamage <damage>");
 					msgNoTag(p, "&6/item brutedamage <damage>");
 					msgNoTag(p, "&6/item attackspeed <multiplier>");
@@ -597,7 +833,6 @@ public class RPGCore extends JavaPlugin
 					msgNoTag(p, "&6/item cooldowns <percentage>");
 					msgNoTag(p, "&6/item dmgreduction <percentage>");
 					msgNoTag(p, "&6/item unbreakable");
-					msgNoTag(p, "&6===[&e /item Commands &6]===");
 					return true;
 				}
 				ItemStack is = p.getItemInHand();
@@ -607,7 +842,26 @@ public class RPGCore extends JavaPlugin
 					msg(p, "Hold the item you want to edit.");
 					return true;
 				}
-				if (args[0].equalsIgnoreCase("magicdamage"))
+				if (args[0].equalsIgnoreCase("lvrequirement"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /item lvrequirement <damage>");
+						return true;
+					}
+					int dmg = -1;
+					try
+					{
+						dmg = Integer.parseInt(args[1]);
+					} catch (Exception e) {
+						msg(p, "Enter a number.");
+						return true;
+					}
+					ri.levelRequirement = dmg;
+					p.setItemInHand(ri.createItem());
+					msg(p, "Lv requirement attribute edited.");
+					return true;
+				} else if (args[0].equalsIgnoreCase("magicdamage"))
 				{
 					if (args.length < 2)
 					{
@@ -626,8 +880,7 @@ public class RPGCore extends JavaPlugin
 					p.setItemInHand(ri.createItem());
 					msg(p, "Magic damage attribute edited.");
 					return true;
-				}
-				if (args[0].equalsIgnoreCase("brutedamage"))
+				} else if (args[0].equalsIgnoreCase("brutedamage"))
 				{
 					if (args.length < 2)
 					{
@@ -646,8 +899,7 @@ public class RPGCore extends JavaPlugin
 					p.setItemInHand(ri.createItem());
 					msg(p, "Brute damage attribute edited.");
 					return true;
-				}
-				if (args[0].equalsIgnoreCase("critchance"))
+				} else if (args[0].equalsIgnoreCase("critchance"))
 				{
 					if (args.length < 2)
 					{
@@ -666,8 +918,7 @@ public class RPGCore extends JavaPlugin
 					p.setItemInHand(ri.createItem());
 					msg(p, "Crit chance attribute edited.");
 					return true;
-				}
-				if (args[0].equalsIgnoreCase("critdamage"))
+				} else if (args[0].equalsIgnoreCase("critdamage"))
 				{
 					if (args.length < 2)
 					{
@@ -686,8 +937,7 @@ public class RPGCore extends JavaPlugin
 					p.setItemInHand(ri.createItem());
 					msg(p, "Crit damage attribute edited.");
 					return true;
-				}
-				if (args[0].equalsIgnoreCase("attackspeed"))
+				} else if (args[0].equalsIgnoreCase("attackspeed"))
 				{
 					if (args.length < 2)
 					{
@@ -706,8 +956,7 @@ public class RPGCore extends JavaPlugin
 					p.setItemInHand(ri.createItem());
 					msg(p, "Attack Speed attribute edited.");
 					return true;
-				}
-				if (args[0].equalsIgnoreCase("cooldowns"))
+				} else if (args[0].equalsIgnoreCase("cooldowns"))
 				{
 					if (args.length < 2)
 					{
@@ -726,8 +975,7 @@ public class RPGCore extends JavaPlugin
 					p.setItemInHand(ri.createItem());
 					msg(p, "Cooldown reduction attribute edited.");
 					return true;
-				}
-				if (args[0].equalsIgnoreCase("dmgreduction"))
+				} else if (args[0].equalsIgnoreCase("dmgreduction"))
 				{
 					if (args.length < 2)
 					{
@@ -744,10 +992,9 @@ public class RPGCore extends JavaPlugin
 					}
 					ri.damageReduction = amt;
 					p.setItemInHand(ri.createItem());
-					msg(p, "Cooldown reduction attribute edited.");
+					msg(p, "Damage reduction attribute edited.");
 					return true;
-				}
-				if (args[0].equalsIgnoreCase("settier"))
+				} else if (args[0].equalsIgnoreCase("settier"))
 				{
 					if (args.length < 2)
 					{
@@ -771,8 +1018,7 @@ public class RPGCore extends JavaPlugin
 					p.setItemInHand(ri.createItem());
 					msg(p, "Tier changed.");
 					return true;
-				}
-				if (args[0].equalsIgnoreCase("unbreakable"))
+				} else if (args[0].equalsIgnoreCase("unbreakable"))
 				{
 					ItemMeta im = is.getItemMeta();
 					boolean u = im.spigot().isUnbreakable();	
@@ -783,6 +1029,7 @@ public class RPGCore extends JavaPlugin
 					return true;
 				}
 				msgNoTag(p, "&6===[&e /item Commands &6]===");
+				msgNoTag(p, "&6/item lvrequirement <level>");
 				msgNoTag(p, "&6/item magicdamage <damage>");
 				msgNoTag(p, "&6/item brutedamage <damage>");
 				msgNoTag(p, "&6/item attackspeed <multiplier>");
@@ -791,7 +1038,6 @@ public class RPGCore extends JavaPlugin
 				msgNoTag(p, "&6/item cooldowns <percentage>");
 				msgNoTag(p, "&6/item dmgreduction <percentage>");
 				msgNoTag(p, "&6/item unbreakable");
-				msgNoTag(p, "&6===[&e /item Commands &6]===");
 				return true;
 			}
 			if (command.getName().equalsIgnoreCase("mob"))

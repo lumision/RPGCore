@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.List;
 import java.util.Random;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -44,8 +45,14 @@ import rpgcore.entities.mobs.ReinforcedSkeleton;
 import rpgcore.entities.mobs.ReinforcedZombie;
 import rpgcore.entities.mobs.WarriorZombie;
 import rpgcore.item.BonusStat.BonusStatCrystal;
+import rpgcore.npc.ConversationData.ConversationPart;
+import rpgcore.npc.ConversationData.ConversationPartType;
+import rpgcore.npc.NPCConversation;
 import rpgcore.player.RPlayer;
 import rpgcore.player.RPlayerManager;
+import rpgcore.shop.Shop;
+import rpgcore.shop.ShopItem;
+import rpgcore.shop.ShopManager;
 import rpgcore.skillinventory.SkillInventory;
 import rpgcore.skills.Heartspan;
 import rpgcore.skills.RPGSkill;
@@ -177,11 +184,26 @@ public class RPGListener implements Listener
 	public void handleInventoryClose(InventoryCloseEvent event)
 	{
 		Player p = (Player) event.getPlayer();
+		RPlayer rp = instance.playerManager.getRPlayer(p.getUniqueId());
+		if (rp == null)
+			return;
 		Inventory inv = event.getInventory();
 		String name = inv.getName();
 		if (!CakeLibrary.hasColor(name))
 			return;
 		name = CakeLibrary.removeColorCodes(name);
+		if (name.startsWith("Conversation - "))
+		{
+			NPCConversation remove = null;
+			for (NPCConversation c: NPCConversation.conversations)
+				if (c.player == rp)
+				{
+					c.closed = true;
+					remove = c;
+				}
+			if (remove != null)
+				NPCConversation.conversations.remove(remove);
+		}
 		for (BonusStatCrystal type: BonusStatCrystal.values())
 			if (name.equals(type.getItemName()))
 			{
@@ -224,10 +246,72 @@ public class RPGListener implements Listener
 				event.setCancelled(true);
 			return;
 		}
-		RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 20), 0);
+
+		for (Shop shop: ShopManager.shopDatabase)
+			if (CakeLibrary.removeColorCodes(shop.shopName).equals(name))
+			{
+				event.setCancelled(true);
+				ShopItem si = shop.getShopItem(event.getSlot());
+				if (si == null)
+					return;
+				if (rp.getGold() < si.cost)
+				{
+					RPGCore.msgNoTag(p, "&cYou need more money for that!");
+					return;
+				}
+				if (!CakeLibrary.playerHasVacantSlots(p))
+				{
+					RPGCore.msgNoTag(p, "&cYou need inventory space to buy items!");
+					return;
+				}
+				p.getInventory().addItem(si.item.createItem());
+				rp.addGold(-si.cost);
+				RPGCore.msgNoTag(p, "&6You've bought " + CakeLibrary.getItemName(si.item.createItem()) + "&6 for &e&n" + si.cost + " Gold&6.");
+				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 41), 0);
+				return;
+			}
+
+		if (name.startsWith("Conversation - "))
+		{
+			event.setCancelled(true);
+			ItemStack is = event.getCurrentItem();
+			if (CakeLibrary.isItemStackNull(is))
+				return;
+			String itemName = CakeLibrary.removeColorCodes(CakeLibrary.getItemName(is));
+			itemName = itemName.substring(1, itemName.length() - 1);
+			for (NPCConversation c: NPCConversation.conversations)
+				if (c.player == rp && !c.closed)
+				{
+					ConversationPart clicked = null;
+					if (c.part.string.startsWith(itemName))
+						clicked = c.part;
+					else 
+					{
+						for (ConversationPart cp: c.part.next)
+							if (cp.string.startsWith(itemName))
+								clicked = cp;
+					}
+					if (clicked == null)
+						return;
+					if (c.part.next.size() <= 0)
+					{
+						p.closeInventory();
+						return;
+					}
+					if (c.part.next.get(0).type == ConversationPartType.PLAYER)
+					{
+						if (clicked.type == ConversationPartType.NPC)
+							return;
+						c.part = clicked.next.get(0);
+					} else if (clicked == c.part)
+						c.part = c.part.next.get(0);
+					c.updateUI();
+				}
+		}
 		if (name.equals("Class Selection"))
 		{
 			event.setCancelled(true);
+			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 169), 0);
 			ItemStack is = event.getCurrentItem();
 			if (CakeLibrary.isItemStackNull(is))
 				return;
@@ -238,7 +322,6 @@ public class RPGListener implements Listener
 					change = ct;
 			rp.currentClass = change;
 			instance.playerManager.writePlayerData(rp);
-			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 169), 0);
 			p.getWorld().playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.2F, 1.0F);
 			p.openInventory(SkillInventory.getSkillInventory(rp, 0));
 			rp.updateScoreboard();
@@ -249,6 +332,7 @@ public class RPGListener implements Listener
 		if (name.startsWith("Skillbook: "))
 		{
 			event.setCancelled(true);
+			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 20), 0);
 			ItemStack is = event.getCurrentItem();
 			if (CakeLibrary.isItemStackNull(is))
 				return;
@@ -350,6 +434,7 @@ public class RPGListener implements Listener
 			p.getInventory().addItem(add);
 			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 169), 0);
 			RPGCore.msg(p, "The skill has been added into your inventory.");
+			return;
 		}
 	}
 
@@ -449,6 +534,7 @@ public class RPGListener implements Listener
 
 		//CRYSTALS
 		Player p = event.getPlayer();
+		RPlayer rp = instance.playerManager.getRPlayer(p.getUniqueId());
 		ItemStack is = p.getItemInHand();
 		if (!CakeLibrary.isItemStackNull(is))
 		{
@@ -456,19 +542,28 @@ public class RPGListener implements Listener
 			if (CakeLibrary.hasColor(name))
 			{
 				name = CakeLibrary.removeColorCodes(name);
+				if (name.startsWith("Gold ("))
+				{
+					int gold = Integer.parseInt(name.substring(6, name.length() - 1)) * is.getAmount();
+					rp.addGold(gold);
+					p.setItemInHand(null);
+					RPGCore.msg(p, "&e" + gold + " Gold &6has been added to your bank");
+					event.setCancelled(true);
+					return;
+				}
 				for (BonusStatCrystal crystal: BonusStatCrystal.values())
 				{
 					if (name.equals(crystal.getItemName()))
 					{
 						p.openInventory(crystal.getCrystalInventory(is.getAmount()));
-						p.setItemInHand(new ItemStack(Material.AIR));
+						p.setItemInHand(null);
+						event.setCancelled(true);
 						break;
 					}
 				}
 			}
 		}
 
-		RPlayer rp = playerManager.getRPlayer(p.getUniqueId());
 		if (rp.heartspanTicks > 0 && rp.castDelay <= 0)
 		{
 			Heartspan.strike(rp);

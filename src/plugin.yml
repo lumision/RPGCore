@@ -29,3 +29,10 @@ commands:
     description: Saves the item as an item
   gi:
     description: Gets a saved item
+  shop:
+    description: Test-opens a shop
+  rr:
+    description: Reloads data
+  gold:
+    aliases: g
+    description: Gold command

@@ -20,9 +20,9 @@ import rpgcore.main.CakeLibrary;
 public class RItem
 {
 	public String databaseName;
-	
+
 	// BASE STATS
-	public int magicDamage, bruteDamage, cooldownReduction, critChance, critDamage, damageReduction;
+	public int levelRequirement, magicDamage, bruteDamage, cooldownReduction, critChance, critDamage, damageReduction;
 	public double attackSpeed;
 
 	//BONUS STATS
@@ -52,7 +52,7 @@ public class RItem
 	{
 		setItemStats(is);
 	}
-	
+
 	public RItem(ItemStack is, String databaseName)
 	{
 		this.databaseName = databaseName;
@@ -61,7 +61,7 @@ public class RItem
 
 	public void cleanItemStats()
 	{
-		magicDamage = bruteDamage = cooldownReduction = critChance = critDamage = damageReduction = 0;
+		levelRequirement = magicDamage = bruteDamage = cooldownReduction = critChance = critDamage = damageReduction = 0;
 		attackSpeed = 0.0D;
 		lifeDrain = lifeDrainChance = 
 				iceDamage = slowChance = slowLevel = slowDuration = 
@@ -96,7 +96,14 @@ public class RItem
 			if (!line.contains("§"))
 				continue;
 			line = CakeLibrary.removeColorCodes(line);
-			if (line.startsWith("  Magic Damage: +"))
+			if (line.startsWith("  Lv. Requirement: "))
+			{
+				try
+				{
+					levelRequirement = Integer.parseInt(line.split(": +")[1]);
+					loreRemove.add(line1);
+				} catch (Exception e) {}
+			} else if (line.startsWith("  Magic Damage: +"))
 			{
 				try
 				{
@@ -169,12 +176,7 @@ public class RItem
 				owner = line.split(": ")[1];
 				loreRemove.add(line1);
 			} else if (line.equals(""))
-			{
-				loreRemove.add(line1);
 				continue;
-			}
-
-
 		}
 		lore.removeAll(loreRemove);
 
@@ -188,6 +190,8 @@ public class RItem
 		ArrayList<String> lore = new ArrayList<String>();
 
 		//BASE STATS
+		if (levelRequirement != 0)
+			lore.add(CakeLibrary.recodeColorCodes(statColor + "  Lv. Requirement:" + statColorSecondary + " " + levelRequirement));
 		if (magicDamage != 0)
 			lore.add(CakeLibrary.recodeColorCodes(statColor + "  Magic Damage:" + statColorSecondary + " +" + magicDamage));
 		if (bruteDamage != 0)
@@ -225,7 +229,7 @@ public class RItem
 		is = CakeLibrary.setItemLore(is, lore);
 		return is;
 	}
-	
+
 	public void saveItemToFile(String fileName)
 	{
 		File file = new File("plugins/RPGCore/items/" + fileName + ".yml");
@@ -233,7 +237,7 @@ public class RItem
 		lines.add("id: " + itemVanilla.getTypeId());
 		lines.add("durability: " + itemVanilla.getDurability());
 		lines.add("amount: " + itemVanilla.getAmount());
-		
+
 		ItemMeta im = itemVanilla.getItemMeta();
 		if (im != null)
 		{
@@ -249,12 +253,12 @@ public class RItem
 					lines.add(" " + (CakeLibrary.removeColorCodes(s).length() <= 0 ? s + " " : s));
 			}
 		}
-		
+
 		ArrayList<Enchantment> enchs = new ArrayList<Enchantment>();
 		ArrayList<Integer> levels = new ArrayList<Integer>();
 		enchs.addAll(itemVanilla.getEnchantments().keySet());
 		levels.addAll(itemVanilla.getEnchantments().values());
-		
+
 		if (enchs.size() > 0)
 		{
 			lines.add("");
@@ -276,7 +280,7 @@ public class RItem
 
 		if (rand.nextDouble() > lifeDrainChance)
 		{
-			
+
 		}
 		if (rand.nextDouble() > slowChance)
 		{
@@ -284,7 +288,7 @@ public class RItem
 		}
 		if (rand.nextDouble() > burnChance)
 		{
-			
+
 		}
 		if (rand.nextDouble() > stunChance)
 		{
@@ -292,10 +296,10 @@ public class RItem
 		}
 		if (rand.nextDouble() > poisonChance)
 		{
-			
+
 		}
-		
-		
+
+
 		return (int) damage;
 	}
 

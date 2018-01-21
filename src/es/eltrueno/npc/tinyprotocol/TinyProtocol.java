@@ -321,7 +321,7 @@ public abstract class TinyProtocol {
      * @return A unique channel handler name.
      */
     protected String getHandlerName() {
-        return "tiny-" + plugin.getName() + "-" + ID.incrementAndGet();
+        return "tiny-RPGCore-" + ID.incrementAndGet();
     }
 
     /**

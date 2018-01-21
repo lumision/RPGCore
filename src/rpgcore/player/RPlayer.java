@@ -22,6 +22,7 @@ import rpgcore.external.Title;
 import rpgcore.item.RItem;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
+import rpgcore.npc.CustomNPC;
 import rpgcore.skills.Buff;
 import rpgcore.skills.LightFeet;
 
@@ -45,7 +46,8 @@ public class RPlayer
 	public boolean checkLevel;
 	public Scoreboard scoreboard;
 	public Objective objective;
-	public int health, maxHealth;
+	public CustomNPC selectedNPC;
+	private int gold;
 
 	public int sneakTicks;
 	public int heartspanTicks;
@@ -71,16 +73,18 @@ public class RPlayer
 		this.lastSkill = "";
 		this.castDelay = 0;
 		this.partyID = -1;
+		this.gold = 10;
 		initializeScoreboard();
 	}
 	
-	public RPlayer(UUID uuid, ArrayList<RPGClass> classes, ClassType currentClass, ArrayList<String> skills, ArrayList<Integer> skillLevels)
+	public RPlayer(UUID uuid, ArrayList<RPGClass> classes, ClassType currentClass, ArrayList<String> skills, ArrayList<Integer> skillLevels, int gold)
 	{
 		this.uuid = uuid;
 		this.classes = classes;
 		this.skills = skills;
 		this.skillLevels = skillLevels;
 		this.currentClass = currentClass;
+		this.gold = gold;
 		for (ClassType ct: ClassType.values())
 		{
 			boolean cont = false;
@@ -107,6 +111,18 @@ public class RPlayer
 		initializeScoreboard();
 	}
 	
+	public int getPowerLevel()
+	{
+		int lv = 0;
+		for (ClassType c: getCurrentClass().classType.getAdvancementTree())
+		{
+			for (RPGClass c1: classes)
+				if (c1.classType.equals(c))
+					lv += c1.getLevel();
+		}
+		return lv;
+	}
+	
 	public void initializeScoreboard()
 	{
 		this.scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
@@ -121,8 +137,21 @@ public class RPlayer
 	{
 		objective.setDisplayName(CakeLibrary.recodeColorCodes("&6" + currentClass.getClassName()));
 
+		//objective.getScore(CakeLibrary.recodeColorCodes("&bPower Level: ")).setScore(getPowerLevel());
 		objective.getScore(CakeLibrary.recodeColorCodes("&eLevel: ")).setScore(getLevel());
 		objective.getScore(CakeLibrary.recodeColorCodes("&e% EXP: ")).setScore(getPercentageToNextLevel());
+		objective.getScore(CakeLibrary.recodeColorCodes("&aGold: ")).setScore(gold);
+	}
+	
+	public void addGold(int amount)
+	{
+		gold += amount;
+		updateScoreboard();
+	}
+	
+	public int getGold()
+	{
+		return gold;
 	}
 
 	public int getDamageOfClass()
