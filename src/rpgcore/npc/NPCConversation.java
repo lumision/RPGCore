@@ -4,10 +4,13 @@ import java.util.ArrayList;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import rpgcore.item.RItem;
 import rpgcore.main.CakeLibrary;
+import rpgcore.main.RPGCore;
 import rpgcore.main.RPGEvents;
 import rpgcore.npc.ConversationData.ConversationPart;
 import rpgcore.npc.ConversationData.ConversationPartType;
@@ -31,7 +34,16 @@ public class NPCConversation
 	{
 		this.player = player;
 		this.conversationData = conversationData;
-		this.part = conversationData.master;
+		for (ConversationPart cp: conversationData.masters)
+		{
+			if (cp.flagKey == null)
+				continue;
+			String value = player.npcFlags.get(cp.flagKey);
+			if (value != null && value.equals(cp.flagValue))
+				part = cp;
+		}
+		if (part == null)
+			part = conversationData.masters.get(0);
 		conversations.add(this);
 	}
 
@@ -54,12 +66,81 @@ public class NPCConversation
 		return lastClickedSlot >= 4 ? lastClickedSlot - 1 - index : lastClickedSlot + 1 + index;
 	}
 
-	public void updateUI()
+	public void checkCommands()
 	{
-		if (part.string.toLowerCase().startsWith("@shop: "))
+		if (part == null)
+			return;
+		
+		Player p = player.getPlayer();
+
+		if (part.string.toLowerCase().startsWith("@exit"))
+		{
+			RPGEvents.scheduleRunnable(new RPGEvents.InventoryClose(p), 1);
+			return;
+		} else if (part.string.toLowerCase().startsWith("@shop: "))
 		{
 			Shop shop = ShopManager.getShopWithDB(part.string.split(": ")[1]);
-			RPGEvents.scheduleRunnable(new RPGEvents.InventoryOpen(player.getPlayer(), shop.getShopInventory()), 1);
+			RPGEvents.scheduleRunnable(new RPGEvents.InventoryOpen(p, shop.getShopInventory()), 1);
+			if (part.next.size() <= 0)
+				part = null;
+			else
+				part = part.next.get(0);
+			checkCommands();
+			return;
+		} else if (part.string.toLowerCase().startsWith("@giveitem: "))
+		{
+			String[] vars = part.string.split(": ");
+			RItem item = RPGCore.instance.getItemFromDatabase(vars[1]);
+			if (item == null)
+			{
+				RPGCore.msgConsole("&4Error while executing @giveitem in " + conversationData.npcName + "'s conversation data: &c" + vars[1] + " &4is not an existing RItem.");
+				return;
+			}
+			if (!CakeLibrary.playerHasVacantSlots(p))
+			{
+				RPGCore.msg(p, "Please clear up an inventory slot to receive an item!");
+				return;
+			}
+			p.getInventory().addItem(item.createItem());
+			if (part.next.size() <= 0)
+				part = null;
+			else
+				part = part.next.get(0);
+			updateUI();
+			return;
+		} else if (part.string.toLowerCase().startsWith("@setflag: "))
+		{
+			String[] vars = part.string.split(": ");
+			String[] vars1 = vars[1].split(", ");
+			player.npcFlags.put(vars1[0], vars1[1]);
+			if (part.next.size() <= 0)
+				part = null;
+			else
+				part = part.next.get(0);
+			RPGCore.instance.playerManager.writePlayerData(player);
+			updateUI();
+			return;
+		} else if (part.string.toLowerCase().startsWith("@delflag: "))
+		{
+			String[] vars = part.string.split(": ");
+			player.npcFlags.remove(vars[1]);
+			if (part.next.size() <= 0)
+				part = null;
+			else
+				part = part.next.get(0);
+			RPGCore.instance.playerManager.writePlayerData(player);
+			updateUI();
+			return;
+		}
+	}
+
+	public void updateUI()
+	{
+		checkCommands();
+		Player p = player.getPlayer();
+		if (part == null)
+		{
+			RPGEvents.scheduleRunnable(new RPGEvents.InventoryClose(p), 1);
 			return;
 		}
 
@@ -121,14 +202,27 @@ public class NPCConversation
 				}
 			}
 		}
-		
+
 		String suffix = CakeLibrary.recodeColorCodes("&c --> Exit <--");
-		if (part.next.size() > 0)
-				suffix = part.next.get(0).type == ConversationPartType.PLAYER ? 
-						lastClickedSlot >= 4 ? CakeLibrary.recodeColorCodes("&e <-- Choose <-- ") : 
-							CakeLibrary.recodeColorCodes("&e --> Choose --> ") : 
-								CakeLibrary.recodeColorCodes("&a --> Next -->");
-		
+		if (part.next.size() > 0 && part.next.get(0).type == ConversationPartType.PLAYER)
+			suffix = lastClickedSlot >= 4 ? CakeLibrary.recodeColorCodes("&e <-- Choose <-- ") : CakeLibrary.recodeColorCodes("&e --> Choose --> ");
+			else if (part.next.size() > 0)
+			{
+				boolean more = false;
+				ConversationPart next = part.next.get(0);
+				try
+				{
+					while (next.string.startsWith("@setflag") || 
+							next.string.startsWith("@delflag") || 
+							next.string.startsWith("@giveitem") || 
+							next.string.startsWith("@exit"))
+						next = next.next.get(0);
+					more = true;
+				} catch (Exception e) {}
+				if (more)
+					suffix = CakeLibrary.recodeColorCodes("&a --> Next -->");
+			}
+
 		lines.add(CakeLibrary.recodeColorCodes("&f "));
 		lines.add(suffix);
 

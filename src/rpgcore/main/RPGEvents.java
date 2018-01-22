@@ -28,6 +28,7 @@ import rpgcore.external.InstantFirework;
 import rpgcore.item.BonusStat.BonusStatCrystal;
 import rpgcore.item.RItem;
 import rpgcore.npc.CustomNPC;
+import rpgcore.npc.NPCConversation;
 import rpgcore.player.RPlayer;
 import rpgcore.skills.effect.ArmageddonE;
 import rpgcore.songs.RSongManager;
@@ -49,6 +50,7 @@ public class RPGEvents implements Runnable
 	@Override
 	public void run()
 	{
+		RPGCore.serverAliveTicks++;
 		instance.playerManager.playersTick();
 		ArrayList<CustomNPC> remove = new ArrayList<CustomNPC>();
 		for (CustomNPC n: RPGCore.npcManager.npcs)
@@ -736,6 +738,21 @@ public class RPGEvents implements Runnable
 		public void run()
 		{
 			player.openInventory(inv);
+		}
+	}
+
+	public static class InventoryClose implements Runnable
+	{
+		public Player player;
+		public InventoryClose(Player player)
+		{
+			this.player = player;
+		}
+
+		@Override
+		public void run()
+		{
+			player.closeInventory();
 		}
 	}
 }

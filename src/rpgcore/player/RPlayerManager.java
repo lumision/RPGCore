@@ -2,6 +2,8 @@ package rpgcore.player;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
@@ -40,11 +42,11 @@ public class RPlayerManager
 		return rp;
 	}
 
-	public RPlayer addRPlayer(UUID uuid, ArrayList<RPGClass> classes, ClassType currentClass, ArrayList<String> skills, ArrayList<Integer> skillLevels, int gold)
+	public RPlayer addRPlayer(UUID uuid, ArrayList<RPGClass> classes, ClassType currentClass, ArrayList<String> skills, ArrayList<Integer> skillLevels, int gold, Map<String, String> npcFlags)
 	{
 		RPlayer rp = new RPlayer(uuid, classes, currentClass, skills, skillLevels, gold);
+		rp.npcFlags = npcFlags;
 		players.add(rp);
-		writePlayerData(rp);
 		return rp;
 	}
 
@@ -100,6 +102,7 @@ public class RPlayerManager
 				ArrayList<RPGClass> classes = new ArrayList<RPGClass>();
 				ArrayList<String> skills = new ArrayList<String>();
 				ArrayList<Integer> skillLevels = new ArrayList<Integer>();
+				Map<String, String> npcFlags = new HashMap<String, String>();
 				int gold = 0;
 
 				ArrayList<String> lines = CakeLibrary.readFile(file);
@@ -132,7 +135,7 @@ public class RPlayerManager
 					s = s.substring(1);
 					if (header.equals("classes"))
 					{
-						String[] split = s.split("::");
+						String[] split = s.split(", ");
 						if (split.length < 3)
 							continue;
 						ClassType classType = null;
@@ -150,7 +153,7 @@ public class RPlayerManager
 						continue;
 					} else if (header.equals("skills"))
 					{
-						String[] split = s.split("::");
+						String[] split = s.split(", ");
 						if (split.length < 2)
 							continue;
 						int lv = 0;
@@ -162,9 +165,15 @@ public class RPlayerManager
 						}
 						skills.add(split[0]);
 						skillLevels.add(lv);
+					} else if (header.equals("npcflags"))
+					{
+						String[] split = s.split(", ");
+						if (split.length < 2)
+							continue;
+						npcFlags.put(split[0], split[1]);
 					}
 				}
-				addRPlayer(uuid, classes, currentClass, skills, skillLevels, gold);
+				addRPlayer(uuid, classes, currentClass, skills, skillLevels, gold, npcFlags);
 			} catch (Exception e) {
 				RPGCore.msgConsole("&4Error reading RPlayer file: " + file.getName());
 			}
@@ -174,17 +183,30 @@ public class RPlayerManager
 	public void writePlayerData(RPlayer rp)
 	{
 		File file = new File("plugins/RPGCore/players/" + rp.getUniqueID() + ".yml");
-		ArrayList<String> lines = new ArrayList<String>();
-		lines.add("lastRecordedName: " + rp.getPlayerName());
-		lines.add("class: " + rp.currentClass.toString());
-		lines.add("gold: " + rp.getGold());
-		lines.add("classes:");
-		for (RPGClass rc: rp.classes)
-			lines.add(" " + rc.classType.toString() + "::" + rc.xp + "::" + rc.skillPoints); 
-		lines.add("skills:");
-		for (int i = 0; i < rp.skills.size(); i++)
-			lines.add(" " + rp.skills.get(i) + "::" + rp.skillLevels.get(i));
-		CakeLibrary.writeFile(lines, file);
+		try
+		{
+			ArrayList<String> lines = new ArrayList<String>();
+			lines.add("lastRecordedName: " + rp.getPlayerName());
+			lines.add("class: " + rp.currentClass.toString());
+			lines.add("gold: " + rp.getGold());
+			lines.add("classes:");
+			for (RPGClass rc: rp.classes)
+				lines.add(" " + rc.classType.toString() + ", " + rc.xp + ", " + rc.skillPoints); 
+			lines.add("skills:");
+			for (int i = 0; i < rp.skills.size(); i++)
+				lines.add(" " + rp.skills.get(i) + ", " + rp.skillLevels.get(i));
+			lines.add("npcflags:");
+			ArrayList<String> keys = new ArrayList<String>();
+			keys.addAll(rp.npcFlags.keySet());
+			ArrayList<String> values = new ArrayList<String>();
+			values.addAll(rp.npcFlags.values());
+			for (int i = 0; i < keys.size(); i++)
+				lines.add(" " + keys.get(i) + ", " + values.get(i));
+			CakeLibrary.writeFile(lines, file);
+		} catch (Exception e) {
+			RPGCore.msgConsole("&4Error reading RPlayer file: " + file.getName());
+			e.printStackTrace();
+		}
 	}
 
 	public void writePlayerData()

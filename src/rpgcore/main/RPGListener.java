@@ -292,6 +292,8 @@ public class RPGListener implements Listener
 			for (NPCConversation c: NPCConversation.conversations)
 				if (c.player == rp && !c.closed)
 				{
+					if (c.part == null)
+						return;
 					ConversationPart clicked = null;
 					if (c.part.string.startsWith(itemName))
 						clicked = c.part;

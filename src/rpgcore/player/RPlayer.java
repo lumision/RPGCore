@@ -1,6 +1,7 @@
 package rpgcore.player;
 
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
@@ -41,6 +42,7 @@ public class RPlayer
 	public ArrayList<Title> titleQueue;
 	public ArrayList<Buff> buffs;
 	public RItem[] rEquips = new RItem[5];
+	public Map<String, String> npcFlags;
 	public int partyID;
 	public int recoverTicks;
 	public boolean checkLevel;

@@ -57,6 +57,7 @@ public class RPGCore extends JavaPlugin
 	public static Random rand = new Random();
 	public static Timer timer = new Timer();
 	public static NPCManager npcManager;
+	public static long serverAliveTicks;
 
 	public static void main(String[] args) {}
 

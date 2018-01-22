@@ -6,6 +6,8 @@ import com.mojang.authlib.GameProfile;
 import es.eltrueno.npc.tinyprotocol.Reflection.FieldAccessor;
 import es.eltrueno.npc.tinyprotocol.Reflection.MethodInvoker;
 import io.netty.channel.*;
+import rpgcore.main.RPGCore;
+
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -13,6 +15,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerLoginEvent;
+import org.bukkit.event.player.PlayerLoginEvent.Result;
 import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -156,9 +159,16 @@ public abstract class TinyProtocol {
         listener = new Listener() {
 
             @EventHandler(priority = EventPriority.LOWEST)
-            public final void onPlayerLogin(PlayerLoginEvent e) {
+            public final void onPlayerLogin(PlayerLoginEvent e) 
+            {
                 if (closed)
                     return;
+                
+                if (RPGCore.serverAliveTicks < 20)
+                {
+        			e.disallow(Result.KICK_OTHER, "You logged in too quickly!\nPlease try again.");
+                	return;
+                }
 
                 Channel channel = getChannel(e.getPlayer());
 
