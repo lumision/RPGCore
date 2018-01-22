@@ -140,18 +140,22 @@ public class NPCManager
 							for(CustomNPC npc : npcs)
 								if(npc.getId() == EntityID.get(packet) && p.getEyeLocation().distance(npc.getBukkitLocation()) < 7) //NPC INTERACT EVENT
 								{
-									RPlayer rp = RPGCore.instance.playerManager.getRPlayer(p.getUniqueId());
+									RPlayer rp = RPGCore.playerManager.getRPlayer(p.getUniqueId());
+									rp.npcClosure = npc;
 									if (p.hasPermission("rpgcore.npc") && p.isSneaking())
 									{
 										rp.selectedNPC = npc;
 										RPGCore.msg(p, "NPC Selected: " + npc.getName());
-									}
-									for (ConversationData cd: ConversationData.dataList)
-										if (cd.npcName.equals(npc.getName()))
-										{
-											NPCConversation c = new NPCConversation(rp, cd);
-											p.openInventory(c.getConversationUI());
-										}
+									} else
+										for (ConversationData cd: ConversationData.dataList)
+											if (cd.npcName.equals(npc.getName()))
+											{
+												NPCConversation c = new NPCConversation(rp, cd);
+												if (!NPCConversation.useChat)
+													p.openInventory(c.getConversationUI());
+												else
+													c.updateUI();
+											}
 									break;
 								}
 							Bukkit.getScheduler().runTaskLaterAsynchronously(instance, new Runnable()

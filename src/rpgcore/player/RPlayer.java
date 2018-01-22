@@ -1,6 +1,7 @@
 package rpgcore.player;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
@@ -26,6 +27,7 @@ import rpgcore.main.RPGCore;
 import rpgcore.npc.CustomNPC;
 import rpgcore.skills.Buff;
 import rpgcore.skills.LightFeet;
+import rpgcore.tutorial.Tutorial;
 
 public class RPlayer 
 {
@@ -48,7 +50,9 @@ public class RPlayer
 	public boolean checkLevel;
 	public Scoreboard scoreboard;
 	public Objective objective;
-	public CustomNPC selectedNPC;
+	public CustomNPC selectedNPC, npcClosure;
+	public Tutorial tutorial;
+	public boolean tutorialCompleted;
 	private int gold;
 
 	public int sneakTicks;
@@ -76,9 +80,11 @@ public class RPlayer
 		this.castDelay = 0;
 		this.partyID = -1;
 		this.gold = 10;
+		this.npcFlags = new HashMap<String, String>();
+		this.tutorial = new Tutorial(this);
 		initializeScoreboard();
 	}
-	
+
 	public RPlayer(UUID uuid, ArrayList<RPGClass> classes, ClassType currentClass, ArrayList<String> skills, ArrayList<Integer> skillLevels, int gold)
 	{
 		this.uuid = uuid;
@@ -110,9 +116,11 @@ public class RPlayer
 		this.lastSkill = "";
 		this.castDelay = 0;
 		this.partyID = -1;
+		this.npcFlags = new HashMap<String, String>();
+		this.tutorial = new Tutorial(this);
 		initializeScoreboard();
 	}
-	
+
 	public int getPowerLevel()
 	{
 		int lv = 0;
@@ -124,7 +132,7 @@ public class RPlayer
 		}
 		return lv;
 	}
-	
+
 	public void initializeScoreboard()
 	{
 		this.scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
@@ -134,7 +142,7 @@ public class RPlayer
 		this.objective = objective;
 		updateScoreboard();
 	}
-	
+
 	public void updateScoreboard()
 	{
 		objective.setDisplayName(CakeLibrary.recodeColorCodes("&6" + currentClass.getClassName()));
@@ -144,13 +152,13 @@ public class RPlayer
 		objective.getScore(CakeLibrary.recodeColorCodes("&e% EXP: ")).setScore(getPercentageToNextLevel());
 		objective.getScore(CakeLibrary.recodeColorCodes("&aGold: ")).setScore(gold);
 	}
-	
+
 	public void addGold(int amount)
 	{
 		gold += amount;
 		updateScoreboard();
 	}
-	
+
 	public int getGold()
 	{
 		return gold;
@@ -202,6 +210,8 @@ public class RPlayer
 				CakeLibrary.addPotionEffectIfBetterOrEquivalent(p, new PotionEffect(PotionEffectType.JUMP, 19, LightFeet.getJumpLevel(lightFeet)));
 			}
 		}
+		if (!tutorialCompleted)
+			tutorial.check();
 	}
 
 	public void tick()
@@ -364,6 +374,7 @@ public class RPlayer
 				RPGCore.msg(p, "&bUse &3/skills &bto spend your skill points!");
 			p.getWorld().playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.4F, 1.0F);
 		}
+		RPGCore.playerManager.writePlayerData(this);
 	}
 
 	public int getSkillLevel(String skill)
@@ -461,7 +472,7 @@ public class RPlayer
 		for (RItem eq: rEquips)
 			equipment += eq.cooldownReduction;
 		int additions = 0;
-		
+
 		if (currentClass.getAdvancementTree().contains(ClassType.THIEF))
 			additions += getSkillLevel("Blade Mastery");
 
@@ -474,7 +485,7 @@ public class RPlayer
 		for (RItem eq: rEquips)
 			equipment += eq.damageReduction;
 		int additions = 0;
-		
+
 		if (currentClass.getAdvancementTree().contains(ClassType.WARRIOR))
 			additions += getSkillLevel("iron body") * 5;
 

@@ -66,7 +66,7 @@ public class RPGListener implements Listener
 	public RPGListener(RPGCore instance)
 	{
 		this.instance = instance;
-		playerManager = instance.playerManager;
+		playerManager = RPGCore.playerManager;
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -175,14 +175,14 @@ public class RPGListener implements Listener
 			if (e.getCustomName().equals(MageZombie.name))
 			{
 				if (dropsRand.nextInt(10) == 0)
-					e.getWorld().dropItem(e.getLocation(), instance.getItemFromDatabase("ZombieStaff").createItem()).setVelocity(new Vector(0, 0.5F, 0));
+					e.getWorld().dropItem(e.getLocation(), RPGCore.getItemFromDatabase("ZombieStaff").createItem()).setVelocity(new Vector(0, 0.5F, 0));
 			}
 
 		if (e.hasMetadata("RPGCore.Killer"))
 		{
 			List<MetadataValue> mlist = e.getMetadata("RPGCore.Killer");
 			String name = mlist.get(mlist.size() - 1).asString();
-			RPlayer rp = instance.playerManager.getRPlayer(name);
+			RPlayer rp = RPGCore.playerManager.getRPlayer(name);
 			if (rp == null)
 				return;
 			rp.addXP((int) e.getMaxHealth());
@@ -193,7 +193,7 @@ public class RPGListener implements Listener
 	public void handleInventoryClose(InventoryCloseEvent event)
 	{
 		Player p = (Player) event.getPlayer();
-		RPlayer rp = instance.playerManager.getRPlayer(p.getUniqueId());
+		RPlayer rp = RPGCore.playerManager.getRPlayer(p.getUniqueId());
 		if (rp == null)
 			return;
 		Inventory inv = event.getInventory();
@@ -232,7 +232,7 @@ public class RPGListener implements Listener
 	public void handleInventoryClick(InventoryClickEvent event)
 	{
 		Player p = (Player) event.getWhoClicked();
-		RPlayer rp = instance.playerManager.getRPlayer(p.getUniqueId());
+		RPlayer rp = RPGCore.playerManager.getRPlayer(p.getUniqueId());
 		if (rp == null)
 			return;
 		Inventory inv = event.getInventory();
@@ -334,9 +334,12 @@ public class RPGListener implements Listener
 				if (itemName.toLowerCase().contains(ct.toString().toLowerCase()))
 					change = ct;
 			rp.currentClass = change;
-			instance.playerManager.writePlayerData(rp);
+			RPGCore.playerManager.writePlayerData(rp);
 			p.getWorld().playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.2F, 1.0F);
-			p.openInventory(SkillInventory.getSkillInventory(rp, 0));
+			if (inv.getSize() == 27)
+				p.openInventory(SkillInventory.getSkillInventory(rp, 0));
+			else
+				RPGEvents.scheduleRunnable(new RPGEvents.InventoryClose(p), 1);
 			rp.updateScoreboard();
 			return;
 		}
@@ -397,7 +400,7 @@ public class RPGListener implements Listener
 				rp.getCurrentClass().skillPoints--;
 				SkillInventory.updateSkillInventory(event.getInventory(), rp);
 				SkillInventory.updatePlayerInventorySkills(rp);
-				instance.playerManager.writePlayerData(rp);
+				RPGCore.playerManager.writePlayerData(rp);
 				return;
 			}
 			if (mode.getDurability() == (short) 14) //Reclaim skill points
@@ -413,7 +416,7 @@ public class RPGListener implements Listener
 				rp.getCurrentClass().skillPoints++;
 				SkillInventory.updateSkillInventory(event.getInventory(), rp);
 				SkillInventory.updatePlayerInventorySkills(rp);
-				instance.playerManager.writePlayerData(rp);
+				RPGCore.playerManager.writePlayerData(rp);
 				return;
 			}
 			if (is.getTypeId() == 383)
@@ -455,7 +458,7 @@ public class RPGListener implements Listener
 	public void handleBlockBreak(BlockBreakEvent event)
 	{
 		Player p = event.getPlayer();
-		RPlayer rp = instance.playerManager.getRPlayer(p.getUniqueId());
+		RPlayer rp = RPGCore.playerManager.getRPlayer(p.getUniqueId());
 		if (rp == null)
 			return;
 		ItemStack is = p.getItemInHand();
@@ -486,7 +489,7 @@ public class RPGListener implements Listener
 			event.setDamage(DamageModifier.ARMOR, 0);
 			event.setDamage(DamageModifier.ABSORPTION, 0);
 			Player p = (Player) event.getEntity();
-			RPlayer rp = instance.playerManager.getRPlayer(p.getUniqueId());
+			RPlayer rp = RPGCore.playerManager.getRPlayer(p.getUniqueId());
 			if (rp == null)
 				return;
 			if (rp.currentClass.getTier1Class().equals(ClassType.THIEF))
@@ -508,7 +511,7 @@ public class RPGListener implements Listener
 	public void handleBlockPlace(BlockPlaceEvent event)
 	{
 		Player player = event.getPlayer();
-		RPlayer rp = instance.playerManager.getRPlayer(player.getUniqueId());
+		RPlayer rp = RPGCore.playerManager.getRPlayer(player.getUniqueId());
 		if (rp == null)
 			return;
 		ItemStack is = player.getItemInHand();
@@ -525,7 +528,7 @@ public class RPGListener implements Listener
 	public void handlePlayerEat(PlayerItemConsumeEvent event)
 	{
 		Player player = event.getPlayer();
-		RPlayer rp = instance.playerManager.getRPlayer(player.getUniqueId());
+		RPlayer rp = RPGCore.playerManager.getRPlayer(player.getUniqueId());
 		if (rp == null)
 			return;
 		ItemStack is = player.getItemInHand();
@@ -547,7 +550,7 @@ public class RPGListener implements Listener
 
 		//CRYSTALS
 		Player p = event.getPlayer();
-		RPlayer rp = instance.playerManager.getRPlayer(p.getUniqueId());
+		RPlayer rp = RPGCore.playerManager.getRPlayer(p.getUniqueId());
 		ItemStack is = p.getItemInHand();
 		if (!CakeLibrary.isItemStackNull(is))
 		{

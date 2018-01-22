@@ -47,7 +47,7 @@ public class ShopManager
 						if (header.equals("items:"))
 						{
 							String[] split = s.split(", ");
-							RItem ri = RPGCore.instance.getItemFromDatabase(split[0]);
+							RItem ri = RPGCore.getItemFromDatabase(split[0]);
 							if (ri == null)
 							{
 								RPGCore.msgConsole("&4Error while reading shop \"&c" + file.getName() + "&4\" - \"&c" + split[0] + "&4\" is not an item!");

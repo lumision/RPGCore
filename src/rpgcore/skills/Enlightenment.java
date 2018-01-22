@@ -67,7 +67,7 @@ public class Enlightenment extends RPGSkill
 		if (caster.partyID == -1)
 			applyEffect(caster, caster, level);
 		else 
-			for (RPlayer partyMember: RPGCore.instance.partyManager.getParty(caster.partyID).players)
+			for (RPlayer partyMember: RPGCore.partyManager.getParty(caster.partyID).players)
 				applyEffect(caster, partyMember, level);
 	}
 

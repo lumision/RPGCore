@@ -1,5 +1,5 @@
 main: rpgcore.main.RPGCore
-version: 1.0
+version: 3.5
 name: RPGCore
 
 commands:
@@ -36,3 +36,5 @@ commands:
   gold:
     aliases: g
     description: Gold command
+  convo:
+    description: NPC Conversation command

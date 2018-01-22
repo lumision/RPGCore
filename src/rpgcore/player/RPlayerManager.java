@@ -42,10 +42,12 @@ public class RPlayerManager
 		return rp;
 	}
 
-	public RPlayer addRPlayer(UUID uuid, ArrayList<RPGClass> classes, ClassType currentClass, ArrayList<String> skills, ArrayList<Integer> skillLevels, int gold, Map<String, String> npcFlags)
+	public RPlayer addRPlayer(UUID uuid, ArrayList<RPGClass> classes, ClassType currentClass, ArrayList<String> skills, 
+			ArrayList<Integer> skillLevels, int gold, Map<String, String> npcFlags, boolean tutorialCompleted)
 	{
 		RPlayer rp = new RPlayer(uuid, classes, currentClass, skills, skillLevels, gold);
 		rp.npcFlags = npcFlags;
+		rp.tutorialCompleted = true;
 		players.add(rp);
 		return rp;
 	}
@@ -103,6 +105,7 @@ public class RPlayerManager
 				ArrayList<String> skills = new ArrayList<String>();
 				ArrayList<Integer> skillLevels = new ArrayList<Integer>();
 				Map<String, String> npcFlags = new HashMap<String, String>();
+				boolean tutorialCompleted = false;
 				int gold = 0;
 
 				ArrayList<String> lines = CakeLibrary.readFile(file);
@@ -124,6 +127,14 @@ public class RPlayerManager
 							try
 							{
 								gold = Integer.parseInt(s.split(": ")[1]);
+							} catch (Exception e) {}
+							continue;
+						}
+						if (s.startsWith("tutorialCompleted: "))
+						{
+							try
+							{
+								tutorialCompleted = Boolean.parseBoolean(s.split(": ")[1]);
 							} catch (Exception e) {}
 							continue;
 						}
@@ -173,7 +184,7 @@ public class RPlayerManager
 						npcFlags.put(split[0], split[1]);
 					}
 				}
-				addRPlayer(uuid, classes, currentClass, skills, skillLevels, gold, npcFlags);
+				addRPlayer(uuid, classes, currentClass, skills, skillLevels, gold, npcFlags, tutorialCompleted);
 			} catch (Exception e) {
 				RPGCore.msgConsole("&4Error reading RPlayer file: " + file.getName());
 			}
@@ -189,6 +200,7 @@ public class RPlayerManager
 			lines.add("lastRecordedName: " + rp.getPlayerName());
 			lines.add("class: " + rp.currentClass.toString());
 			lines.add("gold: " + rp.getGold());
+			lines.add("tutorialCompleted: " + rp.tutorialCompleted);
 			lines.add("classes:");
 			for (RPGClass rc: rp.classes)
 				lines.add(" " + rc.classType.toString() + ", " + rc.xp + ", " + rc.skillPoints); 

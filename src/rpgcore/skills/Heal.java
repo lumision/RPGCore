@@ -81,7 +81,7 @@ public class Heal extends RPGSkill
 		if (caster.partyID == -1)
 			applyEffect(caster, player, healAmount);
 		else
-			for (RPlayer partyMember: RPGCore.instance.partyManager.getParty(caster.partyID).players)
+			for (RPlayer partyMember: RPGCore.partyManager.getParty(caster.partyID).players)
 				applyEffect(partyMember, player, healAmount);
 	}
 

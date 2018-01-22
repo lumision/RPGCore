@@ -32,8 +32,8 @@ public class SorcererZombie extends CasterEntity
 		entity.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, Integer.MAX_VALUE, 0));
 		
 		EntityEquipment eq = entity.getEquipment();
-		eq.setItemInHand(RPGCore.instance.getItemFromDatabase("ZombieSorcererStaff").createItem());
-		eq.setItemInHandDropChance(0);
+		eq.setItemInMainHand(RPGCore.getItemFromDatabase("ZombieSorcererStaff").createItem());
+		eq.setItemInMainHandDropChance(0);
 	}
 
 	@Override

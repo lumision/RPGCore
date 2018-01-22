@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import net.md_5.bungee.api.chat.TextComponent;
 import rpgcore.item.RItem;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
@@ -26,6 +27,7 @@ public class NPCConversation
 	public Inventory conversationUI;
 	public boolean closed;
 	public int lastClickedSlot = 4;
+	public static boolean useChat = false;
 	public static ArrayList<NPCConversation> conversations = new ArrayList<NPCConversation>();
 	public static ItemStack right = CakeLibrary.renameItem(new ItemStack(Material.STAINED_GLASS_PANE, 1, (short) 15), "&7<---");
 	public static ItemStack left = CakeLibrary.renameItem(new ItemStack(Material.STAINED_GLASS_PANE, 1, (short) 15), "&7--->");
@@ -36,6 +38,8 @@ public class NPCConversation
 		this.conversationData = conversationData;
 		for (ConversationPart cp: conversationData.masters)
 		{
+			if (cp == null)
+				continue;
 			if (cp.flagKey == null)
 				continue;
 			String value = player.npcFlags.get(cp.flagKey);
@@ -66,17 +70,17 @@ public class NPCConversation
 		return lastClickedSlot >= 4 ? lastClickedSlot - 1 - index : lastClickedSlot + 1 + index;
 	}
 
-	public void checkCommands()
+	public boolean checkCommands()
 	{
 		if (part == null)
-			return;
+			return false;
 		
 		Player p = player.getPlayer();
 
 		if (part.string.toLowerCase().startsWith("@exit"))
 		{
 			RPGEvents.scheduleRunnable(new RPGEvents.InventoryClose(p), 1);
-			return;
+			return false;
 		} else if (part.string.toLowerCase().startsWith("@shop: "))
 		{
 			Shop shop = ShopManager.getShopWithDB(part.string.split(": ")[1]);
@@ -85,29 +89,27 @@ public class NPCConversation
 				part = null;
 			else
 				part = part.next.get(0);
-			checkCommands();
-			return;
+			return false;
 		} else if (part.string.toLowerCase().startsWith("@giveitem: "))
 		{
 			String[] vars = part.string.split(": ");
-			RItem item = RPGCore.instance.getItemFromDatabase(vars[1]);
+			RItem item = RPGCore.getItemFromDatabase(vars[1]);
 			if (item == null)
 			{
 				RPGCore.msgConsole("&4Error while executing @giveitem in " + conversationData.npcName + "'s conversation data: &c" + vars[1] + " &4is not an existing RItem.");
-				return;
+				return false;
 			}
 			if (!CakeLibrary.playerHasVacantSlots(p))
 			{
 				RPGCore.msg(p, "Please clear up an inventory slot to receive an item!");
-				return;
+				return false;
 			}
 			p.getInventory().addItem(item.createItem());
 			if (part.next.size() <= 0)
 				part = null;
 			else
 				part = part.next.get(0);
-			updateUI();
-			return;
+			return true;
 		} else if (part.string.toLowerCase().startsWith("@setflag: "))
 		{
 			String[] vars = part.string.split(": ");
@@ -117,9 +119,8 @@ public class NPCConversation
 				part = null;
 			else
 				part = part.next.get(0);
-			RPGCore.instance.playerManager.writePlayerData(player);
-			updateUI();
-			return;
+			RPGCore.playerManager.writePlayerData(player);
+			return true;
 		} else if (part.string.toLowerCase().startsWith("@delflag: "))
 		{
 			String[] vars = part.string.split(": ");
@@ -128,15 +129,37 @@ public class NPCConversation
 				part = null;
 			else
 				part = part.next.get(0);
-			RPGCore.instance.playerManager.writePlayerData(player);
-			updateUI();
-			return;
+			RPGCore.playerManager.writePlayerData(player);
+			return true;
 		}
+		return true;
 	}
 
 	public void updateUI()
 	{
-		checkCommands();
+		if (useChat)
+		{
+			String[] quotes = part.string.split("###");
+			TextComponent msg = new TextComponent("§f<" + conversationData.npcName + "§f> ");
+			for (int i = 0; i < quotes.length; i++)
+			{
+				String quote = quotes[i];
+				String[] lines = quote.split("##");
+				for (int i1 = 0; i1 < lines.length; i1++)
+				{
+					String line = lines[i1];
+					if (i != 0 && i1 != 0)
+						msg.addExtra("\n");
+					msg.addExtra(line);
+				}
+			}
+			player.getPlayer().spigot().sendMessage(msg);
+			return;
+		}
+		
+		if (!checkCommands())
+			return;
+		
 		Player p = player.getPlayer();
 		if (part == null)
 		{

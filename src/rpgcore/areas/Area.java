@@ -48,7 +48,7 @@ public class Area
 				
 				if (a.bgm != null)
 				{
-					RPGSong r = RPGCore.instance.songManager.getSong(a.bgm);
+					RPGSong r = RPGCore.songManager.getSong(a.bgm);
 				}
 			}
 		}

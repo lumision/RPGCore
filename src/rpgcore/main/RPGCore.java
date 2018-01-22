@@ -45,14 +45,14 @@ import rpgcore.songs.RunningTrack;
 
 public class RPGCore extends JavaPlugin
 {
-	public RPGEvents events;
-	public RPGListener listener;
-	public RPlayerManager playerManager;
-	public RSongManager songManager;
-	public RPartyManager partyManager;
 	public File pluginFolder = new File("plugins/RPGCore");
 	public File itemsFolder = new File("plugins/RPGCore/items");
-	public ArrayList<RItem> itemDatabase = new ArrayList<RItem>();
+	public static ArrayList<RItem> itemDatabase = new ArrayList<RItem>();
+	public static RPGEvents events;
+	public static RPGListener listener;
+	public static RPlayerManager playerManager;
+	public static RSongManager songManager;
+	public static RPartyManager partyManager;
 	public static RPGCore instance;
 	public static Random rand = new Random();
 	public static Timer timer = new Timer();
@@ -185,7 +185,7 @@ public class RPGCore extends JavaPlugin
 		readItemFolder(itemsFolder);
 	}
 
-	public RItem getItemFromDatabase(String databaseName)
+	public static RItem getItemFromDatabase(String databaseName)
 	{
 		for (RItem run: itemDatabase)
 			if (run.databaseName.equalsIgnoreCase(databaseName))
@@ -217,8 +217,10 @@ public class RPGCore extends JavaPlugin
 				readItemDatabase();
 				ShopManager.readShopDatabase();
 				songManager.readSongs();
+				for (CustomNPC npc: npcManager.npcs)
+					npc.conversationData = null;
 				ConversationData.loadConversationData();
-				msg(p, "Reloaded.");
+				msg(p, "Reloaded RPGCore v" + getDescription().getVersion());
 				return true;
 			}
 			if (command.getName().equalsIgnoreCase("gold"))

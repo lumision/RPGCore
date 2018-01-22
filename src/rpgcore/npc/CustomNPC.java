@@ -27,10 +27,14 @@ import net.minecraft.server.v1_12_R1.PlayerInteractManager;
 import net.minecraft.server.v1_12_R1.WorldServer;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
+import rpgcore.npc.ConversationData.ConversationLine;
+import rpgcore.npc.ConversationData.ConversationPartType;
+import rpgcore.player.RPlayer;
 
 public class CustomNPC extends EntityPlayer 
 {
-	public static double visibleDistance = 128.0D;
+	public static double visibleDistance = 64.0D;
+	public static double outRangeDistance = 5.0D;
 	public static int globalID;
 	public String name;
 	public UUID uuid;
@@ -40,8 +44,10 @@ public class CustomNPC extends EntityPlayer
 	public int randomLookTicks;
 	public boolean removed;
 	public float targetYaw, targetPitch, lastUpdatedYaw, lastUpdatedPitch;
-	public static final float rotationStep = 30;
+	public ConversationData conversationData;
+	public static final float rotationStep = 25;
 	public ArrayList<UUID> visiblePlayers = new ArrayList<UUID>();
+	public ArrayList<UUID> inRangePlayers = new ArrayList<UUID>();
 	public CustomNPC(MinecraftServer srv, WorldServer world, GameProfile game, PlayerInteractManager interact, Location location)
 	{
 		super(srv, world, game, interact);
@@ -79,6 +85,8 @@ public class CustomNPC extends EntityPlayer
 			tick2();
 		if (tick % 5 == 0)
 			tick5();
+		if (tick % 10 == 0)
+			tick10();
 		if (tick == 20)
 		{
 			tick20();
@@ -146,6 +154,10 @@ public class CustomNPC extends EntityPlayer
 	public void tick5()
 	{
 	}
+	
+	public void tick10()
+	{
+	}
 
 	public void tick20()
 	{
@@ -206,6 +218,9 @@ public class CustomNPC extends EntityPlayer
 	{
 		for (Player p: Bukkit.getOnlinePlayers())
 		{
+			if (p.getWorld() != (org.bukkit.World) this.getWorld().getWorld())
+				continue;
+			RPlayer rp = RPGCore.playerManager.getRPlayer(p.getUniqueId());
 			double distance = p.getLocation().distance(getBukkitLocation());
 			if (visiblePlayers.contains(p.getUniqueId()) && distance > visibleDistance)
 			{
@@ -216,7 +231,60 @@ public class CustomNPC extends EntityPlayer
 				spawnFor(p);
 				visiblePlayers.add(p.getUniqueId());
 			}
+			
+			if (!inRangePlayers.contains(p.getUniqueId()) && distance < outRangeDistance)
+			{
+				inRangePlayers.add(p.getUniqueId());
+				if (getConversationData() != null && getConversationData().conversationLines != null)
+				{
+					ConversationLine chat = null;
+					for (ConversationLine cl: getConversationData().conversationLines)
+					{
+						if (cl == null || cl.type == null)
+							continue;
+						if (!cl.type.equals(ConversationPartType.OPENING))
+							continue;
+						String value = rp.npcFlags.get(cl.flagKey);
+						if (cl.flagKey != null && value != null && (cl.flagValue.equals(value) || cl.flagValue.equals("*")))
+							chat = cl;
+						else if (cl.flagKey == null)
+							chat = cl;
+					}
+					if (chat != null)
+						p.sendMessage(chat.getChatLine(getName()));
+				}
+			} else if (inRangePlayers.contains(p.getUniqueId()) && distance > outRangeDistance)
+			{
+				inRangePlayers.remove(p.getUniqueId());
+				if (getConversationData() != null && getConversationData().conversationLines != null && rp.npcClosure == this)
+				{
+					rp.npcClosure = null;
+					ConversationLine chat = null;
+					for (ConversationLine cl: getConversationData().conversationLines)
+					{
+						if (!cl.type.equals(ConversationPartType.CLOSING))
+							continue;
+						String value = rp.npcFlags.get(cl.flagKey);
+						if (cl.flagKey != null && value != null && (cl.flagValue.equals(value) || cl.flagValue.equals("*")))
+							chat = cl;
+						else if (cl.flagKey == null)
+							chat = cl;
+					}
+					if (chat != null)
+						p.sendMessage(chat.getChatLine(getName()));
+				}
+			}
 		}
+	}
+	
+	public ConversationData getConversationData()
+	{
+		if (conversationData != null)
+			return conversationData;
+		for (ConversationData cd: ConversationData.dataList)
+			if (cd.npcName.equals(getName()))
+				conversationData = cd;
+		return conversationData;
 	}
 
 	public void reloadForVisiblePlayers()

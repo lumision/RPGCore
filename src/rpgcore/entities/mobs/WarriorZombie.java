@@ -33,8 +33,8 @@ public class WarriorZombie extends CasterEntity
 		entity.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, Integer.MAX_VALUE, 0));
 		
 		EntityEquipment eq = entity.getEquipment();
-		eq.setItemInHand(RPGCore.instance.getItemFromDatabase("ZombieWarriorSword").createItem());
-		eq.setItemInHandDropChance(0);
+		eq.setItemInMainHand(RPGCore.getItemFromDatabase("ZombieWarriorSword").createItem());
+		eq.setItemInMainHandDropChance(0);
 	}
 
 	@Override

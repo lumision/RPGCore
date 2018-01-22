@@ -28,7 +28,6 @@ import rpgcore.external.InstantFirework;
 import rpgcore.item.BonusStat.BonusStatCrystal;
 import rpgcore.item.RItem;
 import rpgcore.npc.CustomNPC;
-import rpgcore.npc.NPCConversation;
 import rpgcore.player.RPlayer;
 import rpgcore.skills.effect.ArmageddonE;
 import rpgcore.songs.RSongManager;
@@ -51,7 +50,7 @@ public class RPGEvents implements Runnable
 	public void run()
 	{
 		RPGCore.serverAliveTicks++;
-		instance.playerManager.playersTick();
+		RPGCore.playerManager.playersTick();
 		ArrayList<CustomNPC> remove = new ArrayList<CustomNPC>();
 		for (CustomNPC n: RPGCore.npcManager.npcs)
 		{
@@ -105,7 +104,7 @@ public class RPGEvents implements Runnable
 		@Override
 		public void run()
 		{
-			instance.playerManager.playersTick20();
+			RPGCore.playerManager.playersTick20();
 		}
 	}
 
@@ -117,7 +116,7 @@ public class RPGEvents implements Runnable
 			for (CasterEntity ce: CasterEntity.entities)
 				ce.findTarget();
 			Area.tick();
-			instance.playerManager.playersTick10();
+			RPGCore.playerManager.playersTick10();
 		}
 	}
 
@@ -150,7 +149,7 @@ public class RPGEvents implements Runnable
 				}
 			if (damagee instanceof Player)
 			{
-				RPlayer rp = RPGCore.instance.playerManager.getRPlayer(((Player) damagee).getUniqueId());
+				RPlayer rp = RPGCore.playerManager.getRPlayer(((Player) damagee).getUniqueId());
 				damage = (int) (damage - (damage / 100D * rp.calculateDamageReduction()));
 			}
 			damagee.setNoDamageTicks(0);
