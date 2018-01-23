@@ -202,7 +202,7 @@ public class RPGEvents implements Runnable
 		@Override
 		public void run()
 		{
-			Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), "gamerule sendCommandFeedback false");
+			Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), command);
 		}
 	}
 

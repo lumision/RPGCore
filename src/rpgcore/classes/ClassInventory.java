@@ -24,8 +24,8 @@ public class ClassInventory
 		{
 			if (c.classType.equals(ClassType.WARRIOR))
 			{
-				String color = SkillInventory.getClassColor(c.classType);
-				inv.setItem(1, CakeLibrary.addLore(SkillInventory.getClassIcon(c.classType),
+				String color = "&c";
+				inv.setItem(1, CakeLibrary.addLore(CakeLibrary.renameItem(SkillInventory.getClassIcon(c.classType), "&fClass: " + color + c.classType.getClassName()),
 						"&7Tier: " + c.classType.getTier(),
 						"&7DMG: &7[&e&ki!i!i!i!&7      ]",
 						"&7DEF: &7[&a&ki!i!i!i!i!i!&7    ]",
@@ -39,8 +39,8 @@ public class ClassInventory
 
 			if (c.classType.equals(ClassType.MAGE))
 			{
-				String color = SkillInventory.getClassColor(c.classType);
-				inv.setItem(3, CakeLibrary.addLore(SkillInventory.getClassIcon(c.classType),
+				String color = "&b";
+				inv.setItem(3, CakeLibrary.addLore(CakeLibrary.renameItem(SkillInventory.getClassIcon(c.classType), "&fClass: " + color + c.classType.getClassName()),
 						"&7Tier: " + c.classType.getTier(),
 						"&7DMG: &7[&a&ki!i!i!i!i!i!&7    ]",
 						"&7DEF: &7[&e&ki!i!i!i!&7      ]",
@@ -53,8 +53,8 @@ public class ClassInventory
 
 			if (c.classType.equals(ClassType.PRIEST))
 			{
-				String color = SkillInventory.getClassColor(c.classType);
-				inv.setItem(5, CakeLibrary.addLore(SkillInventory.getClassIcon(c.classType),
+				String color = "&e";
+				inv.setItem(5, CakeLibrary.addLore(CakeLibrary.renameItem(SkillInventory.getClassIcon(c.classType), "&fClass: " + color + c.classType.getClassName()),
 						"&7Tier: " + c.classType.getTier(),
 						"&7DMG: &7[&e&ki!i!i!i!i!&7     ]",
 						"&7DEF: &7[&e&ki!i!i!i!i!&7     ]",
@@ -67,8 +67,8 @@ public class ClassInventory
 
 			if (c.classType.equals(ClassType.THIEF))
 			{
-				String color = SkillInventory.getClassColor(c.classType);
-				inv.setItem(7, CakeLibrary.addLore(SkillInventory.getClassIcon(c.classType),
+				String color = "&a";
+				inv.setItem(7, CakeLibrary.addLore(CakeLibrary.renameItem(SkillInventory.getClassIcon(c.classType), "&fClass: " + color + c.classType.getClassName()),
 						"&7Tier: " + c.classType.getTier(),
 						"&7DMG: &7[&a&ki!i!i!i!i!i!i!&7   ]",
 						"&7DEF: &7[&c&ki!i!i!&7       ]",

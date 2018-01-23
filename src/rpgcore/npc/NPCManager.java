@@ -81,7 +81,12 @@ public class NPCManager
 						if (header.equals("location:"))
 						{
 							if (split[0].equals("world"))
-								location.setWorld(Bukkit.getWorld(split[1]));
+							{
+								org.bukkit.World world = Bukkit.getWorld(split[1]);
+								if (world == null)
+									continue;
+								location.setWorld(world);
+							}
 							if (split[0].equals("position"))
 							{
 								String[] pos = split[1].split(", ");
@@ -110,6 +115,8 @@ public class NPCManager
 			{
 				RPGCore.msgConsole("&4Error: Unable to read NPC File: " + file.getName());
 			}
+			if (location == null || location.getWorld() == null)
+				continue;
 			if (skin == null)
 				createNPC(location, name);
 			else

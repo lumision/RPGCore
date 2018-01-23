@@ -164,7 +164,7 @@ public abstract class TinyProtocol {
                 if (closed)
                     return;
                 
-                if (RPGCore.serverAliveTicks < 20)
+                if (RPGCore.serverAliveTicks < 60)
                 {
         			e.disallow(Result.KICK_OTHER, "You logged in too quickly!\nPlease try again.");
                 	return;

@@ -14,7 +14,8 @@ public class Tutorial
 	public RPlayer player;
 	public boolean welcomeMessage, classMessage, classSelect, classResponse, 
 	weaponGive, weaponEquip, weaponExplain, equipmentExplain, 
-	equipmentExplain11, equipmentExplain12, equipmentExplain13, equipmentExplain14, equipmentExplain15, equipmentExplain2, equipmentExplain3, equipmentExplain4, equipmentExplain5;
+	equipmentExplain11, equipmentExplain12, equipmentExplain13, equipmentExplain14, equipmentExplain15, equipmentExplain2, equipmentExplain3, equipmentExplain4, equipmentExplain5,
+	skillsExplain, skillsExplain1, conclusion, conclusion1;
 	public static Title titleWelcome = new Title("&b- Welcome -", "&bto CakeCraft!", 20, 80, 20);
 	public static Title titleClass = new Title("", "&bYou will now pick a class...", 20, 60, 20);
 	public static Title titleWeapon = new Title("", "&eYou have been gifted an appropriate weapon.", 20, 60, 20);
@@ -27,16 +28,21 @@ public class Tutorial
 	public static Title titleEquipment14 = new Title("&d&nLeggings&d", "", 10, 20, 10);
 	public static Title titleEquipment15 = new Title("&dand &d&nBoots&d", "", 10, 20, 10);
 	public static Title titleEquipment2 = new Title("", "&d...will have their stats &napplied&d to you.", 20, 80, 20);
-	public static Title titleEquipment3 = new Title("", "&cWhat you hold in your &nmain hand&d...", 20, 60, 20);
+	public static Title titleEquipment3 = new Title("", "&cWhat you hold in your &nmain hand&c...", 20, 60, 20);
 	public static Title titleEquipment4 = new Title("", "&c...has &nno effect&c on your stats.", 20, 60, 20);
 	public static Title titleEquipment5 = new Title("", "&cBe sure to keep that in mind.", 20, 60, 20);
+	public static Title titleSkills = new Title("&cType &n/skills", "&c...and apply some skill points.", 20, 32767, 20);
+	public static Title titleSkills1 = new Title("&cLeft/Right Click", "&cwith the skill in your &nmain hand&c to cast it.", 20, 140, 20);
+	public static Title titleConclude = new Title("", "&fThat about concludes this small tutorial.", 20, 80, 20);
+	public static Title titleConclude1 = new Title("", "&f&nWe hope you enjoy the game!", 20, 120, 20);
 	public long ticks;
 	public long equipTicks = Long.MAX_VALUE;
+	public long skillsTicks = Long.MAX_VALUE;
 	public Tutorial(RPlayer player)
 	{
 		this.player = player;
 	}
-	
+
 	public void check()
 	{
 		if (player.tutorialCompleted)
@@ -44,8 +50,13 @@ public class Tutorial
 		Player p = player.getPlayer();
 		if (p == null)
 			return;
-		if (p.getOpenInventory() == null || p.getOpenInventory().getTitle() == null || CakeLibrary.hasColor(p.getOpenInventory().getTitle()))
+		String name = p.getOpenInventory().getTitle();
+		if (CakeLibrary.hasColor(name))
+		{
+			if (ticks - equipTicks >= 840 && name.contains("Skillbook: "))
+				skillsTicks = ticks;
 			return;
+		}
 		ticks += 10;
 		double spawnDistance = p.getWorld().getSpawnLocation().distance(p.getLocation());
 		if (ticks > 20 && spawnDistance > 5 && !welcomeMessage)
@@ -121,6 +132,24 @@ public class Tutorial
 		{
 			titleEquipment5.sendPlayer(p);
 			equipmentExplain5 = true;
+		} else if (ticks - equipTicks >= 840 && !skillsExplain)
+		{
+			titleSkills.sendPlayer(p);
+			skillsExplain = true;
+		} else if (ticks - skillsTicks >= 20 && !skillsExplain1)
+		{
+			titleSkills1.sendPlayer(p);
+			skillsExplain1 = true;
+		} else if (ticks - skillsTicks >= 200 && !conclusion)
+		{
+			titleConclude.sendPlayer(p);
+			conclusion = true;
+		} else if (ticks - skillsTicks >= 320 && !conclusion1)
+		{
+			titleConclude1.sendPlayer(p);
+			conclusion1 = true;
+			player.tutorialCompleted = true;
+			RPGCore.playerManager.writePlayerData(player);
 		}
 	}
 }

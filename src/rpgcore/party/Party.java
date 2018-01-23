@@ -51,8 +51,8 @@ public class Party
 					"&7Level: " + color + rp.getCurrentClass().getLevel());
 
 			if (p != null)
-				is = CakeLibrary.addLore(is, "&7Raw Damage: " + color + rp.getDamageOfClass(),
-						"&7Attack Speed: " + color + String.format("%.1f", 1.0D / rp.calculateCastDelayMultiplier()));
+				is = CakeLibrary.addLore(is, "&7Atk Damage: " + color + rp.getDamageOfClass(),
+						"&7Attack Speed: " + color + "x" + String.format("%.1f", 1.0D / rp.calculateCastDelayMultiplier()));
 			else
 				is = CakeLibrary.addLore(is, "&7 * Offline");
 			if (rp == host)

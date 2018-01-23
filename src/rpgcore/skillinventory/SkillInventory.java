@@ -41,7 +41,7 @@ public class SkillInventory
 	public static ItemStack delevelSkills = CakeLibrary.editNameAndLore(new ItemStack(Material.WOOL, 1, (short) 14), 
 			"&c&nReclaim skill points",
 			"&7Individually retract each skill's level",
-			"&7to earn back skill points.");
+			"&7to claim back skill points.");
 	public static ItemStack returnToBook = CakeLibrary.renameItem(new ItemStack(Material.WOOL, 1, (short) 0), 
 			"&f&nReturn to skill selection");
 	public static ItemStack skillPoints = CakeLibrary.renameItem(new ItemStack(Material.PAPER), 
@@ -415,29 +415,6 @@ case DUALIST:
 			for (RPGSkill skill: RPGSkill.skillList)
 				if (name.equals(skill.skillName))
 					change = skill.instanceGetSkillItem(player);
-			/** - don't use this anymore
-			if (name.equals(ArcaneBolt.skillName))
-				change = ArcaneBolt.getSkillItem(player);
-			if (name.equals(ArcaneBarrage.skillName))
-				change = ArcaneBarrage.getSkillItem(player);
-			if (name.equals(HolyBolt.skillName))
-				change = HolyBolt.getSkillItem(player);
-			if (name.equals(PowerPierce.skillName))
-				change = PowerPierce.getSkillItem(player);
-			if (name.equals(Kunai.skillName))
-				change = Kunai.getSkillItem(player);
-			if (name.equals(Dash.skillName))
-				change = Dash.getSkillItem(player);
-			if (name.equals(Heal.skillName))
-				change = Heal.getSkillItem(player);
-			if (name.equals(Enlightenment.skillName))
-				change = Enlightenment.getSkillItem(player);
-			if (name.equals(Propulsion.skillName))
-				change = Propulsion.getSkillItem(player);
-			if (name.equals(BladeMastery.skillName))
-				change = BladeMastery.getSkillItem(player);
-			- don't use this anymore
-				*/
 
 			if (change == null)
 				continue;

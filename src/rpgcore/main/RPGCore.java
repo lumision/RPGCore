@@ -819,7 +819,7 @@ public class RPGCore extends JavaPlugin
 				msgNoTag(p, "&4 * Brute Damage: &c" + target.calculateBruteDamage());
 				msgNoTag(p, "&4 * Crit Chance: &c" + target.calculateCritChance() + "%");
 				msgNoTag(p, "&4 * Crit Damage: &c" + (int) (target.calculateCritDamageMultiplier() * 100.0D) + "%");
-				msgNoTag(p, "&2 * Attack Speed: &ax" + (1.0D / target.calculateCastDelayMultiplier()));
+				msgNoTag(p, "&2 * Attack Speed: &ax" + Double.parseDouble(String.format("%.1f", (1.0D / target.calculateCastDelayMultiplier()))));
 				msgNoTag(p, "&2 * Cooldowns: &a-" + target.calculateCooldownReduction() + "%");
 				return true;
 			}

@@ -47,7 +47,7 @@ public class RPlayerManager
 	{
 		RPlayer rp = new RPlayer(uuid, classes, currentClass, skills, skillLevels, gold);
 		rp.npcFlags = npcFlags;
-		rp.tutorialCompleted = true;
+		rp.tutorialCompleted = tutorialCompleted;
 		players.add(rp);
 		return rp;
 	}

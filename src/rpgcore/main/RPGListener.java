@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.List;
 import java.util.Random;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -398,8 +399,20 @@ public class RPGListener implements Listener
 				rp.offsetSkillLevel(itemName, 1);
 				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 169), 0);
 				rp.getCurrentClass().skillPoints--;
+				if (rp.getSkillLevel(itemName) == 1)
+				{
+					ItemStack add = null;
+					for (RPGSkill skill: RPGSkill.skillList)
+						if (itemName.equals(skill.skillName))
+							add = skill.instanceGetSkillItem(rp);
+					if (add != null)
+					{
+						add = SkillInventory.changeForInventory(add, p.getName());
+						p.getInventory().addItem(add);
+					}
+				} else
+					SkillInventory.updatePlayerInventorySkills(rp);
 				SkillInventory.updateSkillInventory(event.getInventory(), rp);
-				SkillInventory.updatePlayerInventorySkills(rp);
 				RPGCore.playerManager.writePlayerData(rp);
 				return;
 			}
