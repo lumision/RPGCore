@@ -1,7 +1,11 @@
 package rpgcore.main;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.TimerTask;
+import java.util.UUID;
+import java.util.concurrent.Callable;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Effect;
@@ -17,7 +21,6 @@ import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.util.Vector;
 
@@ -37,6 +40,8 @@ public class RPGEvents implements Runnable
 {
 	public static RPGCore instance;
 	public static boolean stopped;
+	
+	public static LivingEntity customHit;
 	public RPGEvents(RPGCore instance)
 	{
 		RPGEvents.instance = instance;
@@ -65,6 +70,91 @@ public class RPGEvents implements Runnable
 		CasterEntity.remove.clear();
 		
 		ArmageddonE.globalTick();
+		DamageOverTime.globalTick();
+	}
+	
+	public static class EntityDamageHistory
+	{
+		public int entityID;
+		public Map<UUID, Integer> damageHistory = new HashMap<UUID, Integer>();
+
+		public static ArrayList<EntityDamageHistory> damageHistories = new ArrayList<EntityDamageHistory>();
+		public static ArrayList<EntityDamageHistory> remove = new ArrayList<EntityDamageHistory>();
+		private EntityDamageHistory(int entityID)
+		{
+			this.entityID = entityID;
+			damageHistories.add(this);
+		}
+		
+		public static void ApplyDamage(int entityID, UUID damager, int damage)
+		{
+			damageHistories.removeAll(remove);
+			remove.clear();
+			
+			for (EntityDamageHistory history: damageHistories)
+			{
+				if (history.entityID == entityID)
+				{
+					int get = history.damageHistory.get(damager);
+					history.damageHistory.put(damager, get + damage);
+					return;
+				}
+			}
+			
+			EntityDamageHistory history = new EntityDamageHistory(entityID);
+			history.damageHistory.put(damager, damage);
+		}
+	}
+	
+	public static class DamageOverTime
+	{
+		public int length;
+		public int interval;
+		public int damage;
+		public int tick;
+		public LivingEntity victim;
+		public Entity damager;
+		
+		public static ArrayList<DamageOverTime> list = new ArrayList<DamageOverTime>();
+		public static ArrayList<DamageOverTime> remove = new ArrayList<DamageOverTime>();
+		
+		public DamageOverTime(int length, int interval, int damage, Entity damager, LivingEntity victim)
+		{
+			this.length = length;
+			this.interval = interval;
+			this.damage = damage;
+			this.damager = damager;
+			this.victim = victim;
+			
+			this.tick = interval;
+			list.add(this);
+		}
+		
+		public static void globalTick()
+		{
+			for (DamageOverTime dot: list)
+			{
+				if (dot.victim.getHealth() <= 0 || dot.victim.isDead())
+				{
+					remove.add(dot);
+					continue;
+				}
+				
+				dot.length--;
+				dot.tick--;
+				
+				if (dot.tick <= 0)
+				{
+					new ApplyDamage(dot.damager, dot.victim, dot.damage).run();
+					dot.tick = dot.interval;
+				}
+				
+				if (dot.length <= 0)
+					remove.add(dot);
+			}
+			list.removeAll(remove);
+			remove.clear();
+		}
 	}
 
 	public class MusicRuntime extends TimerTask
@@ -105,6 +195,7 @@ public class RPGEvents implements Runnable
 		public void run()
 		{
 			RPGCore.playerManager.playersTick20();
+			Area.tick();
 		}
 	}
 
@@ -115,7 +206,6 @@ public class RPGEvents implements Runnable
 		{
 			for (CasterEntity ce: CasterEntity.entities)
 				ce.findTarget();
-			Area.tick();
 			RPGCore.playerManager.playersTick10();
 		}
 	}
@@ -144,8 +234,7 @@ public class RPGEvents implements Runnable
 				if (damager instanceof Player)
 				{
 					Player p = (Player) damager;
-					FixedMetadataValue meta = new FixedMetadataValue(RPGCore.instance, p.getName());
-					damagee.setMetadata("RPGCore.Killer", meta);
+					EntityDamageHistory.ApplyDamage(damagee.getEntityId(), p.getUniqueId(), damage);
 				}
 			if (damagee instanceof Player)
 			{
@@ -453,6 +542,51 @@ public class RPGEvents implements Runnable
 		public void run()
 		{
 			player.playSound(player.getLocation(), sound, volume, pitch);
+		}
+	}
+
+	public static class AOEDetectionCustom implements Runnable
+	{
+		public ArrayList<LivingEntity> hit;
+		public double radius;
+		public Location l;
+		public LivingEntity damager;
+		public Callable<Void> func;
+
+		public AOEDetectionCustom(ArrayList<LivingEntity> hit, Location l, double radius, LivingEntity damager, Callable<Void> func)
+		{
+			this.hit = hit;
+			this.radius = radius;
+			this.l = l;
+			this.damager = damager;
+			this.func = func;
+		}
+
+		@Override
+		public void run()
+		{
+			boolean player = damager instanceof Player;
+			boolean monster = damager instanceof Monster;
+			for (LivingEntity e: CakeLibrary.getNearbyLivingEntities(l, radius))
+			{
+				if (e == damager)
+					continue;
+				if (player && e instanceof Player)
+					continue;
+				if (monster && e instanceof Monster)
+					continue;
+				if (hit.contains(e))
+					continue;
+				hit.add(e);
+				
+				try {
+					customHit = e;
+					func.call();
+					customHit = null;
+				} catch (Exception e1) {
+					e1.printStackTrace();
+				}
+			}
 		}
 	}
 

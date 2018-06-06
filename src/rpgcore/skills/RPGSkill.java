@@ -30,6 +30,10 @@ public class RPGSkill
 			new Heartspan(),
 			new TripleKunai(),
 			new Armageddon(),
+			new IceBolt(),
+			new PoisonBolt(),
+			new Leap(),
+			new Warcry(),
 	};
 	
 	public RPGSkill(String skillName, RPlayer caster, int castDelay, double baseDamageMultiplier, ClassType classType)

@@ -7,6 +7,7 @@ import java.util.Random;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -25,6 +26,8 @@ import rpgcore.item.RItem;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
 import rpgcore.npc.CustomNPC;
+import rpgcore.sideclasses.RPGSideClass;
+import rpgcore.sideclasses.RPGSideClass.SideClassType;
 import rpgcore.skills.Buff;
 import rpgcore.skills.LightFeet;
 import rpgcore.tutorial.Tutorial;
@@ -33,6 +36,7 @@ public class RPlayer
 {
 	private UUID uuid;
 	public ArrayList<RPGClass> classes;
+	public ArrayList<RPGSideClass> sideClasses;
 	public ClassType currentClass;
 	public int castDelay;
 	public String lastSkill;
@@ -48,12 +52,15 @@ public class RPlayer
 	public int partyID;
 	public int recoverTicks;
 	public boolean checkLevel;
+	public RPGSideClass checkSideClassLevel;
 	public Scoreboard scoreboard;
 	public Objective objective;
 	public CustomNPC selectedNPC, npcClosure;
 	public Tutorial tutorial;
 	public boolean tutorialCompleted;
 	private int gold;
+	private int tokens;
+	public Location pos1, pos2;
 
 	public int sneakTicks;
 	public int heartspanTicks;
@@ -62,12 +69,11 @@ public class RPlayer
 	{
 		this.uuid = uuid;
 		this.classes = new ArrayList<RPGClass>();
+		this.sideClasses = new ArrayList<RPGSideClass>();
 		for (ClassType ct: ClassType.values())
-		{
-			RPGClass c = new RPGClass(ct);
-			c.skillPoints = 3;
-			classes.add(c);
-		}
+			classes.add(new RPGClass(ct, 0, 3));
+		for (SideClassType ct: SideClassType.values())
+			sideClasses.add(new RPGSideClass(ct, 0));
 		this.skills = new ArrayList<String>();
 		this.skillLevels = new ArrayList<Integer>();
 		this.cooldowns = new ArrayList<String>();
@@ -80,15 +86,17 @@ public class RPlayer
 		this.castDelay = 0;
 		this.partyID = -1;
 		this.gold = 10;
+		this.tokens = 0;
 		this.npcFlags = new HashMap<String, String>();
 		this.tutorial = new Tutorial(this);
 		initializeScoreboard();
 	}
 
-	public RPlayer(UUID uuid, ArrayList<RPGClass> classes, ClassType currentClass, ArrayList<String> skills, ArrayList<Integer> skillLevels, int gold)
+	public RPlayer(UUID uuid, ArrayList<RPGClass> classes, ArrayList<RPGSideClass> sideClasses, ClassType currentClass, ArrayList<String> skills, ArrayList<Integer> skillLevels, int gold, int tokens)
 	{
 		this.uuid = uuid;
 		this.classes = classes;
+		this.sideClasses = sideClasses;
 		this.skills = skills;
 		this.skillLevels = skillLevels;
 		this.currentClass = currentClass;
@@ -107,6 +115,20 @@ public class RPlayer
 			RPGClass c = new RPGClass(ct);
 			c.skillPoints = 3;
 			classes.add(c);
+		}
+		for (SideClassType ct: SideClassType.values())
+		{
+			boolean cont = false;
+			for (RPGSideClass c: sideClasses)
+				if (c.sideClassType.equals(ct))
+				{
+					cont = true;
+					break;
+				}
+			if (cont)
+				continue;
+			RPGSideClass c = new RPGSideClass(ct, 0);
+			sideClasses.add(c);
 		}
 		this.cooldowns = new ArrayList<String>();
 		this.cooldownValues = new ArrayList<Integer>();
@@ -174,6 +196,14 @@ public class RPlayer
 		if (!instantCast.contains(skill))
 			instantCast.add(skill);
 		removeCooldown(skill);
+	}
+
+	public RPGSideClass getSideClass(SideClassType sideClassType)
+	{
+		for (RPGSideClass rc: sideClasses)
+			if (rc.sideClassType.equals(sideClassType))
+				return rc;
+		return null;
 	}
 
 	public RPGClass getCurrentClass()
@@ -267,6 +297,18 @@ public class RPlayer
 			checkLevel = false;
 			updateScoreboard();
 		}
+		if (checkSideClassLevel != null)
+		{
+			int lv = checkSideClassLevel.getLevel();
+			if (checkSideClassLevel.lastCheckedLevel != lv)
+			{
+				checkSideClassLevel.lastCheckedLevel = lv;
+				RPGCore.msg(p, "&bYou've leveled your &3" + checkSideClassLevel.sideClassType.getClassName() + " &bclass up to " + lv + "!");
+				p.getWorld().playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.4F, 1.0F);
+				RPGCore.playerManager.writePlayerData(this);
+				checkSideClassLevel = null;
+			}
+		}
 		int health = (int) p.getHealth();
 		int maxHealth = (int) p.getMaxHealth();
 		if (health < maxHealth && !p.isDead())
@@ -336,8 +378,18 @@ public class RPlayer
 		getCurrentClass().xp += xp;
 		Player p = getPlayer();
 		if (p != null)
-			titleQueue.add(new Title("", CakeLibrary.recodeColorCodes("&7+" + xp + "XP (" + getPercentageToNextLevel() + "%)"), 4, 0, 16));
+			titleQueue.add(new Title("", CakeLibrary.recodeColorCodes("&7+" + xp + " XP (" + getPercentageToNextLevel() + "%)"), 4, 0, 16));
 		checkLevel = true;
+	}
+
+	public void addSideclassXP(SideClassType sideClassType, int xp)
+	{
+		RPGSideClass sc = getSideClass(sideClassType);
+		sc.xp += xp;
+		Player p = getPlayer();
+		if (p != null)
+			titleQueue.add(new Title("", CakeLibrary.recodeColorCodes(sc.sideClassType.getColorCode() + "+" + xp + " " + sc.sideClassType.getClassName() + " XP"), 4, 0, 16));
+		checkSideClassLevel = sc;
 	}
 
 	public int getPercentageToNextLevel()
@@ -462,6 +514,8 @@ public class RPlayer
 		{
 			if (b.buffName.equalsIgnoreCase("Enlightenment"))
 				multiplier += 0.05D + (b.buffLevel / 50.0D);
+			if (b.buffName.equalsIgnoreCase("Warcry"))
+				multiplier += 0.1D + (b.buffLevel * 2.0D / 100.0D);
 		}
 		return (int) ((equipment + additions) * multiplier);
 	}

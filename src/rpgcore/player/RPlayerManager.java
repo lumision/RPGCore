@@ -13,6 +13,8 @@ import rpgcore.classes.RPGClass;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
+import rpgcore.sideclasses.RPGSideClass;
+import rpgcore.sideclasses.RPGSideClass.SideClassType;
 
 public class RPlayerManager 
 {
@@ -42,10 +44,10 @@ public class RPlayerManager
 		return rp;
 	}
 
-	public RPlayer addRPlayer(UUID uuid, ArrayList<RPGClass> classes, ClassType currentClass, ArrayList<String> skills, 
-			ArrayList<Integer> skillLevels, int gold, Map<String, String> npcFlags, boolean tutorialCompleted)
+	public RPlayer addRPlayer(UUID uuid, ArrayList<RPGClass> classes, ArrayList<RPGSideClass> sideClasses, ClassType currentClass, ArrayList<String> skills, 
+			ArrayList<Integer> skillLevels, int gold, int tokens, Map<String, String> npcFlags, boolean tutorialCompleted)
 	{
-		RPlayer rp = new RPlayer(uuid, classes, currentClass, skills, skillLevels, gold);
+		RPlayer rp = new RPlayer(uuid, classes, sideClasses, currentClass, skills, skillLevels, gold, tokens);
 		rp.npcFlags = npcFlags;
 		rp.tutorialCompleted = tutorialCompleted;
 		players.add(rp);
@@ -102,11 +104,13 @@ public class RPlayerManager
 				UUID uuid = UUID.fromString(file.getName().substring(0, file.getName().length() - 4));
 				ClassType currentClass = ClassType.MAGE;
 				ArrayList<RPGClass> classes = new ArrayList<RPGClass>();
+				ArrayList<RPGSideClass> sideClasses = new ArrayList<RPGSideClass>();
 				ArrayList<String> skills = new ArrayList<String>();
 				ArrayList<Integer> skillLevels = new ArrayList<Integer>();
 				Map<String, String> npcFlags = new HashMap<String, String>();
 				boolean tutorialCompleted = false;
 				int gold = 0;
+				int tokens = 0;
 
 				ArrayList<String> lines = CakeLibrary.readFile(file);
 				String header = "";
@@ -127,6 +131,14 @@ public class RPlayerManager
 							try
 							{
 								gold = Integer.parseInt(s.split(": ")[1]);
+							} catch (Exception e) {}
+							continue;
+						}
+						if (s.startsWith("tokens: "))
+						{
+							try
+							{
+								tokens = Integer.parseInt(s.split(": ")[1]);
 							} catch (Exception e) {}
 							continue;
 						}
@@ -162,6 +174,22 @@ public class RPlayerManager
 						}
 						classes.add(new RPGClass(classType, xp, skillPoints));
 						continue;
+					} else if (header.equals("sideclasses"))
+					{
+						String[] split = s.split(", ");
+						if (split.length < 2)
+							continue;
+						SideClassType sideClassType = null;
+						int xp = 0;
+						try
+						{
+							sideClassType = SideClassType.valueOf(split[0]);
+							xp = Integer.parseInt(split[1]);
+						} catch (Exception e) {
+							continue;
+						}
+						sideClasses.add(new RPGSideClass(sideClassType, xp));
+						continue;
 					} else if (header.equals("skills"))
 					{
 						String[] split = s.split(", ");
@@ -184,7 +212,28 @@ public class RPlayerManager
 						npcFlags.put(split[0], split[1]);
 					}
 				}
-				addRPlayer(uuid, classes, currentClass, skills, skillLevels, gold, npcFlags, tutorialCompleted);
+				
+				for (ClassType classType: ClassType.values())
+				{
+					boolean contains = false;
+					for (RPGClass c: classes)
+						if (c.classType.equals(classType))
+							contains = true;
+					if (!contains)
+						classes.add(new RPGClass(classType, 0, 3));
+				}
+				
+				for (SideClassType sideClassType: SideClassType.values())
+				{
+					boolean contains = false;
+					for (RPGSideClass sideClass: sideClasses)
+						if (sideClass.sideClassType.equals(sideClassType))
+							contains = true;
+					if (!contains)
+						sideClasses.add(new RPGSideClass(sideClassType, 0));
+				}
+				
+				addRPlayer(uuid, classes, sideClasses, currentClass, skills, skillLevels, gold, tokens, npcFlags, tutorialCompleted);
 			} catch (Exception e) {
 				RPGCore.msgConsole("&4Error reading RPlayer file: " + file.getName());
 			}
@@ -204,6 +253,9 @@ public class RPlayerManager
 			lines.add("classes:");
 			for (RPGClass rc: rp.classes)
 				lines.add(" " + rc.classType.toString() + ", " + rc.xp + ", " + rc.skillPoints); 
+			lines.add("sideclasses:");
+			for (RPGSideClass rc: rp.sideClasses)
+				lines.add(" " + rc.sideClassType.toString() + ", " + rc.xp); 
 			lines.add("skills:");
 			for (int i = 0; i < rp.skills.size(); i++)
 				lines.add(" " + rp.skills.get(i) + ", " + rp.skillLevels.get(i));

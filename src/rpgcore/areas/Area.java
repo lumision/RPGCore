@@ -12,6 +12,9 @@ import rpgcore.songs.RPGSong;
 public class Area 
 {
 	public static ArrayList<Area> areas = new ArrayList<Area>();
+	
+	public boolean editable;
+	
 	public String name;
 	public int minX;
 	public int maxX;
@@ -28,21 +31,19 @@ public class Area
 		areas.add(this);
 	}
 	
+	public boolean isInArea(Location location)
+	{
+		return location.getX() >= minX && location.getX() <= maxX && location.getZ() >= minZ && location.getZ() <= maxZ;
+	}
+	
 	public static void tick()
 	{
 		for (Player p: Bukkit.getOnlinePlayers())
 		{
 			Location l = p.getLocation();
-			boolean cont = false;
 			for (Area a: areas)
 			{
-				if (l.getX() < a.minX)
-					continue;
-				if (l.getX() > a.maxX)
-					continue;
-				if (l.getZ() < a.minZ)
-					continue;
-				if (l.getZ() > a.maxZ)
+				if (!a.isInArea(l))
 					continue;
 				//Player is in Area 'a'
 				
@@ -50,6 +51,7 @@ public class Area
 				{
 					RPGSong r = RPGCore.songManager.getSong(a.bgm);
 				}
+				break;
 			}
 		}
 	}

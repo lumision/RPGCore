@@ -78,10 +78,10 @@ public class BonusStat
 
 	public static enum BonusStatCrystal
 	{
-		ALL_LINES_REROLL(CakeLibrary.editNameAndLore(new ItemStack(Material.END_CRYSTAL), "&a&nAlchemy Crystal", "&aRerolls all bonus stat lines.", "&b", "&7&oHold and click to use.")),
-		TIER_REROLL(CakeLibrary.editNameAndLore(new ItemStack(Material.END_CRYSTAL), "&e&nPassion Crystal", "&eIncreases the tier of a bonus", "&estat at a small chance.", "&eMax Tier: 5", "&b", "&7&oHold and click to use.")),
-		LINE_AMOUNT_REROLL(CakeLibrary.editNameAndLore(new ItemStack(Material.END_CRYSTAL), "&b&nWisdom Crystal", "&bAdds a random bonus stat line.", "&bMax Lines: 3", "&b", "&7&oHold and click to use.")),
-		STAT_ADDER(CakeLibrary.editNameAndLore(new ItemStack(Material.END_CRYSTAL), "&d&nSpirit Crystal", "&dAdds a bonus stat to an item.", "&b", "&7&oHold and click to use."));
+		ALL_LINES_REROLL(CakeLibrary.editNameAndLore(new ItemStack(Material.END_CRYSTAL), "&a&nGreen Crystal", "&aRerolls all bonus stat lines.", "&b", "&7&oHold and click to use.")),
+		TIER_REROLL(CakeLibrary.editNameAndLore(new ItemStack(Material.END_CRYSTAL), "&e&nYellow Crystal", "&eIncreases the tier of a bonus", "&estat at a small chance.", "&eMax Tier: 5", "&b", "&7&oHold and click to use.")),
+		LINE_AMOUNT_REROLL(CakeLibrary.editNameAndLore(new ItemStack(Material.END_CRYSTAL), "&b&nCyan Crystal", "&bAdds a random bonus stat line.", "&bMax Lines: 3", "&b", "&7&oHold and click to use.")),
+		STAT_ADDER(CakeLibrary.editNameAndLore(new ItemStack(Material.END_CRYSTAL), "&d&nPink Crystal", "&dAdds a bonus stat to an item.", "&b", "&7&oHold and click to use."));
 
 		private String itemName;
 		private ItemStack item;

@@ -84,7 +84,7 @@ public class RPGClass
 	public static void setXPTable()
 	{
 		xpTable.clear();
-		for (int i = 1; i < 100; i++)
+		for (int i = 1; i < 101; i++)
 			xpTable.add((int) (Math.pow((i - 1), 2) * 20));
 	}
 	
@@ -99,7 +99,6 @@ public class RPGClass
 	{
 		this.classType = classType;
 		this.xp = xp;
-		this.lastCheckedLevel = 1;
 		this.lastCheckedLevel = getLevel();
 	}
 	
@@ -125,7 +124,7 @@ public class RPGClass
 	
 	public static int getXPRequiredForLevel(int level)
 	{
-		if (level < 0 || level > 98)
+		if (level < 0 || level > 99)
 			return -1;
 		return xpTable.get(level);
 	}

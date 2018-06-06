@@ -33,7 +33,7 @@ import rpgcore.player.RPlayer;
 
 public class CustomNPC extends EntityPlayer 
 {
-	public static double visibleDistance = 64.0D;
+	public static double visibleDistance = 32.0D;
 	public static double outRangeDistance = 5.0D;
 	public static int globalID;
 	public String name;

@@ -18,6 +18,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import rpgcore.areas.Area;
 import rpgcore.classes.ClassInventory;
 import rpgcore.classes.RPGClass;
 import rpgcore.entities.bosses.Astrea;
@@ -38,6 +39,7 @@ import rpgcore.player.RPlayer;
 import rpgcore.player.RPlayerManager;
 import rpgcore.shop.Shop;
 import rpgcore.shop.ShopManager;
+import rpgcore.sideclasses.RPGSideClass;
 import rpgcore.skillinventory.SkillInventory;
 import rpgcore.songs.RPGSong;
 import rpgcore.songs.RSongManager;
@@ -59,6 +61,46 @@ public class RPGCore extends JavaPlugin
 	public static NPCManager npcManager;
 	public static long serverAliveTicks;
 
+	static final String[] helpGold = new String[] { 
+			"&6===[&e /gold Help &6]===", 
+	"&6/gold withdraw/w <amt>: &eWithdraws Gold into item form"};
+
+	static final String[] helpGoldAdmin = new String[] { 
+			"&6/gold add/a <amt> [player]: &eAdds Gold to a player",  
+	"&6/gold remove/r <amt> [player]: &eRemoves Gold from a player"};
+
+	static final String[] helpParty = new String[] { 
+			"&5===[&d /party Help &5]===",  
+			"&5/party info: &dGives info about the party you're in",
+			"&5/party join <host>: &dJoins a party if you were invited",
+			"&5/party leave: &dLeaves the party as a member",
+			"&5/party create: &dCreates a party with you as the host",
+			"&5/party invite <player>: &dInvites a player to your party (Host)",
+			"&5/party kick <player>: &dKicks a player from your party (Host)",
+			"&5/party sethost <player>: &dPasses host to a member (Host)",
+			"&5/party disband: &dDisbands your party (Host)",
+	"&dBegin a message with '\\' to chat in the party."};
+
+	static final String[] helpItem = new String[] { 
+			"&6===[&e /item Help &6]===",  
+			"&6/item lvrequirement <level>",
+			"&6/item magicdamage <damage>",
+			"&6/item brutedamage <damage>",
+			"&6/item attackspeed <multiplier>",
+			"&6/item critchance <percentage>",
+			"&6/item critdamage <percentage>",
+			"&6/item cooldowns <percentage>",
+			"&6/item dmgreduction <percentage>",
+	"&6/item unbreakable"};
+
+	static final String[] helpArea = new String[] { 
+			"&4===[&c /area Help &4]===",  
+			"&4/area pos1/pos2: &cSets the pos1 or pos2 of a creating area",
+			"&4/area create <name>: &cCreates an area",
+			"&4/area list: &cLists all areas",
+			"&4/area editable <areaName>: &cToggles the editability of an area",
+	"&4/area bgm <areaName> <bgmName>: &cSets the BGM of an area"};
+
 	public static void main(String[] args) {}
 
 	@Override
@@ -66,7 +108,9 @@ public class RPGCore extends JavaPlugin
 	{
 		RPGCore.instance = this;
 		pluginFolder.mkdirs();
+		readItemDatabase();
 		RPGClass.setXPTable();
+		RPGSideClass.setXPTable();
 		playerManager = new RPlayerManager(this);
 		songManager = new RSongManager(this);
 		partyManager = new RPartyManager(this);
@@ -75,7 +119,6 @@ public class RPGCore extends JavaPlugin
 		npcManager = new NPCManager(this);
 		events = new RPGEvents(this);
 		RPGEvents.stopped = false;
-		readItemDatabase();
 		ShopManager.readShopDatabase();
 		ConversationData.loadConversationData();
 
@@ -94,7 +137,7 @@ public class RPGCore extends JavaPlugin
 		for (CasterEntity ce: CasterEntity.entities)
 			ce.entity.remove();
 	}
-	
+
 	public static ItemStack getGoldItem(int amount)
 	{
 		ItemStack gold = new ItemStack(Material.GOLD_NUGGET);
@@ -223,17 +266,76 @@ public class RPGCore extends JavaPlugin
 				msg(p, "Reloaded RPGCore v" + getDescription().getVersion());
 				return true;
 			}
+			if (command.getName().equalsIgnoreCase("area"))
+			{
+				if (args.length == 0)
+				{
+					msgNoTag(p, helpArea);
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("pos1"))
+				{
+					rp.pos1 = p.getLocation();
+					msg(p, "Position 1 set.");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("pos2"))
+				{
+					rp.pos2 = p.getLocation();
+					msg(p, "Position 2 set.");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("create"))
+				{
+					if (args.length <  2)
+					{
+						msg(p, "Usage: /area create <areaName>");
+						return true;
+					}
+					new Area(args[1], (int) Math.min(rp.pos1.getX(), rp.pos2.getX()),
+							(int) Math.max(rp.pos1.getX(), rp.pos2.getX()),
+							(int) Math.min(rp.pos1.getZ(), rp.pos2.getZ()),
+							(int) Math.max(rp.pos1.getZ(), rp.pos2.getZ()));
+					msg(p, "Area \"" + args[1] + "\" created.");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("editable"))
+				{
+					if (args.length <  2)
+					{
+						msg(p, "Usage: /area editable <areaName>");
+						return true;
+					}
+					Area area = null;
+					for (Area check: Area.areas)
+						if (check.name.equalsIgnoreCase(args[1]))
+							area = check;
+					if (area == null)
+					{
+						msg(p, "Area \"" + args[1] + "\" does not exist.");
+						return true;
+					}
+					area.editable = !area.editable;
+					msg(p, "Area editability: " + area.editable);
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("list"))
+				{
+					msgNoTag(p, "&4===[ &cAreas &4]===");
+					for (Area area: Area.areas)
+						msgNoTag(p, "&4 - &c" + area.name + "");
+					return true;
+				}
+				msgNoTag(p, helpArea);
+				return true;
+			}
 			if (command.getName().equalsIgnoreCase("gold"))
 			{
 				if (args.length == 0)
 				{
-					msgNoTag(p, "&6===[&e /gold Help &6]===");
-					msgNoTag(p, "&6/gold withdraw/w <amt>: &eWithdraws Gold into item form");
+					msgNoTag(p, helpGold);
 					if (p.hasPermission("rpgcore.gold"))
-					{
-						msgNoTag(p, "&6/gold add/a <amt> [player]: &eAdds Gold to a player");
-						msgNoTag(p, "&6/gold remove/r <amt> [player]: &eRemoves Gold from a player");
-					}
+						msgNoTag(p, helpGoldAdmin);
 					return true;
 				}
 				if (args[0].equalsIgnoreCase("withdraw") || args[0].equalsIgnoreCase("w"))
@@ -327,13 +429,9 @@ public class RPGCore extends JavaPlugin
 					msg(p, "You've removed &6" + amount + " Gold &efrom &6" + target.getPlayerName() + "&e's account.");
 					return true;
 				}
-				msgNoTag(p, "&6===[&e /gold Help &6]===");
-				msgNoTag(p, "&6/gold withdraw/w <amt>: &eWithdraws gold into item form");
+				msgNoTag(p, helpGold);
 				if (p.hasPermission("rpgcore.gold"))
-				{
-					msgNoTag(p, "&6/gold add/a <amt> [player]: &eAdds gold to a player");
-					msgNoTag(p, "&6/gold remove/r <amt> [player]: &eRemoves gold from a player");
-				}
+					msgNoTag(p, helpGoldAdmin);
 				return true;
 			}
 			if (command.getName().equalsIgnoreCase("shop"))
@@ -502,20 +600,20 @@ public class RPGCore extends JavaPlugin
 				}
 				if (args.length < 1)
 				{
-					msg(p, "Usage: /crystal <spirit/wisdom/alchemy/passion>");
+					msg(p, "Usage: /crystal <green/yellow/cyan/pink>");
 					return true;
 				}
 				ItemStack crystal = null;
-				if (args[0].equalsIgnoreCase("alchemy"))
+				if (args[0].equalsIgnoreCase("green"))
 					crystal = BonusStatCrystal.ALL_LINES_REROLL.getItemStack();
-				else if (args[0].equalsIgnoreCase("passion"))
+				else if (args[0].equalsIgnoreCase("yellow"))
 					crystal = BonusStatCrystal.TIER_REROLL.getItemStack();
-				else if (args[0].equalsIgnoreCase("wisdom"))
+				else if (args[0].equalsIgnoreCase("cyan"))
 					crystal = BonusStatCrystal.LINE_AMOUNT_REROLL.getItemStack();
-				else if (args[0].equalsIgnoreCase("spirit"))
+				else if (args[0].equalsIgnoreCase("pink"))
 					crystal = BonusStatCrystal.STAT_ADDER.getItemStack();
 				else
-					msg(p, "Usage: /crystal <spirit/wisdom/alchemy/passion>");
+					msg(p, "Usage: /crystal <red/yellow/cyan/pink>");
 				if (crystal != null)
 				{
 					crystal.setAmount(64);
@@ -527,16 +625,7 @@ public class RPGCore extends JavaPlugin
 			{
 				if (args.length < 1)
 				{
-					msgNoTag(p, "&5===[&d /party Help &5]===");
-					msgNoTag(p, "&5/party info: &dGives info about the party you're in");
-					msgNoTag(p, "&5/party join <host>: &dJoins a party if you were invited");
-					msgNoTag(p, "&5/party leave: &dLeaves the party as a member");
-					msgNoTag(p, "&5/party create: &dCreates a party with you as the host");
-					msgNoTag(p, "&5/party invite <player>: &dInvites a player to your party (Host)");
-					msgNoTag(p, "&5/party kick <player>: &dKicks a player from your party (Host)");
-					msgNoTag(p, "&5/party sethost <player>: &dPasses host to a member (Host)");
-					msgNoTag(p, "&5/party disband: &dDisbands your party (Host)");
-					msgNoTag(p, "&dBegin a message with '\\' to chat in the party.");
+					msgNoTag(p, helpParty);
 					return true;
 				}
 				if (args[0].equalsIgnoreCase("info"))
@@ -782,16 +871,7 @@ public class RPGCore extends JavaPlugin
 					party.disbandParty();
 					return true;
 				}
-				msgNoTag(p, "&5===[&d /party Help &5]===");
-				msgNoTag(p, "&5/party info: &dGives info about the party you're in");
-				msgNoTag(p, "&5/party join <host>: &dJoins a party if you were invited");
-				msgNoTag(p, "&5/party leave: &dLeaves the party as a member");
-				msgNoTag(p, "&5/party create: &dCreates a party with you as the host");
-				msgNoTag(p, "&5/party invite <player>: &dInvites a player to your party (*)");
-				msgNoTag(p, "&5/party kick <player>: &dKicks a player from your party (*)");
-				msgNoTag(p, "&5/party sethost <player>: &dPasses host to another member (*)");
-				msgNoTag(p, "&5/party disband: &dDisbands your party (*)");
-				msgNoTag(p, "&dBegin a message with '\\' to chat in the party.");
+				msgNoTag(p, helpParty);
 				return true;
 			}
 			if (command.getName().equalsIgnoreCase("stats"))
@@ -832,16 +912,7 @@ public class RPGCore extends JavaPlugin
 				}
 				if (args.length < 1)
 				{
-					msgNoTag(p, "&6===[&e /item Commands &6]===");
-					msgNoTag(p, "&6/item lvrequirement <level>");
-					msgNoTag(p, "&6/item magicdamage <damage>");
-					msgNoTag(p, "&6/item brutedamage <damage>");
-					msgNoTag(p, "&6/item attackspeed <multiplier>");
-					msgNoTag(p, "&6/item critchance <percentage>");
-					msgNoTag(p, "&6/item critdamage <percentage>");
-					msgNoTag(p, "&6/item cooldowns <percentage>");
-					msgNoTag(p, "&6/item dmgreduction <percentage>");
-					msgNoTag(p, "&6/item unbreakable");
+					msgNoTag(p, helpItem);
 					return true;
 				}
 				ItemStack is = p.getItemInHand();
@@ -1037,16 +1108,7 @@ public class RPGCore extends JavaPlugin
 					msg(p, "Unbreakable attribute toggled to: " + !u);
 					return true;
 				}
-				msgNoTag(p, "&6===[&e /item Commands &6]===");
-				msgNoTag(p, "&6/item lvrequirement <level>");
-				msgNoTag(p, "&6/item magicdamage <damage>");
-				msgNoTag(p, "&6/item brutedamage <damage>");
-				msgNoTag(p, "&6/item attackspeed <multiplier>");
-				msgNoTag(p, "&6/item critchance <percentage>");
-				msgNoTag(p, "&6/item critdamage <percentage>");
-				msgNoTag(p, "&6/item cooldowns <percentage>");
-				msgNoTag(p, "&6/item dmgreduction <percentage>");
-				msgNoTag(p, "&6/item unbreakable");
+				msgNoTag(p, helpItem);
 				return true;
 			}
 			if (command.getName().equalsIgnoreCase("mob"))
@@ -1145,7 +1207,7 @@ public class RPGCore extends JavaPlugin
 				}
 				if (args[0].equalsIgnoreCase("list"))
 				{
-					msgNoTag(p, "&6===[ Songs ]===");
+					msgNoTag(p, "&6===[ &eSongs &6]===");
 					for (RPGSong song: songManager.songs)
 						msgNoTag(p, "&e\"" + song.name + "\" &6- &e" + song.BPM + "BPM, " + song.tracks.size() + " tracks");
 					return true;
@@ -1304,9 +1366,21 @@ public class RPGCore extends JavaPlugin
 		return false;
 	}
 
+	public static void msgNoTag(CommandSender p, String[] msgs)
+	{
+		for (String msg: msgs)
+			p.sendMessage(CakeLibrary.recodeColorCodes(msg));
+	}
+
 	public static void msgNoTag(CommandSender p, String msg)
 	{
 		p.sendMessage(CakeLibrary.recodeColorCodes(msg));
+	}
+
+	public static void msg(CommandSender p, String[] msgs)
+	{
+		for (String msg: msgs)
+			p.sendMessage(CakeLibrary.recodeColorCodes("&6[&eRPGCore&6] &e" + msg));
 	}
 
 	public static void msg(CommandSender p, String msg)

@@ -59,7 +59,7 @@ public class PowerPierce extends RPGSkill
 	
 	public static double calculateDamage(int level)
 	{
-		return 0.5D + (level / 20.0D);
+		return 1.0D + (level / 20.0D);
 	}
 
 	@Override

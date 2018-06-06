@@ -253,9 +253,65 @@ public class NPCConversation
 		{
 			for (int i = 0; i < part.next.size(); i++)
 			{
+				ArrayList<String> lines1 = new ArrayList<String>();
 				ConversationPart n = part.next.get(i);
 				ItemStack decision = new ItemStack(Material.PAPER);
-				decision = CakeLibrary.renameItem(decision, "&6\"&e" + n.string + "&6\"&e");
+
+				String[] quotes1 = n.string.split("###");
+
+				String name1 = CakeLibrary.recodeColorCodes("&6\"&e" + quotes1[0] + "&6\"&e");
+				if (quotes1.length > 1)
+				{
+					String[] split1 = quotes1[0].split("##");
+					if (split1.length > 1)
+					{
+						name1 = CakeLibrary.recodeColorCodes("&6\"&e" + split1[0]);
+						for (int i2 = 1; i2 < split1.length; i2++)
+						{
+							String s = "&e" + split1[i2];
+							if (i2 == 0)
+								s = "&6\"" + s;
+							if (i2 == split1.length - 1)
+								s += "&6\"&e";
+							lines1.add(CakeLibrary.recodeColorCodes(s));
+						}
+					}
+					for (int index = 1; index < quotes1.length; index++)
+					{
+						lines1.add(CakeLibrary.recodeColorCodes("&e "));	
+						String quote = quotes1[index];
+						String[] split = quote.split("##");
+						for (int i2 = 0; i2 < split.length; i2++)
+						{
+							String s = "&e" + split[i2];
+							if (i2 == 0)
+								s = "&6\"" + s;
+							if (i2 == split.length - 1)
+								s += "&6\"&e";
+							lines1.add(CakeLibrary.recodeColorCodes(s));
+						}
+					}
+				} else
+				{
+					String[] split1 = quotes1[0].split("##");
+					if (split1.length > 1)
+					{
+						name1 = CakeLibrary.recodeColorCodes("&6\"&e" + split1[0]);
+						for (int i2 = 1; i2 < split1.length; i2++)
+						{
+							String s = "&e" + split1[i2];
+							if (i2 == 0)
+								s = "&6\"" + s;
+							if (i2 == split1.length - 1)
+								s += "&6\"&e";
+							lines1.add(CakeLibrary.recodeColorCodes(s));
+						}
+					}
+				}
+				
+				decision = CakeLibrary.renameItem(decision, name1);
+				if (lines1.size() > 0)
+					decision = CakeLibrary.setItemLore(decision, lines1);
 				conversationUI.setItem(getDecisionSlot(i), decision);
 			}
 		}

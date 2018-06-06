@@ -18,9 +18,9 @@ public class Tutorial
 	skillsExplain, skillsExplain1, conclusion, conclusion1;
 	public static Title titleWelcome = new Title("&b- Welcome -", "&bto CakeCraft!", 20, 80, 20);
 	public static Title titleClass = new Title("", "&bYou will now pick a class...", 20, 60, 20);
-	public static Title titleWeapon = new Title("", "&eYou have been gifted an appropriate weapon.", 20, 60, 20);
-	public static Title titleEquip = new Title("", "&a&nPlace that weapon in your &2&nSHIELD&a&n slot to equip it.", 20, 32767, 20);
-	public static Title titleEquipped = new Title("", "&aThe stats of that weapon have now been applied.", 20, 100, 20);
+	public static Title titleWeapon = new Title("", "&eYou have been gifted an appropriate &nweapon&e.", 20, 60, 20);
+	public static Title titleEquip = new Title("", "&a&nPlace it in your &2&nSHIELD&a&n slot to equip it.", 20, 32767, 20);
+	public static Title titleEquipped = new Title("", "&aThe stats of that &nweapon&a have now been applied.", 20, 100, 20);
 	public static Title titleEquipment = new Title("", "&aOnly items in these equipment slots:", 20, 40, 20);
 	public static Title titleEquipment11 = new Title("&d&nShield&d", "", 10, 20, 10);
 	public static Title titleEquipment12 = new Title("&d&nHelmet&d", "", 10, 20, 10);

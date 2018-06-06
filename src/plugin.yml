@@ -1,14 +1,19 @@
 main: rpgcore.main.RPGCore
 version: 3.5
 name: RPGCore
+depend: [WorldEdit]
 
 commands:
+  area:
+    description: Core area management command
   sound:
     description: Plays a sound
   skills:
     description: Opens up your skillbook
+    aliases: [s]
   class:
     description: Opens up your class manager
+    aliases: [c]
   bgm:
     description: Plays a song
   item:

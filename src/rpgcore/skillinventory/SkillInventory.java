@@ -21,14 +21,18 @@ import rpgcore.skills.Enlightenment;
 import rpgcore.skills.Heal;
 import rpgcore.skills.Heartspan;
 import rpgcore.skills.HolyBolt;
+import rpgcore.skills.IceBolt;
 import rpgcore.skills.IronBody;
 import rpgcore.skills.Kunai;
+import rpgcore.skills.Leap;
 import rpgcore.skills.LightFeet;
+import rpgcore.skills.PoisonBolt;
 import rpgcore.skills.PowerPierce;
 import rpgcore.skills.Propulsion;
 import rpgcore.skills.RPGSkill;
 import rpgcore.skills.ShadowStab;
 import rpgcore.skills.TripleKunai;
+import rpgcore.skills.Warcry;
 import rpgcore.skills.Wisdom;
 
 public class SkillInventory 
@@ -426,7 +430,9 @@ case DUALIST:
 	public static void setWarriorSkills(Inventory inv, RPlayer player, int row)
 	{
 		inv.setItem(0 + (row * 9), PowerPierce.getSkillItem(player));
-		inv.setItem(1 + (row * 9), IronBody.getSkillItem(player));
+		inv.setItem(1 + (row * 9), Leap.getSkillItem(player));
+		inv.setItem(8 + (row * 9), IronBody.getSkillItem(player));
+		inv.setItem(7 + (row * 9), Warcry.getSkillItem(player));
 	}
 	public static void setThiefSkills(Inventory inv, RPlayer player, int row)
 	{
@@ -434,8 +440,8 @@ case DUALIST:
 		inv.setItem(1 + (row * 9), Kunai.getSkillItem(player));
 		inv.setItem(2 + (row * 9), Dash.getSkillItem(player));
 		//inv.setItem(3 + (row * 9), Evade.getSkillItem(player));
-		inv.setItem(3 + (row * 9), BladeMastery.getSkillItem(player));
-		inv.setItem(4 + (row * 9), LightFeet.getSkillItem(player));
+		inv.setItem(8 + (row * 9), BladeMastery.getSkillItem(player));
+		inv.setItem(7 + (row * 9), LightFeet.getSkillItem(player));
 	}
 	public static void setPriestSkills(Inventory inv, RPlayer player, int row)
 	{
@@ -446,8 +452,10 @@ case DUALIST:
 	public static void setMageSkills(Inventory inv, RPlayer player, int row)
 	{
 		inv.setItem(0 + (row * 9), ArcaneBolt.getSkillItem(player));
-		inv.setItem(1 + (row * 9), Wisdom.getSkillItem(player));
-		inv.setItem(2 + (row * 9), Propulsion.getSkillItem(player));
+		inv.setItem(1 + (row * 9), Propulsion.getSkillItem(player));
+		inv.setItem(2 + (row * 9), IceBolt.getSkillItem(player));
+		inv.setItem(3 + (row * 9), PoisonBolt.getSkillItem(player));
+		inv.setItem(8 + (row * 9), Wisdom.getSkillItem(player));
 	}
 
 	public static void setPaladinSkills(Inventory inv, RPlayer player, int row)

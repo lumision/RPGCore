@@ -1,18 +1,24 @@
 package rpgcore.main;
 
 import java.io.File;
-import java.util.List;
+import java.util.ArrayList;
 import java.util.Random;
+import java.util.UUID;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.block.Block;
+import org.bukkit.entity.Chicken;
+import org.bukkit.entity.Cow;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
+import org.bukkit.entity.Pig;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Skeleton;
+import org.bukkit.entity.Slime;
 import org.bukkit.entity.Zombie;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -27,6 +33,7 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent.RegainReason;
 import org.bukkit.event.entity.EntitySpawnEvent;
+import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
@@ -36,7 +43,6 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.metadata.MetadataValue;
 import org.bukkit.util.Vector;
 
 import net.minecraft.server.v1_12_R1.EnumParticle;
@@ -45,7 +51,9 @@ import rpgcore.entities.mobs.MageZombie;
 import rpgcore.entities.mobs.ReinforcedSkeleton;
 import rpgcore.entities.mobs.ReinforcedZombie;
 import rpgcore.entities.mobs.WarriorZombie;
+import rpgcore.entities.mobs.WeakSlime;
 import rpgcore.item.BonusStat.BonusStatCrystal;
+import rpgcore.main.RPGEvents.EntityDamageHistory;
 import rpgcore.npc.ConversationData.ConversationPart;
 import rpgcore.npc.ConversationData.ConversationPartType;
 import rpgcore.npc.CustomNPC;
@@ -55,6 +63,8 @@ import rpgcore.player.RPlayerManager;
 import rpgcore.shop.Shop;
 import rpgcore.shop.ShopItem;
 import rpgcore.shop.ShopManager;
+import rpgcore.sideclasses.RPGSideClass;
+import rpgcore.sideclasses.RPGSideClass.SideClassType;
 import rpgcore.skillinventory.SkillInventory;
 import rpgcore.skills.Heartspan;
 import rpgcore.skills.RPGSkill;
@@ -64,10 +74,21 @@ public class RPGListener implements Listener
 	public RPGCore instance;
 	public RPlayerManager playerManager;
 	public Random dropsRand = new Random();
+	
+	ItemStack calcite, platinum, topaz, sapphire, ruby, etheryte, excaryte, luminyte;
 	public RPGListener(RPGCore instance)
 	{
 		this.instance = instance;
 		playerManager = RPGCore.playerManager;
+
+		calcite = RPGCore.getItemFromDatabase("Calcite").createItem();
+		platinum = RPGCore.getItemFromDatabase("Platinum").createItem();
+		topaz = RPGCore.getItemFromDatabase("Topaz").createItem();
+		sapphire = RPGCore.getItemFromDatabase("Sapphire").createItem();
+		ruby = RPGCore.getItemFromDatabase("Ruby").createItem();
+		etheryte = RPGCore.getItemFromDatabase("Etheryte").createItem();
+		excaryte = RPGCore.getItemFromDatabase("Excaryte").createItem();
+		luminyte = RPGCore.getItemFromDatabase("Luminyte").createItem();
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -107,6 +128,15 @@ public class RPGListener implements Listener
 			{
 				new ReinforcedSkeleton((Monster) e);
 				return;
+			}
+		}
+		if (e instanceof Pig || e instanceof Cow || e instanceof Chicken)
+		{
+			if (spawnDistance < 150.0D && rand.nextInt(5) == 0)
+			{
+				event.setCancelled(true);
+				Slime slime = (Slime) e.getWorld().spawnEntity(e.getLocation(), EntityType.SLIME);
+				new WeakSlime(slime);
 			}
 		}
 	}
@@ -173,20 +203,36 @@ public class RPGListener implements Listener
 
 		String cn = e.getCustomName();
 		if (cn != null)
+		{
 			if (e.getCustomName().equals(MageZombie.name))
 			{
 				if (dropsRand.nextInt(10) == 0)
-					e.getWorld().dropItem(e.getLocation(), RPGCore.getItemFromDatabase("ZombieStaff").createItem()).setVelocity(new Vector(0, 0.5F, 0));
+					e.getWorld().dropItem(e.getLocation(), RPGCore.getItemFromDatabase("ZombieMageStaff").createItem()).setVelocity(new Vector(0, 0.5F, 0));
 			}
+			if (e.getCustomName().equals(WarriorZombie.name))
+			{
+				if (dropsRand.nextInt(10) == 0)
+					e.getWorld().dropItem(e.getLocation(), RPGCore.getItemFromDatabase("ZombieWarriorSword").createItem()).setVelocity(new Vector(0, 0.5F, 0));
+			}
+		}			
 
-		if (e.hasMetadata("RPGCore.Killer"))
+		for (EntityDamageHistory history: RPGEvents.EntityDamageHistory.damageHistories)
 		{
-			List<MetadataValue> mlist = e.getMetadata("RPGCore.Killer");
-			String name = mlist.get(mlist.size() - 1).asString();
-			RPlayer rp = RPGCore.playerManager.getRPlayer(name);
-			if (rp == null)
-				return;
-			rp.addXP((int) e.getMaxHealth());
+			if (history.entityID == e.getEntityId())
+			{
+				EntityDamageHistory.remove.add(history);
+				ArrayList<UUID> uuids = new ArrayList<UUID>();
+				uuids.addAll(history.damageHistory.keySet());
+				for (UUID uuid: uuids)
+				{
+					int xp = (int) Math.min(history.damageHistory.get(uuid), e.getMaxHealth());
+					RPlayer rp = RPGCore.playerManager.getRPlayer(uuid);
+					if (rp != null)
+						if (rp.getPlayer() != null)
+							rp.addXP(xp);
+				}
+				break;
+			}
 		}
 	}
 
@@ -475,15 +521,61 @@ public class RPGListener implements Listener
 		if (rp == null)
 			return;
 		ItemStack is = p.getItemInHand();
-		if (CakeLibrary.isItemStackNull(is))
-			return;
-		String name = CakeLibrary.getItemName(is);
-		if (!name.contains("§"))
-			return;
-		name = CakeLibrary.removeColorCodes(name);
-		for (String skill: rp.skills)
-			if (skill.equalsIgnoreCase(name))
-				event.setCancelled(true);
+		if (!CakeLibrary.isItemStackNull(is))
+		{
+			String name = CakeLibrary.getItemName(is);
+			if (name.contains("§"))
+			{
+				name = CakeLibrary.removeColorCodes(name);
+				for (String skill: rp.skills)
+					if (skill.equalsIgnoreCase(name))
+					{
+						event.setCancelled(true);
+						return;
+					}
+			}
+		}
+		
+		Block b = event.getBlock();
+		if (b.getType().equals(Material.STONE))
+		{
+			RPGSideClass prospector = rp.getSideClass(SideClassType.PROSPECTOR);
+			
+			int xp = 0;
+			switch (b.getData())
+			{
+			case 0:
+				xp = 3;
+				break;
+			case 1:
+				xp = 5;
+				break;
+			case 3:
+				xp = 5;
+				break;
+			case 5:
+				xp = 5;
+				break;
+			}
+			
+			if (prospector.lastCheckedLevel >= 0 && RPGCore.rand.nextInt(20) == 0)
+			{
+				xp += 10;
+				b.getWorld().dropItem(b.getLocation(), calcite.clone()).setVelocity(new Vector(0, 0.5F, 0));
+			}
+			rp.addSideclassXP(SideClassType.PROSPECTOR, xp);
+		} else if (b.getType().equals(Material.COBBLESTONE))
+			rp.addSideclassXP(SideClassType.PROSPECTOR, 2);
+		 else if (b.getType().equals(Material.COAL_ORE))
+				rp.addSideclassXP(SideClassType.PROSPECTOR, 10);
+		 else if (b.getType().equals(Material.IRON_ORE))
+				rp.addSideclassXP(SideClassType.PROSPECTOR, 15);
+		 else if (b.getType().equals(Material.GOLD_ORE))
+				rp.addSideclassXP(SideClassType.PROSPECTOR, 25);
+		 else if (b.getType().equals(Material.DIAMOND_ORE))
+				rp.addSideclassXP(SideClassType.PROSPECTOR, 100);
+		 else if (b.getType().equals(Material.OBSIDIAN))
+				rp.addSideclassXP(SideClassType.PROSPECTOR, 25);
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -518,6 +610,15 @@ public class RPGListener implements Listener
 
 			event.setDamage(event.getDamage() - (event.getDamage() / 100D * rp.calculateDamageReduction()));
 		}
+	}
+
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void handleItemCraft(CraftItemEvent event)
+	{
+		Inventory inv = event.getInventory();
+		for (ItemStack item: inv.getContents())
+			if (CakeLibrary.hasColor(CakeLibrary.getItemName(item)))
+				event.setCancelled(true);
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)

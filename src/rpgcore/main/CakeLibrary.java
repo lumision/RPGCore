@@ -267,14 +267,14 @@ public class CakeLibrary
 	{
 		PacketPlayOutWorldParticles packet = new PacketPlayOutWorldParticles(particle, true, (float) location.getX(), (float) location.getY(), (float) location.getZ(), range, range, range, speed, particles, null );
 		((CraftPlayer) player).getHandle().playerConnection.sendPacket(packet);
- //		CakeAPI.spawnParticle(EnumParticle.FLAME, player.getLocation(), 128, player, 99999, 0);
+ //		CakeLibrary.spawnParticle(EnumParticle.FLAME, player.getLocation(), 128, player, 99999, 0);
 	}
 	
 	public static void spawnParticle(EnumParticle particle, Location location, float range, Player player, int particles, float speed, int... data)
 	{
 		PacketPlayOutWorldParticles packet = new PacketPlayOutWorldParticles(particle, true, (float) location.getX(), (float) location.getY(), (float) location.getZ(), range, range, range, speed, particles, data );
 		((CraftPlayer) player).getHandle().playerConnection.sendPacket(packet);
- //		CakeAPI.spawnParticle(EnumParticle.FLAME, player.getLocation(), 128, player, 99999, 0);
+ //		CakeLibrary.spawnParticle(EnumParticle.FLAME, player.getLocation(), 128, player, 99999, 0);
 	}
 
 	public static class FireworkEffectPlayer {
@@ -1355,6 +1355,7 @@ public class CakeLibrary
 		try
 		{
 			createFolderDirectory(file);
+			file.createNewFile();
 			BufferedWriter pWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8"));
 			for (int i = 0; i < lines.size(); i++)
 			{
@@ -1376,6 +1377,7 @@ public class CakeLibrary
 	{
 		try
 		{
+			/*
 			String[] sM = file.getPath().split("/");
 			if (sM.length == 0)
 				return;
@@ -1384,6 +1386,10 @@ public class CakeLibrary
 			File folder = new File(directory);
 			if (!folder.exists())
 				folder.mkdirs();
+				*/
+			File parent = file.getParentFile();
+			if (parent != null)
+				parent.mkdirs();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

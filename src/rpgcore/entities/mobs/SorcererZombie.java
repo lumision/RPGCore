@@ -45,7 +45,7 @@ public class SorcererZombie extends CasterEntity
 		if (castDelay > 0 || target == null)
 			return;
 		castArcaneBolt();
-		castDelay = 60;
+		castDelay = 40;
 	}
 
 	public void castArcaneBolt()
