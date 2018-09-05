@@ -45,7 +45,8 @@ public class CustomNPC extends EntityPlayer
 	public boolean removed;
 	public float targetYaw, targetPitch, lastUpdatedYaw, lastUpdatedPitch;
 	public ConversationData conversationData;
-	public static final float rotationStep = 25;
+	public static final float rotationStepYaw = 25;
+	public static final float rotationStepPitch = 10;
 	public ArrayList<UUID> visiblePlayers = new ArrayList<UUID>();
 	public ArrayList<UUID> inRangePlayers = new ArrayList<UUID>();
 	public CustomNPC(MinecraftServer srv, WorldServer world, GameProfile game, PlayerInteractManager interact, Location location)
@@ -92,40 +93,39 @@ public class CustomNPC extends EntityPlayer
 			tick20();
 			tick = 0;
 		}
-
-		while (yaw > 180 && targetYaw > 180)
+		
+		while (targetYaw > 180)
+			targetYaw = -180 + (targetYaw - 180);
+		while (targetYaw < -180)
+			targetYaw = 180 - (targetYaw * -1 - 180);
+		
+		float multiplierYaw = 0;
+		
+		if (targetYaw < 0 && yaw > 0)
+			multiplierYaw = ((180 - targetYaw * -1) + (180 - yaw) < yaw - targetYaw) ? 1 : -1;
+		else if (targetYaw > 0 && yaw < 0)
+			multiplierYaw = ((180 - targetYaw) + (180 - yaw * -1) < targetYaw - yaw) ? -1 : 1;
+		else
+			multiplierYaw = yaw < targetYaw ? 1 : -1;
+		
+		yaw += Math.min(rotationStepYaw, Math.abs(targetYaw - yaw)) * multiplierYaw;
+		
+		float multiplierPitch = pitch < targetPitch ? 1 : -1;
+		pitch += Math.min(rotationStepPitch, Math.abs(targetPitch - pitch)) * multiplierPitch;
+		
+		while (yaw > 180)
 		{
-			yaw -= 360;
-			targetYaw -= 360;
-		}
-
-		while (yaw < -180 && targetYaw < -180)
-		{
-			yaw += 360;
-			targetYaw += 360;
+			yaw = -180 + (yaw - 180);
+			if (Math.abs(targetYaw - yaw) < rotationStepYaw)
+				yaw = targetYaw;
 		}
 		
-		if (yaw < targetYaw)
-			if (targetYaw - yaw < rotationStep)
+		while (yaw < -180)
+		{
+			yaw = 180 - (yaw * -1 - 180);
+			if (Math.abs(targetYaw - yaw) < rotationStepYaw)
 				yaw = targetYaw;
-			else
-				yaw += rotationStep;
-		else if (yaw > targetYaw)
-			if (targetYaw - yaw > -rotationStep)
-				yaw = targetYaw;
-			else
-				yaw -= rotationStep;
-
-		if (pitch < targetPitch)
-			if (targetPitch - pitch < rotationStep)
-				pitch = targetPitch;
-			else
-				pitch += rotationStep;
-		else if (pitch > targetPitch)
-			if (targetPitch - pitch > -rotationStep)
-				pitch = targetPitch;
-			else
-				pitch -= rotationStep;
+		}
 
 		updateRotation();
 	}

@@ -13,7 +13,6 @@ import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
 import rpgcore.player.RPlayer;
 import rpgcore.skills.ArcaneBarrage;
-import rpgcore.skills.ArcaneBolt;
 import rpgcore.skills.Armageddon;
 import rpgcore.skills.BladeMastery;
 import rpgcore.skills.Dash;
@@ -65,30 +64,26 @@ public class SkillInventory
 	public static Inventory getSkillInventory(RPlayer player, int mode) //mode == 0: skillbook, 1: use skillPoints, 2: reclaim skillPoints
 	{
 		Inventory inv;
-		int size;
+		int size = 9 * (player.currentClass.getTier() + 2);
 		switch(player.currentClass)
 		{
 		//tier 1
 		case THIEF:
-			size = 9 * (player.currentClass.getTier() + 1);
 			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Thief"));
 			setThiefSkills(inv, player, 0);
 			setUI(inv, size / 9, player, mode);
 			return inv;
 		case PRIEST:
-			size = 9 * (player.currentClass.getTier() + 1);
 			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Priest"));
 			setPriestSkills(inv, player, 0);
 			setUI(inv, size / 9, player, mode);
 			return inv;
 		case WARRIOR:
-			size = 9 * (player.currentClass.getTier() + 1);
 			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Warrior"));
 			setWarriorSkills(inv, player, 0);
 			setUI(inv, size / 9, player, mode);
 			return inv;
 		case MAGE:
-			size = 9 * (player.currentClass.getTier() + 1);
 			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Mage"));
 			setMageSkills(inv, player, 0);
 			setUI(inv, size / 9, player, mode);
@@ -96,42 +91,36 @@ public class SkillInventory
 			
 		//tier 2
 		case SORCERER:
-			size = 9 * (player.currentClass.getTier() + 1);
 			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Sorcerer"));
 			setMageSkills(inv, player, 1);
 			setSorcererSkills(inv, player, 0);
 			setUI(inv, size / 9, player, mode);
 			return inv;
 		case SHAMAN:
-			size = 9 * (player.currentClass.getTier() + 1);
 			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Shaman"));
 			setMageSkills(inv, player, 1);
 			setShamanSkills(inv, player, 0);
 			setUI(inv, size / 9, player, mode);
 			return inv;
 		case KNIGHT:
-			size = 9 * (player.currentClass.getTier() + 1);
 			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Knight"));
 			setWarriorSkills(inv, player, 1);
 			setKnightSkills(inv, player, 0);
 			setUI(inv, size / 9, player, mode);
 			return inv;
 		case PALADIN:
-			size = 9 * (player.currentClass.getTier() + 1);
 			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Paladin"));
 			setWarriorSkills(inv, player, 1);
 			setPaladinSkills(inv, player, 0);
 			setUI(inv, size / 9, player, mode);
 			return inv;
 		case FRIAR:
-			size = 9 * (player.currentClass.getTier() + 1);
 			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Friar"));
 			setPriestSkills(inv, player, 1);
 			setFriarSkills(inv, player, 0);
 			setUI(inv, size / 9, player, mode);
 			return inv;
 		case ASSASSIN:
-			size = 9 * (player.currentClass.getTier() + 1);
 			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Assassin"));
 			setThiefSkills(inv, player, 1);
 			setAssassinSkills(inv, player, 0);
@@ -140,7 +129,6 @@ public class SkillInventory
 
 		//tier 3
 		case ODIN:
-			size = 9 * (player.currentClass.getTier() + 1);
 			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Odin"));
 			setWarriorSkills(inv, player, 2);
 			setPaladinSkills(inv, player, 1);
@@ -148,7 +136,6 @@ public class SkillInventory
 			setUI(inv, size / 9, player, mode);
 			return inv;
 		case HERO:
-			size = 9 * (player.currentClass.getTier() + 1);
 			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Hero"));
 			setWarriorSkills(inv, player, 2);
 			setPaladinSkills(inv, player, 1);
@@ -156,7 +143,6 @@ public class SkillInventory
 			setUI(inv, size / 9, player, mode);
 			return inv;
 		case ARCHMAGE:
-			size = 9 * (player.currentClass.getTier() + 1);
 			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Archmage"));
 			setMageSkills(inv, player, 2);
 			setSorcererSkills(inv, player, 1);
@@ -164,7 +150,6 @@ public class SkillInventory
 			setUI(inv, size / 9, player, mode);
 			return inv;
 		case THAUMATURGE:
-			size = 9 * (player.currentClass.getTier() + 1);
 			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Thaumaturge"));
 			setMageSkills(inv, player, 2);
 			setSorcererSkills(inv, player, 1);
@@ -172,7 +157,6 @@ public class SkillInventory
 			setUI(inv, size / 9, player, mode);
 			return inv;
 		case DUALIST:
-			size = 9 * (player.currentClass.getTier() + 1);
 			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Dualist"));
 			setThiefSkills(inv, player, 2);
 			setAssassinSkills(inv, player, 1);
@@ -180,7 +164,6 @@ public class SkillInventory
 			setUI(inv, size / 9, player, mode);
 			return inv;
 		case BISHOP:
-			size = 9 * (player.currentClass.getTier() + 1);
 			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Bishop"));
 			setPriestSkills(inv, player, 2);
 			setFriarSkills(inv, player, 1);
@@ -451,10 +434,9 @@ case DUALIST:
 	}
 	public static void setMageSkills(Inventory inv, RPlayer player, int row)
 	{
-		inv.setItem(0 + (row * 9), ArcaneBolt.getSkillItem(player));
-		inv.setItem(1 + (row * 9), Propulsion.getSkillItem(player));
-		inv.setItem(2 + (row * 9), IceBolt.getSkillItem(player));
-		inv.setItem(3 + (row * 9), PoisonBolt.getSkillItem(player));
+		inv.setItem(0 + (row * 9), IceBolt.getSkillItem(player));
+		inv.setItem(1 + (row * 9), PoisonBolt.getSkillItem(player));
+		inv.setItem(4 + (row * 9), Propulsion.getSkillItem(player));
 		inv.setItem(8 + (row * 9), Wisdom.getSkillItem(player));
 	}
 

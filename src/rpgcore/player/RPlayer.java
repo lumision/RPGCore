@@ -305,7 +305,7 @@ public class RPlayer
 				checkSideClassLevel.lastCheckedLevel = lv;
 				RPGCore.msg(p, "&bYou've leveled your &3" + checkSideClassLevel.sideClassType.getClassName() + " &bclass up to " + lv + "!");
 				p.getWorld().playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.4F, 1.0F);
-				RPGCore.playerManager.writePlayerData(this);
+				RPGCore.playerManager.writeData(this);
 				checkSideClassLevel = null;
 			}
 		}
@@ -426,7 +426,7 @@ public class RPlayer
 				RPGCore.msg(p, "&bUse &3/skills &bto spend your skill points!");
 			p.getWorld().playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.4F, 1.0F);
 		}
-		RPGCore.playerManager.writePlayerData(this);
+		RPGCore.playerManager.writeData(this);
 	}
 
 	public int getSkillLevel(String skill)

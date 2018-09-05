@@ -15,6 +15,7 @@ import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
@@ -26,7 +27,7 @@ import org.bukkit.util.Vector;
 
 import net.minecraft.server.v1_12_R1.EnumParticle;
 import rpgcore.areas.Area;
-import rpgcore.entities.mobs.CasterEntity;
+import rpgcore.entities.mobs.RPGMonster;
 import rpgcore.external.InstantFirework;
 import rpgcore.item.BonusStat.BonusStatCrystal;
 import rpgcore.item.RItem;
@@ -64,10 +65,10 @@ public class RPGEvents implements Runnable
 				remove.add(n);
 		}
 		RPGCore.npcManager.npcs.removeAll(remove);
-		for (CasterEntity ce: CasterEntity.entities)
+		for (RPGMonster ce: RPGMonster.entities)
 			ce.tick();
-		CasterEntity.entities.removeAll(CasterEntity.remove);
-		CasterEntity.remove.clear();
+		RPGMonster.entities.removeAll(RPGMonster.remove);
+		RPGMonster.remove.clear();
 		
 		ArmageddonE.globalTick();
 		DamageOverTime.globalTick();
@@ -204,7 +205,7 @@ public class RPGEvents implements Runnable
 		@Override
 		public void run()
 		{
-			for (CasterEntity ce: CasterEntity.entities)
+			for (RPGMonster ce: RPGMonster.entities)
 				ce.findTarget();
 			RPGCore.playerManager.playersTick10();
 		}
@@ -292,6 +293,24 @@ public class RPGEvents implements Runnable
 		public void run()
 		{
 			Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), command);
+		}
+	}
+
+	public static class Message implements Runnable
+	{
+		public CommandSender cs;
+		public String[] msgs;
+		public Message(CommandSender cs, String... msgs)
+		{
+			this.cs = cs;
+			this.msgs = msgs;
+		}
+
+		@Override
+		public void run()
+		{
+			for (String msg: msgs)
+				cs.sendMessage(CakeLibrary.recodeColorCodes(msg));
 		}
 	}
 

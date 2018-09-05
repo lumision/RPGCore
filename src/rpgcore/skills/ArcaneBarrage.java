@@ -51,7 +51,7 @@ public class ArcaneBarrage extends RPGSkill
 		int level = player.getSkillLevel(skillName);
 		boolean unlocked = level > 0;
 		level += unlocked ? 0 : 1;
-		return CakeLibrary.addLore(CakeLibrary.renameItem(unlocked ? new ItemStack(Material.FEATHER, 1) : SkillInventory.locked.clone(), 
+		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.FEATHER, 1), 
 				"&fA&7r&fc&7a&fn&7e &fB&7a&fr&7r&fa&7g&fe"),
 				"&7Skill Level: " + (unlocked ? level : 0),
 				"&7Damage/Projectile: " + (int) (calculateDamage(level) * 100) + "%",

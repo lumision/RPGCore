@@ -6,9 +6,12 @@ import java.util.Random;
 import java.util.UUID;
 
 import org.bukkit.Effect;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
+import org.bukkit.block.Chest;
+import org.bukkit.block.DoubleChest;
 import org.bukkit.entity.Chicken;
 import org.bukkit.entity.Cow;
 import org.bukkit.entity.Entity;
@@ -42,12 +45,14 @@ import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
 import net.minecraft.server.v1_12_R1.EnumParticle;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.entities.mobs.MageZombie;
+import rpgcore.entities.mobs.RPGMonster;
 import rpgcore.entities.mobs.ReinforcedSkeleton;
 import rpgcore.entities.mobs.ReinforcedZombie;
 import rpgcore.entities.mobs.WarriorZombie;
@@ -73,7 +78,7 @@ public class RPGListener implements Listener
 {
 	public RPGCore instance;
 	public RPlayerManager playerManager;
-	public Random dropsRand = new Random();
+	public static Random dropsRand = new Random();
 	
 	ItemStack calcite, platinum, topaz, sapphire, ruby, etheryte, excaryte, luminyte;
 	public RPGListener(RPGCore instance)
@@ -204,17 +209,17 @@ public class RPGListener implements Listener
 		String cn = e.getCustomName();
 		if (cn != null)
 		{
-			if (e.getCustomName().equals(MageZombie.name))
+			RPGMonster ce = RPGMonster.getRPGMob(e.getEntityId());
+			if (ce != null)
 			{
-				if (dropsRand.nextInt(10) == 0)
-					e.getWorld().dropItem(e.getLocation(), RPGCore.getItemFromDatabase("ZombieMageStaff").createItem()).setVelocity(new Vector(0, 0.5F, 0));
+				ItemStack[] drops = ce.getDrops();
+				if (drops != null && drops.length > 0)
+				{
+					for (ItemStack is: drops)
+						e.getWorld().dropItem(e.getLocation(), is).setVelocity(new Vector(0, 0.5F, 0));
+				}
 			}
-			if (e.getCustomName().equals(WarriorZombie.name))
-			{
-				if (dropsRand.nextInt(10) == 0)
-					e.getWorld().dropItem(e.getLocation(), RPGCore.getItemFromDatabase("ZombieWarriorSword").createItem()).setVelocity(new Vector(0, 0.5F, 0));
-			}
-		}			
+		}
 
 		for (EntityDamageHistory history: RPGEvents.EntityDamageHistory.damageHistories)
 		{
@@ -282,7 +287,43 @@ public class RPGListener implements Listener
 		RPlayer rp = RPGCore.playerManager.getRPlayer(p.getUniqueId());
 		if (rp == null)
 			return;
+		
 		Inventory inv = event.getInventory();
+		InventoryHolder holder = inv.getHolder();
+		if (holder instanceof Chest)
+		{
+			Location l = ((Chest) holder).getBlock().getLocation();
+			if (RPGCore.previewChestManager.getPreviewChest(l) != null)
+			{
+				if (p.hasPermission("rpgcore.previewchest"))
+					RPGCore.msg(p, "Bypassed preview chest with permissions.");
+				else
+					event.setCancelled(true);
+				return;
+			}
+		} else if (holder instanceof DoubleChest)
+		{
+			Location l = ((Chest) ((DoubleChest) holder).getLeftSide()).getLocation();
+			if (RPGCore.previewChestManager.getPreviewChest(l) != null)
+			{
+				if (p.hasPermission("rpgcore.previewchest"))
+					RPGCore.msg(p, "Bypassed preview chest with permissions.");
+				else
+					event.setCancelled(true);
+				return;
+			}
+			
+			l = ((Chest) ((DoubleChest) holder).getRightSide()).getLocation();
+			if (RPGCore.previewChestManager.getPreviewChest(l) != null)
+			{
+				if (p.hasPermission("rpgcore.previewchest"))
+					RPGCore.msg(p, "Bypassed preview chest with permissions.");
+				else
+					event.setCancelled(true);
+				return;
+			}
+		}
+		
 		String name = inv.getName();
 		if (!CakeLibrary.hasColor(name))
 			return;
@@ -381,7 +422,7 @@ public class RPGListener implements Listener
 				if (itemName.toLowerCase().contains(ct.toString().toLowerCase()))
 					change = ct;
 			rp.currentClass = change;
-			RPGCore.playerManager.writePlayerData(rp);
+			RPGCore.playerManager.writeData(rp);
 			p.getWorld().playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.2F, 1.0F);
 			if (inv.getSize() == 27)
 				p.openInventory(SkillInventory.getSkillInventory(rp, 0));
@@ -434,7 +475,7 @@ public class RPGListener implements Listener
 				int level = rp.getSkillLevel(itemName);
 				if (level >= 10)
 				{
-					RPGCore.msg(p, "Level 10 is the maximum level for any skill.");
+					RPGCore.msg(p, "Level 10 is the maximum level.");
 					return;
 				}
 				if (rp.getCurrentClass().skillPoints < 1)
@@ -459,7 +500,7 @@ public class RPGListener implements Listener
 				} else
 					SkillInventory.updatePlayerInventorySkills(rp);
 				SkillInventory.updateSkillInventory(event.getInventory(), rp);
-				RPGCore.playerManager.writePlayerData(rp);
+				RPGCore.playerManager.writeData(rp);
 				return;
 			}
 			if (mode.getDurability() == (short) 14) //Reclaim skill points
@@ -475,11 +516,15 @@ public class RPGListener implements Listener
 				rp.getCurrentClass().skillPoints++;
 				SkillInventory.updateSkillInventory(event.getInventory(), rp);
 				SkillInventory.updatePlayerInventorySkills(rp);
-				RPGCore.playerManager.writePlayerData(rp);
+				RPGCore.playerManager.writeData(rp);
 				return;
 			}
-			if (is.getTypeId() == 383)
+			int level = rp.getSkillLevel(itemName);
+			if (level < 1)
+			{
+				RPGCore.msg(p, "That skill is not unlocked.");
 				return;
+			}
 			for (String line: CakeLibrary.getItemLore(is))
 				if (CakeLibrary.removeColorCodes(line).startsWith("Passive Skill:"))
 				{
@@ -674,7 +719,7 @@ public class RPGListener implements Listener
 				name = CakeLibrary.removeColorCodes(name);
 				if (name.startsWith("Gold ("))
 				{
-					int gold = Integer.parseInt(name.substring(6, name.length() - 1)) * is.getAmount();
+					int gold = Integer.parseInt(name.substring(6, name.length() - 1).replaceAll(",", "")) * is.getAmount();
 					rp.addGold(gold);
 					p.setItemInHand(null);
 					RPGCore.msg(p, "&e" + gold + " Gold &6has been added to your bank");

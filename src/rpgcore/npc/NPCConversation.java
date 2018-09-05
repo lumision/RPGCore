@@ -119,7 +119,7 @@ public class NPCConversation
 				part = null;
 			else
 				part = part.next.get(0);
-			RPGCore.playerManager.writePlayerData(player);
+			RPGCore.playerManager.writeData(player);
 			return true;
 		} else if (part.string.toLowerCase().startsWith("@delflag: "))
 		{
@@ -129,7 +129,7 @@ public class NPCConversation
 				part = null;
 			else
 				part = part.next.get(0);
-			RPGCore.playerManager.writePlayerData(player);
+			RPGCore.playerManager.writeData(player);
 			return true;
 		}
 		return true;

@@ -19,11 +19,13 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 import net.minecraft.server.v1_12_R1.EnumParticle;
-import rpgcore.entities.mobs.CasterEntity;
+import rpgcore.entities.mobs.RPGMonster;
 import rpgcore.main.CakeLibrary;
+import rpgcore.main.RPGCore;
 import rpgcore.main.RPGEvents;
+import rpgcore.main.RPGListener;
 
-public class UndeadEmperor extends CasterEntity
+public class UndeadEmperor extends RPGMonster
 {
 	public static double maxHealth = 40000.0D;
 	public static String name = CakeLibrary.recodeColorCodes("&e&lUndead Emperor&7 Lv. 31");
@@ -122,5 +124,10 @@ public class UndeadEmperor extends CasterEntity
 			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.1F, 1.25F), multiplier / 2);
 			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, 3, entity, 20), multiplier / 2);
 		}
+	}
+	
+	public ItemStack[] getDrops()
+	{
+		return null;
 	}
 }

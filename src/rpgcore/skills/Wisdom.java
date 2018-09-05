@@ -14,7 +14,7 @@ public class Wisdom
 		int level = player.getSkillLevel(skillName);
 		boolean unlocked = level > 0;
 		level += unlocked ? 0 : 1;
-		return CakeLibrary.addLore(CakeLibrary.renameItem(unlocked ? new ItemStack(6, 1, (short) 5) : SkillInventory.locked.clone(), 
+		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(6, 1, (short) 5), 
 				"&eWisdom"),
 				"&7Skill Level: " + (unlocked ? level : 0),
 				"&7Passive Skill:",

@@ -44,7 +44,7 @@ public class Heal extends RPGSkill
 		int level = player.getSkillLevel(skillName);
 		boolean unlocked = level > 0;
 		level += unlocked ? 0 : 1;
-		return CakeLibrary.addLore(CakeLibrary.renameItem(unlocked ? new ItemStack(38, 1, (short) 6) : SkillInventory.locked.clone(), 
+		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(38, 1, (short) 6), 
 				"&cHeal"),
 				"&7Skill Level: " + (unlocked ? level : 0),
 				"&7Heal: " + getHealAmount(level) / 2.0D + " hearts",

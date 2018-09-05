@@ -7,6 +7,7 @@ import org.bukkit.Sound;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.inventory.EntityEquipment;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
@@ -14,8 +15,9 @@ import org.bukkit.util.Vector;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
 import rpgcore.main.RPGEvents;
+import rpgcore.main.RPGListener;
 
-public class MageZombie extends CasterEntity
+public class MageZombie extends RPGMonster
 {
 	public static double maxHealth = 90.0D;
 	public static String name = "§cMage Zombie §7Lv. 9";
@@ -66,5 +68,14 @@ public class MageZombie extends CasterEntity
 			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.1F, 1.25F), multiplier);
 			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, 4, entity, 20), multiplier);
 		}
+	}
+	
+	public ItemStack[] getDrops()
+	{
+		if (RPGListener.dropsRand.nextInt(10) == 0)
+			return new ItemStack[] { 
+					RPGCore.getItemFromDatabase("ZombieMageStaff").createItem() 
+					};
+		return null;
 	}
 }

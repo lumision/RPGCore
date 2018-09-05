@@ -6,14 +6,19 @@ import java.util.Random;
 import java.util.Timer;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.block.Block;
+import org.bukkit.block.Chest;
+import org.bukkit.block.DoubleChest;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Skeleton;
 import org.bukkit.entity.Zombie;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -23,8 +28,8 @@ import rpgcore.classes.ClassInventory;
 import rpgcore.classes.RPGClass;
 import rpgcore.entities.bosses.Astrea;
 import rpgcore.entities.bosses.UndeadEmperor;
-import rpgcore.entities.mobs.CasterEntity;
 import rpgcore.entities.mobs.MageZombie;
+import rpgcore.entities.mobs.RPGMonster;
 import rpgcore.entities.mobs.ReinforcedSkeleton;
 import rpgcore.entities.mobs.ReinforcedZombie;
 import rpgcore.entities.mobs.WarriorZombie;
@@ -37,6 +42,7 @@ import rpgcore.party.Party;
 import rpgcore.party.RPartyManager;
 import rpgcore.player.RPlayer;
 import rpgcore.player.RPlayerManager;
+import rpgcore.previewchests.PreviewChestManager;
 import rpgcore.shop.Shop;
 import rpgcore.shop.ShopManager;
 import rpgcore.sideclasses.RPGSideClass;
@@ -55,6 +61,7 @@ public class RPGCore extends JavaPlugin
 	public static RPlayerManager playerManager;
 	public static RSongManager songManager;
 	public static RPartyManager partyManager;
+	public static PreviewChestManager previewChestManager;
 	public static RPGCore instance;
 	public static Random rand = new Random();
 	public static Timer timer = new Timer();
@@ -82,7 +89,8 @@ public class RPGCore extends JavaPlugin
 	"&dBegin a message with '\\' to chat in the party."};
 
 	static final String[] helpItem = new String[] { 
-			"&6===[&e /item Help &6]===",  
+			"&6===[&e /item Help &6]===",
+			"&6/item tier <tier>",
 			"&6/item lvrequirement <level>",
 			"&6/item magicdamage <damage>",
 			"&6/item brutedamage <damage>",
@@ -114,6 +122,7 @@ public class RPGCore extends JavaPlugin
 		playerManager = new RPlayerManager(this);
 		songManager = new RSongManager(this);
 		partyManager = new RPartyManager(this);
+		previewChestManager = new PreviewChestManager(this);
 		listener = new RPGListener(this);
 		getServer().getPluginManager().registerEvents(listener, this);
 		npcManager = new NPCManager(this);
@@ -126,6 +135,7 @@ public class RPGCore extends JavaPlugin
 		RPGEvents.scheduleRunnable(new RPGEvents.ConsoleCommand("gamerule mobGriefing false"), 1);
 		RPGEvents.scheduleRunnable(new RPGEvents.ConsoleCommand("gamerule doFireTick false"), 1);
 		RPGEvents.scheduleRunnable(new RPGEvents.ConsoleCommand("gamerule keepInventory true"), 1);
+		RPGEvents.scheduleRunnable(new RPGEvents.Message(Bukkit.getConsoleSender(), "&cCakeCraft has finished launching."), 5);
 	}
 
 	@Override
@@ -133,15 +143,16 @@ public class RPGCore extends JavaPlugin
 	{
 		RPGEvents.stopped = true;
 		npcManager.onDisable();
-		playerManager.writePlayerData();
-		for (CasterEntity ce: CasterEntity.entities)
+		playerManager.writeData();
+		previewChestManager.writeData();
+		for (RPGMonster ce: RPGMonster.entities)
 			ce.entity.remove();
 	}
 
 	public static ItemStack getGoldItem(int amount)
 	{
 		ItemStack gold = new ItemStack(Material.GOLD_NUGGET);
-		return CakeLibrary.renameItem(gold, "&6Gold &e(" + amount + ")");
+		return CakeLibrary.renameItem(gold, "&6Gold &e(" + CakeLibrary.seperateNumberWithCommas(amount, false) + ")");
 	}
 
 	public void readItemFolder(File folder)
@@ -162,6 +173,8 @@ public class RPGCore extends JavaPlugin
 				int id = 0;
 				int amount = 0;
 				short durability = 0;
+				boolean unbreakable = false;
+				int tier = 0;
 
 				String name = null;
 				ArrayList<String> lore = new ArrayList<String>();
@@ -194,6 +207,10 @@ public class RPGCore extends JavaPlugin
 							amount = Integer.valueOf(split[1]);
 						if (line.startsWith("durability: "))
 							durability = Short.valueOf(split[1]);
+						if (line.startsWith("unbreakable: "))
+							unbreakable = Boolean.valueOf(split[1]);
+						if (line.startsWith("tier: "))
+							tier = Integer.valueOf(split[1]);
 
 						if (line.startsWith("name: "))
 							name = split[1];
@@ -207,12 +224,15 @@ public class RPGCore extends JavaPlugin
 					im.setDisplayName(name);
 				if (lore.size() > 0)
 					im.setLore(lore);
+				if (unbreakable)
+					im.spigot().setUnbreakable(unbreakable);
 				item.setItemMeta(im);
 
 				for (int i = 0; i < enchs.size(); i++)
 					item.addUnsafeEnchantment(enchs.get(i), levels.get(i));
 
 				RItem ri = new RItem(item, file.getName().substring(0, file.getName().length() - 4));
+				ri.setTier(tier);
 				itemDatabase.add(ri);
 
 			} catch (Exception e) {
@@ -457,6 +477,59 @@ public class RPGCore extends JavaPlugin
 					return true;
 				}
 				p.openInventory(shop.getShopInventory());
+				return true;
+			}
+			if (command.getName().equalsIgnoreCase("pc"))
+			{
+				if (!p.hasPermission("rpgcore.previewchest"))
+				{
+					msg(p, "You do not have permissions to do this.");
+					return true;
+				}
+				Block b = p.getTargetBlock(CakeLibrary.getPassableBlocks(), 6);
+				Location l = b.getLocation();
+				if (!(b.getState() instanceof Chest))
+				{
+					msg(p, "The target block is not a chest (" + b.getType() + ")");
+					return true;
+				}
+
+				Chest chest = (Chest) b.getState();
+				InventoryHolder ih = chest.getInventory().getHolder();
+
+				if (ih instanceof DoubleChest)
+				{
+					DoubleChest dchest = (DoubleChest) ih;
+					Location left = ((Chest) dchest.getLeftSide()).getBlock().getLocation();
+					Location right = ((Chest) dchest.getRightSide()).getBlock().getLocation();
+					Location getLeft = previewChestManager.getPreviewChest(left);
+					Location getRight = previewChestManager.getPreviewChest(right);
+					if (getLeft == null && getRight == null)
+					{
+						previewChestManager.previewChests.add(left);
+						msg(p, "Preview chest added.");
+					} else
+					{
+						if (getLeft != null)
+							previewChestManager.previewChests.remove(getLeft);
+						if (getRight != null)
+							previewChestManager.previewChests.remove(getRight);
+						msg(p, "Preview chest removed.");
+					}
+				} else
+				{
+					Location get = previewChestManager.getPreviewChest(l);
+					if (get == null)
+					{
+						previewChestManager.previewChests.add(l);
+						msg(p, "Preview chest added.");
+					} else 
+					{
+						previewChestManager.previewChests.remove(get);
+						msg(p, "Preview chest removed.");
+					}
+					previewChestManager.writeData();
+				}
 				return true;
 			}
 			if (command.getName().equalsIgnoreCase("si"))
@@ -920,6 +993,36 @@ public class RPGCore extends JavaPlugin
 				if (CakeLibrary.isItemStackNull(is))
 				{
 					msg(p, "Hold the item you want to edit.");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("tier"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /item tier <tier>");
+						return true;
+					}
+					int tier = -1;
+					try
+					{
+						tier = Integer.parseInt(args[1]);
+					} catch (Exception e) {
+						msg(p, "Enter a number.");
+						return true;
+					}
+					if (tier < 0)
+					{
+						msg(p, "The minimum tier is 0.");
+						return true;
+					}
+					if (tier > RItem.tiers.length)
+					{
+						msg(p, "The maximum tier is " + RItem.tiers.length);
+						return true;
+					}
+					ri.setTier(tier);
+					p.setItemInHand(ri.createItem());
+					msg(p, "Tier attribute edited.");
 					return true;
 				}
 				if (args[0].equalsIgnoreCase("lvrequirement"))

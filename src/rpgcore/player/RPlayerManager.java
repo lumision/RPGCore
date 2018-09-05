@@ -25,7 +25,7 @@ public class RPlayerManager
 	{
 		this.instance = instance;
 		playersFolder.mkdirs();
-		readPlayerData();
+		readData();
 		for (Player p: Bukkit.getOnlinePlayers())
 		{
 			RPlayer rp = getRPlayer(p.getUniqueId());
@@ -40,7 +40,7 @@ public class RPlayerManager
 	{
 		RPlayer rp = new RPlayer(uuid);
 		players.add(rp);
-		writePlayerData(rp);
+		writeData(rp);
 		return rp;
 	}
 
@@ -94,7 +94,7 @@ public class RPlayerManager
 		return players.size();
 	}
 
-	public void readPlayerData()
+	public void readData()
 	{
 		players.clear();
 		for (File file: playersFolder.listFiles())
@@ -240,7 +240,7 @@ public class RPlayerManager
 		}
 	}
 
-	public void writePlayerData(RPlayer rp)
+	public void writeData(RPlayer rp)
 	{
 		File file = new File("plugins/RPGCore/players/" + rp.getUniqueID() + ".yml");
 		try
@@ -273,9 +273,9 @@ public class RPlayerManager
 		}
 	}
 
-	public void writePlayerData()
+	public void writeData()
 	{
 		for (RPlayer rp: players)
-			writePlayerData(rp);
+			writeData(rp);
 	}
 }

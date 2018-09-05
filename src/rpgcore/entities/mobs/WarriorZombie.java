@@ -8,6 +8,7 @@ import org.bukkit.Sound;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.inventory.EntityEquipment;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
@@ -15,8 +16,9 @@ import org.bukkit.util.Vector;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
 import rpgcore.main.RPGEvents;
+import rpgcore.main.RPGListener;
 
-public class WarriorZombie extends CasterEntity
+public class WarriorZombie extends RPGMonster
 {
 	public static double maxHealth = 140.0D;
 	public static String name = "§cWarrior Zombie §7Lv. 10";
@@ -66,5 +68,14 @@ public class WarriorZombie extends CasterEntity
 			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, 20), multiplier);
 			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, 4, entity, 20), multiplier);
 		}
+	}
+	
+	public ItemStack[] getDrops()
+	{
+		if (RPGListener.dropsRand.nextInt(10) == 0)
+			return new ItemStack[] { 
+					RPGCore.getItemFromDatabase("ZombieWarriorSword").createItem() 
+					};
+		return null;
 	}
 }

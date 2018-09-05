@@ -57,7 +57,7 @@ public class ConversationData
 
 		public String getChatLine(String npcName)
 		{
-			return CakeLibrary.recodeColorCodes("&f<" + npcName + "&f> " + getRandomLine());
+			return CakeLibrary.recodeColorCodes("&f" + npcName + "&f: " + getRandomLine());
 		}
 	}
 

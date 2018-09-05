@@ -16,7 +16,7 @@ public class LightFeet
 		boolean unlocked = level > 0;
 		level += unlocked ? 0 : 1;
 		int jump = getJumpLevel(level);
-		return CakeLibrary.addLore(CakeLibrary.renameItem(unlocked ? new ItemStack(Material.FEATHER) : SkillInventory.locked.clone(), 
+		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.FEATHER), 
 				"&eLight Feet"),
 				"&7Skill Level: " + (unlocked ? level : 0),
 				"&7Passive Skill:",
