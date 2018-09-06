@@ -10,21 +10,22 @@ import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
 import rpgcore.main.RPGEvents;
 import rpgcore.player.RPlayer;
-import rpgcore.skillinventory.SkillInventory;
 
 public class Heal extends RPGSkill
 {
 	public final static String skillName = "Heal";
+	public final static int skillTier = 1;
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.PRIEST;
+	public final static float healAmount = 2;
 	public Heal(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, 0, classType);
+		super(skillName, caster, castDelay, 0, classType, skillTier);
 	}
 	
 	public Heal()
 	{
-		super(skillName, null, castDelay, 0, classType);
+		super(skillName, null, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -32,52 +33,26 @@ public class Heal extends RPGSkill
 	{
 		new Heal(rp);
 	}
-	
-	@Override 
-	public ItemStack instanceGetSkillItem(RPlayer player)
-	{
-		return getSkillItem(player);
-	}
 
-	public static ItemStack getSkillItem(RPlayer player)
+	@Override
+	public ItemStack getSkillItem()
 	{
-		int level = player.getSkillLevel(skillName);
-		boolean unlocked = level > 0;
-		level += unlocked ? 0 : 1;
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(38, 1, (short) 6), 
 				"&cHeal"),
-				"&7Skill Level: " + (unlocked ? level : 0),
-				"&7Heal: " + getHealAmount(level) / 2.0D + " hearts",
+				"&7Heal: " + (healAmount / 2.0F) + " heart",
 				"&7Cooldown: 3s",
 				"&f",
 				"&8&oHeals the user and all party",
 				"&8&omembers within 16 blocks.",
+				"&f",
+				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
 				"&7Class: " + classType.getClassName());
-	}
-
-	public static double getHealAmount(int level)
-	{
-		switch(level)
-		{
-		case 1: return 1.0D;
-		case 2: return 1.4D;
-		case 3: return 1.8D;
-		case 4: return 2.2D;
-		case 5: return 2.6D;
-		case 6: return 3.0D;
-		case 7: return 3.2D;
-		case 8: return 3.4D;
-		case 9: return 3.8D;
-		case 10: return 4.0D;
-		default: return 1.0D;
-		}
 	}
 
 	@Override
 	public void activate()
 	{
 		super.applyCooldown(3);
-		double healAmount = getHealAmount(caster.getSkillLevel(skillName));
 		if (caster.partyID == -1)
 			applyEffect(caster, player, healAmount);
 		else

@@ -3,37 +3,35 @@ package rpgcore.skills;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
+import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
-import rpgcore.player.RPlayer;
-import rpgcore.skillinventory.SkillInventory;
 
-public class LightFeet
+public class LightFeet extends RPGSkill
 {
 	public final static String skillName = "Light Feet";
-	public static ItemStack getSkillItem(RPlayer player)
+	public final static int skillTier = 1;
+	public final static int castDelay = 0;
+	public final static ClassType classType = ClassType.ASSASSIN;
+	public final static int swiftness = 1;
+	public final static int jump = 0;
+	
+	public LightFeet()
 	{
-		int level = player.getSkillLevel(skillName);
-		boolean unlocked = level > 0;
-		level += unlocked ? 0 : 1;
-		int jump = getJumpLevel(level);
+		super(skillName, null, castDelay, 0, classType, skillTier);
+	}
+
+	@Override
+	public ItemStack getSkillItem()
+	{
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.FEATHER), 
 				"&eLight Feet"),
-				"&7Skill Level: " + (unlocked ? level : 0),
 				"&7Passive Skill:",
-				"&7 * +Swiftness " + CakeLibrary.convertToRoman(getSwiftnessLevel(level) + 1),
-				jump != -1 ? "&7 * +Jump " + CakeLibrary.convertToRoman(getJumpLevel(level) + 1) : "",
+				"&7 * +Swiftness " + CakeLibrary.convertToRoman(swiftness + 1),
+				jump != -1 ? "&7 * +Jump " + CakeLibrary.convertToRoman(jump + 1) : "",
 				"&f",
 				"&8&oIncreases your overall speed.",
-				"&7Class: Thief");
-	}
-	
-	public static int getSwiftnessLevel(int level)
-	{
-		return level < 5 ? 0 : level < 10 ? 1 : 2;
-	}
-	
-	public static int getJumpLevel(int level)
-	{
-		return level < 5 ? -1 : level < 10 ? 0 : 1;
+				"&f",
+				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
+				"&7Class: " + classType.getClassName());
 	}
 }

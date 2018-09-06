@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.util.UUID;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -51,10 +50,8 @@ import org.bukkit.event.server.TabCompleteEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Vector;
 
-import net.minecraft.server.v1_12_R1.EnumParticle;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.entities.mobs.MageZombie;
 import rpgcore.entities.mobs.RPGMonster;
@@ -62,6 +59,7 @@ import rpgcore.entities.mobs.ReinforcedSkeleton;
 import rpgcore.entities.mobs.ReinforcedZombie;
 import rpgcore.entities.mobs.WarriorZombie;
 import rpgcore.entities.mobs.WeakSlime;
+import rpgcore.external.Title;
 import rpgcore.item.BonusStat.BonusStatCrystal;
 import rpgcore.item.RItem;
 import rpgcore.main.RPGEvents.EntityDamageHistory;
@@ -78,6 +76,7 @@ import rpgcore.shop.ShopManager;
 import rpgcore.sideclasses.RPGSideClass;
 import rpgcore.sideclasses.RPGSideClass.SideClassType;
 import rpgcore.skillinventory.SkillInventory;
+import rpgcore.skillinventory2.SkillInventory2;
 import rpgcore.skills.Heartspan;
 import rpgcore.skills.RPGSkill;
 
@@ -234,7 +233,7 @@ public class RPGListener implements Listener
 				crystal = true;
 				break;
 			}
-		if (name.equals("Party Info") || name.equals("Class Selection") || name.startsWith("Skillbook: ") || crystal)
+		if (name.equals("Party Info") || name.equals("Class Selection") || name.startsWith("Skillbook: ") || name.startsWith("Learnt Skills") || crystal)
 		{
 			for (int i: event.getRawSlots())
 				if (i < event.getView().getTopInventory().getSize())
@@ -458,11 +457,13 @@ public class RPGListener implements Listener
 			if (CakeLibrary.isItemStackNull(is))
 				return;
 			String itemName = CakeLibrary.removeColorCodes(CakeLibrary.getItemName(is));
+
 			ClassType change = rp.currentClass;
 			for (ClassType ct: ClassType.values())
 				if (itemName.toLowerCase().contains(ct.toString().toLowerCase()))
 					change = ct;
 			rp.currentClass = change;
+
 			RPGCore.playerManager.writeData(rp);
 			p.getWorld().playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.2F, 1.0F);
 			if (inv.getSize() == 27)
@@ -474,18 +475,79 @@ public class RPGListener implements Listener
 		}
 		if (name.equals("Party Info"))
 			event.setCancelled(true);
-		if (name.startsWith("Skillbook: "))
+		if (name.startsWith("Learnt Skills"))
 		{
 			event.setCancelled(true);
-			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 20), 0);
 			ItemStack is = event.getCurrentItem();
 			if (CakeLibrary.isItemStackNull(is))
 				return;
+			//RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 20), 0);
+			String itemName = CakeLibrary.removeColorCodes(CakeLibrary.getItemName(is));
+			if (itemName.startsWith("Skillbook Tier: "))
+				return;
+			else if (itemName.startsWith("<-- "))
+			{
+				if (rp.skillbookTierSwitchTicks > 0 || rp.lastSkillbookTier <= 1)
+					return;
+				rp.lastSkillbookTier--;
+				inv.setContents(SkillInventory2.getSkillInventory(rp, rp.lastSkillbookTier).getContents());
+				p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.1F, 0.9F);
+				rp.skillbookTierSwitchTicks = 3;
+			} else if (itemName.startsWith("Next Tier"))
+			{
+				if (rp.skillbookTierSwitchTicks > 0 || rp.lastSkillbookTier >= 10)
+					return;
+				rp.lastSkillbookTier++;
+				inv.setContents(SkillInventory2.getSkillInventory(rp, rp.lastSkillbookTier).getContents());
+				p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.1F, 1.1F);
+				rp.skillbookTierSwitchTicks = 3;
+			} else
+			{
+				for (String line: CakeLibrary.getItemLore(is))
+					if (CakeLibrary.removeColorCodes(line).startsWith("Passive Skill:"))
+					{
+						RPGCore.msg(p, "Passive Skills do not require activation.");
+						return;
+					}
+				ItemStack add = is.clone();
+				add = SkillInventory.changeForInventory(add, p.getName());
+				boolean r = false;
+				for (int i = 0; i < p.getInventory().getSize(); i++)
+				{
+					ItemStack item = p.getInventory().getItem(i);
+					if (CakeLibrary.isItemStackNull(item))
+						continue;
+					if (CakeLibrary.getItemName(item).equals(CakeLibrary.getItemName(event.getCurrentItem())))
+					{
+						p.getInventory().setItem(i, add.clone());
+						r = true;
+					}
+				}
+				if (r)
+				{
+					RPGCore.msg(p, "Skill(s) in your inventory have been updated.");
+					RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 169), 0);
+					return;
+				}
+				p.getInventory().addItem(add);
+				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 169), 0);
+				RPGCore.msg(p, "The skill has been added into your inventory.");
+			}
+			return;
+		}
+		/*
+		if (name.startsWith("Skillbook: "))
+		{
+			event.setCancelled(true);
+			ItemStack is = event.getCurrentItem();
+			if (CakeLibrary.isItemStackNull(is))
+				return;
+			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 20), 0);
 			String itemName = CakeLibrary.removeColorCodes(CakeLibrary.getItemName(is));
 			if (itemName.startsWith("You have sufficient permissions to use these:"))
 			{
 				rp.getCurrentClass().skillPoints += 10;
-				SkillInventory.updateSkillInventory(event.getInventory(), rp);
+				//SkillInventory.updateSkillInventory(event.getInventory(), rp);
 				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 169), 0);
 				return;
 			}
@@ -540,7 +602,7 @@ public class RPGListener implements Listener
 					}
 				} else
 					SkillInventory.updatePlayerInventorySkills(rp);
-				SkillInventory.updateSkillInventory(event.getInventory(), rp);
+				//SkillInventory.updateSkillInventory(event.getInventory(), rp);
 				RPGCore.playerManager.writeData(rp);
 				return;
 			}
@@ -555,7 +617,7 @@ public class RPGListener implements Listener
 				rp.offsetSkillLevel(itemName, -1);
 				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 169), 0);
 				rp.getCurrentClass().skillPoints++;
-				SkillInventory.updateSkillInventory(event.getInventory(), rp);
+				//SkillInventory.updateSkillInventory(event.getInventory(), rp);
 				SkillInventory.updatePlayerInventorySkills(rp);
 				RPGCore.playerManager.writeData(rp);
 				return;
@@ -597,6 +659,7 @@ public class RPGListener implements Listener
 			RPGCore.msg(p, "The skill has been added into your inventory.");
 			return;
 		}
+		 */
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -683,16 +746,6 @@ public class RPGListener implements Listener
 			RPlayer rp = RPGCore.playerManager.getRPlayer(p.getUniqueId());
 			if (rp == null)
 				return;
-			if (rp.currentClass.getTier1Class().equals(ClassType.THIEF))
-			{
-				int time = rp.getSkillLevel("Evade");
-				if (p.isSneaking() && rp.sneakTicks <= time)
-				{
-					event.setCancelled(true);
-					RPGCore.msgNoTag(p, "&8--- DAMAGE EVADED ---");
-					CakeLibrary.spawnParticle(EnumParticle.SMOKE_LARGE, p.getLocation().add(0, 1, 0), 0.5F, p, 8, 0);
-				}
-			}
 
 			event.setDamage(event.getDamage() - (event.getDamage() / 100D * rp.calculateDamageReduction()));
 		}
@@ -749,6 +802,28 @@ public class RPGListener implements Listener
 			if (CakeLibrary.hasColor(name))
 			{
 				name = CakeLibrary.removeColorCodes(name);
+				if (name.startsWith("Skillbook < "))
+				{
+					String skillName = name.replace("Skillbook < ", "");
+					skillName = skillName.substring(0, skillName.length() - 2);
+
+					RPGSkill skill = null;
+					for (RPGSkill check: RPGSkill.skillList)
+						if (check.skillName.equals(skillName))
+							skill = check;
+					
+					if (skill != null && !rp.skills.contains(skillName))
+					{
+						rp.skills.add(skillName);
+						rp.titleQueue.add(new Title("&6 < " + CakeLibrary.getItemName(skill.getSkillItem()) + "&6 >", "&eSkill Learnt", 20, 60, 20));
+						p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.3f, 1.0f);
+						new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 20).run();
+						p.setItemInHand(null);
+						RPGCore.playerManager.writeData(rp);
+					}
+					event.setCancelled(true);
+					return;
+				}
 				if (name.startsWith("Gold ("))
 				{
 					int gold = Integer.parseInt(name.substring(6, name.length() - 1).replaceAll(",", "")) * is.getAmount();
@@ -778,18 +853,18 @@ public class RPGListener implements Listener
 		}
 		handleSkillCast(event.getPlayer());
 	}
-	
+
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void handleTab(TabCompleteEvent event)
 	{
 		String msg = event.getBuffer();
 		if (msg.length() < 1)
 			return;
-		
+
 		String s = event.getSender() instanceof Player ? "/" : "";
 		ArrayList<String> completions = new ArrayList<String>();
-		
-		if (msg.startsWith(s + "gi "))
+
+		if (msg.startsWith(s + "gi ") || msg.startsWith(s + "getitem "))
 		{
 			String[] split = msg.split(" ");
 			if (split.length >= 2 && split[1].length() > 0)
@@ -798,9 +873,22 @@ public class RPGListener implements Listener
 					if (ri.databaseName.toLowerCase().startsWith(split[1].toLowerCase()))
 						completions.add(ri.databaseName);
 			}
-				
 		}
-		
+
+		if (msg.startsWith(s + "skillbook ") || msg.startsWith(s + "sb "))
+		{
+			String[] split = msg.split(" ");
+			if (split.length >= 2 && split[1].length() > 0)
+			{
+				for (RPGSkill skill: RPGSkill.skillList)
+				{
+					String skillName = skill.skillName.replace(" ", "");
+					if (skillName.toLowerCase().startsWith(split[1].toLowerCase()))
+						completions.add(skillName);
+				}
+			}
+		}
+
 		if (completions.size() > 0)
 			event.setCompletions(completions);
 	}

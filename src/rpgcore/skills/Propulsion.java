@@ -12,21 +12,22 @@ import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGEvents;
 import rpgcore.player.RPlayer;
-import rpgcore.skillinventory.SkillInventory;
 
 public class Propulsion extends RPGSkill
 {
 	public final static String skillName = "Propulsion";
+	public final static int skillTier = 1;
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.MAGE;
+	public final static int radius = 4;
 	public Propulsion(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, 0, classType);
+		super(skillName, caster, castDelay, 0, classType, skillTier);
 	}
 	
 	public Propulsion()
 	{
-		super(skillName, null, castDelay, 0, classType);
+		super(skillName, null, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -34,63 +35,26 @@ public class Propulsion extends RPGSkill
 	{
 		new Propulsion(rp);
 	}
-	
-	@Override 
-	public ItemStack instanceGetSkillItem(RPlayer player)
-	{
-		return getSkillItem(player);
-	}
 
-	public static ItemStack getSkillItem(RPlayer player)
+	@Override
+	public ItemStack getSkillItem()
 	{
-		int level = player.getSkillLevel(skillName);
-		boolean unlocked = level > 0;
-		level += unlocked ? 0 : 1;
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.PISTON_BASE, 1), 
 				"&ePropulsion"),
-				"&7Skill Level: " + (unlocked ? level : 0),
-				"&7Radius: " + calculateRadius(level) + " blocks",
+				"&7Radius: " + radius + " blocks",
 				"&7Cooldown: 8s",
 				"&f",
 				"&8&oKnocks back all monsters",
 				"&8&owithin a set radius.",
+				"&f",
+				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
 				"&7Class: " + classType.getClassName());
-	}
-
-	public static double calculateRadius(int level)
-	{
-		switch (level)
-		{
-		case 1:
-			return 2.0D;
-		case 2:
-			return 2.3D;
-		case 3:
-			return 2.6D;
-		case 4:
-			return 2.9D;
-		case 5:
-			return 3.3D;
-		case 6:
-			return 3.6D;
-		case 7:
-			return 3.9D;
-		case 8:
-			return 4.2D;
-		case 9:
-			return 4.5D;
-		case 10:
-			return 5.0D;
-		default:
-			return 2.0D;
-		}
 	}
 
 	@Override
 	public void activate()
 	{
 		super.applyCooldown(8.0D);
-		double radius = calculateRadius(caster.getSkillLevel(skillName));
 		Location origin = player.getLocation();
 		for (LivingEntity e: CakeLibrary.getNearbyLivingEntities(player.getLocation(), radius))
 		{

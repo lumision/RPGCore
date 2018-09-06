@@ -6,22 +6,23 @@ import org.bukkit.inventory.ItemStack;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
 import rpgcore.player.RPlayer;
-import rpgcore.skillinventory.SkillInventory;
 import rpgcore.skills.effect.ArmageddonE;
 
 public class Armageddon extends RPGSkill
 {
 	public final static String skillName = "Armageddon";
+	public final static int skillTier = 8;
 	public final static int castDelay = 100;
-	public final static ClassType classType = ClassType.ARCHMAGE;
+	public final static ClassType classType = ClassType.MAGE;
+	public final static float damage = 24.8F;
 	public Armageddon(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, calculateDamage(caster.getSkillLevel(skillName)), classType);
+		super(skillName, caster, castDelay, damage, classType, skillTier);
 	}
 	
 	public Armageddon()
 	{
-		super(skillName, null, castDelay, 0, classType);
+		super(skillName, null, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -29,26 +30,19 @@ public class Armageddon extends RPGSkill
 	{
 		new Armageddon(rp);
 	}
-	
-	@Override 
-	public ItemStack instanceGetSkillItem(RPlayer player)
-	{
-		return getSkillItem(player);
-	}
 
-	public static ItemStack getSkillItem(RPlayer player)
+	@Override
+	public ItemStack getSkillItem()
 	{
-		int level = player.getSkillLevel(skillName);
-		boolean unlocked = level > 0;
-		level += unlocked ? 0 : 1;
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.FIREBALL, 1), 
 				"&9A&br&fm&9a&bg&fe&9d&bd&fo&9n"),
-				"&7Skill Level: " + (unlocked ? level : 0),
-				"&7Damage/Projectile: " + (int) (calculateDamage(level) * 100) + "%",
+				"&7Damage/Projectile: " + (int) (damage * 100) + "%",
 				"&7Cooldown: 60s",
 				"&f",
 				"&8&oUnleashes a barrage of arcane",
 				"&8&oprojectiles unto the target.",
+				"&f",
+				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
 				"&7Class: " + classType.getClassName());
 	}
 

@@ -163,19 +163,19 @@ public class RPGRecipe
 		}
 
 		int equate = 0;
-		for (int row = 0; row < 4 - shape.length; row++)
+		for (int rowSnip = 0; rowSnip < 4 - shape.length; rowSnip++)
 		{
-			for (int ss = 0; ss < (craftingTable ? 3 : 2); ss++)
+			for (int columnSnip = 0; columnSnip < (craftingTable ? 3 : 2); columnSnip++)
 			{
 				equate = 0;
 				for (int i = 0; i < matrixShape.length; i++)
 				{
-					if (i + row >= matrixShape.length)
+					if (i + rowSnip >= matrixShape.length)
 						break;
 					if (shape.length < i + 1)
 						break;
-					String line = matrixShape[i + row];
-					line = line.substring(ss);
+					String line = matrixShape[i + rowSnip];
+					line = line.substring(columnSnip);
 					if (line.length() == 0)
 						continue;
 					if (line.startsWith(shape[i]))

@@ -45,9 +45,9 @@ public class RPlayerManager
 	}
 
 	public RPlayer addRPlayer(UUID uuid, ArrayList<RPGClass> classes, ArrayList<RPGSideClass> sideClasses, ClassType currentClass, ArrayList<String> skills, 
-			ArrayList<Integer> skillLevels, int gold, int tokens, Map<String, String> npcFlags, boolean tutorialCompleted)
+			int gold, int tokens, Map<String, String> npcFlags, boolean tutorialCompleted)
 	{
-		RPlayer rp = new RPlayer(uuid, classes, sideClasses, currentClass, skills, skillLevels, gold, tokens);
+		RPlayer rp = new RPlayer(uuid, classes, sideClasses, currentClass, skills, gold, tokens);
 		rp.npcFlags = npcFlags;
 		rp.tutorialCompleted = tutorialCompleted;
 		players.add(rp);
@@ -106,9 +106,9 @@ public class RPlayerManager
 				ArrayList<RPGClass> classes = new ArrayList<RPGClass>();
 				ArrayList<RPGSideClass> sideClasses = new ArrayList<RPGSideClass>();
 				ArrayList<String> skills = new ArrayList<String>();
-				ArrayList<Integer> skillLevels = new ArrayList<Integer>();
 				Map<String, String> npcFlags = new HashMap<String, String>();
 				boolean tutorialCompleted = false;
+				int lastSkillbookTier = 1;
 				int gold = 0;
 				int tokens = 0;
 
@@ -147,6 +147,14 @@ public class RPlayerManager
 							try
 							{
 								tutorialCompleted = Boolean.parseBoolean(s.split(": ")[1]);
+							} catch (Exception e) {}
+							continue;
+						}
+						if (s.startsWith("lastSkillbookTier: "))
+						{
+							try
+							{
+								lastSkillbookTier = Integer.parseInt(s.split(": ")[1]);
 							} catch (Exception e) {}
 							continue;
 						}
@@ -192,18 +200,7 @@ public class RPlayerManager
 						continue;
 					} else if (header.equals("skills"))
 					{
-						String[] split = s.split(", ");
-						if (split.length < 2)
-							continue;
-						int lv = 0;
-						try
-						{
-							lv = Integer.parseInt(split[1]);
-						} catch (Exception e) {
-							continue;
-						}
-						skills.add(split[0]);
-						skillLevels.add(lv);
+						skills.add(s);
 					} else if (header.equals("npcflags"))
 					{
 						String[] split = s.split(", ");
@@ -233,7 +230,8 @@ public class RPlayerManager
 						sideClasses.add(new RPGSideClass(sideClassType, 0));
 				}
 				
-				addRPlayer(uuid, classes, sideClasses, currentClass, skills, skillLevels, gold, tokens, npcFlags, tutorialCompleted);
+				RPlayer rp = addRPlayer(uuid, classes, sideClasses, currentClass, skills, gold, tokens, npcFlags, tutorialCompleted);
+				rp.lastSkillbookTier = lastSkillbookTier;
 			} catch (Exception e) {
 				RPGCore.msgConsole("&4Error reading RPlayer file: " + file.getName());
 			}
@@ -250,6 +248,7 @@ public class RPlayerManager
 			lines.add("class: " + rp.currentClass.toString());
 			lines.add("gold: " + rp.getGold());
 			lines.add("tutorialCompleted: " + rp.tutorialCompleted);
+			lines.add("lastSkillbookTier: " + rp.lastSkillbookTier);
 			lines.add("classes:");
 			for (RPGClass rc: rp.classes)
 				lines.add(" " + rc.classType.toString() + ", " + rc.xp + ", " + rc.skillPoints); 
@@ -258,7 +257,7 @@ public class RPlayerManager
 				lines.add(" " + rc.sideClassType.toString() + ", " + rc.xp); 
 			lines.add("skills:");
 			for (int i = 0; i < rp.skills.size(); i++)
-				lines.add(" " + rp.skills.get(i) + ", " + rp.skillLevels.get(i));
+				lines.add(" " + rp.skills.get(i));
 			lines.add("npcflags:");
 			ArrayList<String> keys = new ArrayList<String>();
 			keys.addAll(rp.npcFlags.keySet());

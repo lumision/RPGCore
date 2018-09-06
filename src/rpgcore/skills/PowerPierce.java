@@ -1,6 +1,7 @@
 package rpgcore.skills;
 
 import java.util.ArrayList;
+
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -13,21 +14,22 @@ import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGEvents;
 import rpgcore.player.RPlayer;
-import rpgcore.skillinventory.SkillInventory;
 
 public class PowerPierce extends RPGSkill
 {
 	public final static String skillName = "Power Pierce";
+	public final static int skillTier = 1;
 	public final static int castDelay = 20;
 	public final static ClassType classType = ClassType.WARRIOR;
+	public final static float damage = 1.4F;
 	public PowerPierce(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, calculateDamage(caster.getSkillLevel(skillName)), classType);
+		super(skillName, caster, castDelay, damage, classType, skillTier);
 	}
 	
 	public PowerPierce()
 	{
-		super(skillName, null, castDelay, 0, classType);
+		super(skillName, null, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -35,31 +37,19 @@ public class PowerPierce extends RPGSkill
 	{
 		new PowerPierce(rp);
 	}
-	
-	@Override 
-	public ItemStack instanceGetSkillItem(RPlayer player)
+
+	@Override
+	public ItemStack getSkillItem()
 	{
-		return getSkillItem(player);
-	}
-	
-	public static ItemStack getSkillItem(RPlayer player)
-	{
-		int level = player.getSkillLevel(skillName);
-		boolean unlocked = level > 0;
-		level += unlocked ? 0 : 1;
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.IRON_SWORD, 1), 
 				"&fPower Pierce"),
-				"&7Skill Level: " + (unlocked ? level : 0),
-				"&7Damage: " + (int) (calculateDamage(level) * 100) + "%",
+				"&7Damage: " + (int) (damage * 100) + "%",
 				"&7Interval: 0.5s",
 				"&f",
-				"&8&oSends a long pierce forward.",
+				"&8&oSends a short pierce forward.",
+				"&f",
+				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
 				"&7Class: " + classType.getClassName());
-	}
-	
-	public static double calculateDamage(int level)
-	{
-		return 1.0D + (level / 20.0D);
 	}
 
 	@Override

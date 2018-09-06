@@ -1,6 +1,7 @@
 package rpgcore.skills;
 
 import java.util.ArrayList;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -12,21 +13,22 @@ import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGEvents;
 import rpgcore.player.RPlayer;
-import rpgcore.skillinventory.SkillInventory;
 
 public class TripleKunai extends RPGSkill
 {
 	public final static String skillName = "Triple Kunai";
+	public final static int skillTier = 4;
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.ASSASSIN;
+	public final static float damage = 2.8F;
 	public TripleKunai(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, calculateDamage(caster.getSkillLevel(skillName)), classType);
+		super(skillName, caster, castDelay, damage, classType, skillTier);
 	}
 
 	public TripleKunai()
 	{
-		super(skillName, null, castDelay, 0, classType);
+		super(skillName, null, castDelay, 0, classType, skillTier);
 	}
 
 	@Override
@@ -35,30 +37,18 @@ public class TripleKunai extends RPGSkill
 		new TripleKunai(rp);
 	}
 
-	@Override 
-	public ItemStack instanceGetSkillItem(RPlayer player)
+	@Override
+	public ItemStack getSkillItem()
 	{
-		return getSkillItem(player);
-	}
-
-	public static ItemStack getSkillItem(RPlayer player)
-	{
-		int level = player.getSkillLevel(skillName);
-		boolean unlocked = level > 0;
-		level += unlocked ? 0 : 1;
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.GOLDEN_CARROT, 1), 
 				"&cTriple Kunai"),
-				"&7Skill Level: " + (unlocked ? level : 0),
-				"&7Damage: " + (int) (calculateDamage(level) * 100) + "%",
+				"&7Damage: " + (int) (damage * 100) + "%",
 				"&7Cooldown: 2s",
 				"&f",
 				"&8&oThrows 3 kunai knives forward.",
+				"&f",
+				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
 				"&7Class: " + classType.getClassName());
-	}
-
-	public static double calculateDamage(int level)
-	{
-		return 0.8D + (level / 5.0D);
 	}
 
 	@Override

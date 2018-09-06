@@ -95,7 +95,7 @@ public class ConversationData
 		dataList.clear();
 		for (File file: dataFolder.listFiles())
 		{
-			String npcName = "";
+			String npcName = CakeLibrary.recodeColorCodes(file.getName().substring(0, file.getName().length() - 4));
 			ArrayList<ConversationLine> conversationLines = new ArrayList<ConversationLine>();
 			ConversationLine prevLine = null;
 			ArrayList<ConversationPart> masters = new ArrayList<ConversationPart>();

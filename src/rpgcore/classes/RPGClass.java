@@ -12,10 +12,10 @@ public class RPGClass
 	private boolean unlocked;
 	public static enum ClassType
 	{
-		WARRIOR(null, 1), KNIGHT(ClassType.WARRIOR, 2), PALADIN(ClassType.WARRIOR, 2), HERO(ClassType.KNIGHT, 3), ODIN(ClassType.PALADIN, 3),
-		MAGE(null, 1), SHAMAN(ClassType.MAGE, 2), SORCERER(ClassType.MAGE, 2), THAUMATURGE(ClassType.SHAMAN, 3), ARCHMAGE(ClassType.SORCERER, 3),
-		PRIEST(null, 1), FRIAR(ClassType.PRIEST, 2), BISHOP(ClassType.FRIAR, 3),
-		THIEF(null, 1), ASSASSIN(ClassType.THIEF, 2), DUALIST(ClassType.ASSASSIN, 3);
+		WARRIOR(null, 1),
+		MAGE(null, 1),
+		PRIEST(null, 1),
+		ASSASSIN(null, 1);
 		
 		private ClassType baseClass;
 		private int tier;
@@ -30,7 +30,7 @@ public class RPGClass
 		 */
 		public int getDamageType()
 		{
-			return (getTier1Class().equals(ClassType.WARRIOR) || getTier1Class().equals(ClassType.THIEF)) ? 0 : 1;
+			return (getTier1Class().equals(ClassType.WARRIOR) || getTier1Class().equals(ClassType.ASSASSIN)) ? 0 : 1;
 		}
 		
 		public int getTier()

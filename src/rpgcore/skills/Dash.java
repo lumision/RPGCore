@@ -9,21 +9,21 @@ import org.bukkit.util.Vector;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
 import rpgcore.player.RPlayer;
-import rpgcore.skillinventory.SkillInventory;
 
 public class Dash extends RPGSkill
 {
 	public final static String skillName = "Dash";
+	public final static int skillTier = 2;
 	public final static int castDelay = 10;
-	public final static ClassType classType = ClassType.THIEF;
+	public final static ClassType classType = ClassType.ASSASSIN;
 	public Dash(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, 0, classType);
+		super(skillName, caster, castDelay, 0, classType, skillTier);
 	}
 	
 	public Dash()
 	{
-		super(skillName, null, castDelay, 0, classType);
+		super(skillName, null, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -31,21 +31,20 @@ public class Dash extends RPGSkill
 	{
 		new Dash(rp);
 	}
-	
-	public static ItemStack getSkillItem(RPlayer player)
+
+	@Override
+	public ItemStack getSkillItem()
 	{
-		int level = player.getSkillLevel(skillName);
-		boolean unlocked = level > 0;
-		level += unlocked ? 0 : 1;
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.ARROW, 1), 
 				"&eDash"),
-				"&7Skill Level: " + (unlocked ? level : 0),
-				"&7Distance: " + (int) (3 + (level / 2)) + " blocks",
+				"&7Distance: 8 blocks",
 				"&7Cooldown: 2s",
 				"&f",
 				"&8&oDashes forward in the direction",
 				"&8&oyou face. Hold down &7&o[SNEAK] &8&oto",
 				"&8&odash in the opposite direction.",
+				"&f",
+				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
 				"&7Class: " + classType.getClassName());
 	}
 
@@ -53,7 +52,7 @@ public class Dash extends RPGSkill
 	public void activate()
 	{
 		Location b = null;
-		int length = 3 + (caster.getSkillLevel(skillName) / 2);
+		int length = 3 + (10 / 2);
 		if (player.isSneaking())
 		{
 			Vector vector = player.getLocation().getDirection().setY(0);

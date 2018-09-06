@@ -17,21 +17,22 @@ import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGEvents;
 import rpgcore.player.RPlayer;
-import rpgcore.skillinventory.SkillInventory;
 
 public class ArcaneBarrage extends RPGSkill
 {
 	public final static String skillName = "Arcane Barrage";
+	public final static int skillTier = 7;
 	public final static int castDelay = 20;
-	public final static ClassType classType = ClassType.ARCHMAGE;
+	public final static ClassType classType = ClassType.MAGE;
+	public final static float damage = 4.8F;
 	public ArcaneBarrage(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, calculateDamage(caster.getSkillLevel(skillName)), classType);
+		super(skillName, caster, castDelay, damage, classType, skillTier);
 	}
 	
 	public ArcaneBarrage()
 	{
-		super(skillName, null, castDelay, 0, classType);
+		super(skillName, null, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -39,32 +40,20 @@ public class ArcaneBarrage extends RPGSkill
 	{
 		new ArcaneBarrage(rp);
 	}
-	
-	@Override 
-	public ItemStack instanceGetSkillItem(RPlayer player)
-	{
-		return getSkillItem(player);
-	}
 
-	public static ItemStack getSkillItem(RPlayer player)
+	@Override
+	public ItemStack getSkillItem()
 	{
-		int level = player.getSkillLevel(skillName);
-		boolean unlocked = level > 0;
-		level += unlocked ? 0 : 1;
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.FEATHER, 1), 
 				"&fA&7r&fc&7a&fn&7e &fB&7a&fr&7r&fa&7g&fe"),
-				"&7Skill Level: " + (unlocked ? level : 0),
-				"&7Damage/Projectile: " + (int) (calculateDamage(level) * 100) + "%",
+				"&7Damage/Projectile: " + (int) (damage * 100.0F) + "%",
 				"&7Interval: 1s",
 				"&f",
 				"&8&oUnleashes a barrage of arcane",
 				"&8&oprojectiles unto the target.",
+				"&f",
+				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
 				"&7Class: " + classType.getClassName());
-	}
-
-	public static double calculateDamage(int level)
-	{
-		return 2.8D + (level / 5.0D);
 	}
 
 	@Override

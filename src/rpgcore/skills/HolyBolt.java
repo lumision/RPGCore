@@ -12,21 +12,22 @@ import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGEvents;
 import rpgcore.player.RPlayer;
-import rpgcore.skillinventory.SkillInventory;
 
 public class HolyBolt extends RPGSkill
 {
 	public final static String skillName = "Holy Bolt";
+	public final static int skillTier = 1;
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.PRIEST;
+	public final static float damage = 1.2F;
 	public HolyBolt(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, calculateDamage(caster.getSkillLevel(skillName)), classType);
+		super(skillName, caster, castDelay, damage, classType, skillTier);
 	}
 	
 	public HolyBolt()
 	{
-		super(skillName, null, castDelay, 0, classType);
+		super(skillName, null, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -34,31 +35,19 @@ public class HolyBolt extends RPGSkill
 	{
 		new HolyBolt(rp);
 	}
-	
-	@Override 
-	public ItemStack instanceGetSkillItem(RPlayer player)
+
+	@Override
+	public ItemStack getSkillItem()
 	{
-		return getSkillItem(player);
-	}
-	
-	public static ItemStack getSkillItem(RPlayer player)
-	{
-		int level = player.getSkillLevel(skillName);
-		boolean unlocked = level > 0;
-		level += unlocked ? 0 : 1;
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(175, 1), 
 				"&fHoly Bolt"),
-				"&7Skill Level: " + (unlocked ? level : 0),
-				"&7Damage: " + (int) (calculateDamage(level) * 100) + "%",
+				"&7Damage: " + (int) (damage * 100) + "%",
 				"&7Interval: 0.5s",
 				"&f",
 				"&8&oShoots a beam of holy energy.",
+				"&f",
+				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
 				"&7Class: " + classType.getClassName());
-	}
-	
-	public static double calculateDamage(int level)
-	{
-		return 0.4D + (level / 20.0D);
 	}
 	
 	@Override

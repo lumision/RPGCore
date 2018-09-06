@@ -65,7 +65,7 @@ public class ClassInventory
 						"&7Level: " + c.getLevel()));
 			}
 
-			if (c.classType.equals(ClassType.THIEF))
+			if (c.classType.equals(ClassType.ASSASSIN))
 			{
 				String color = "&a";
 				inv.setItem(7, CakeLibrary.addLore(CakeLibrary.renameItem(SkillInventory.getClassIcon(c.classType), "&fClass: " + color + c.classType.getClassName()),
@@ -108,6 +108,7 @@ public class ClassInventory
 						"&c",
 						"&7Level: " + c.getLevel()));
 			}
+			/*
 			if (c.classType.equals(ClassType.KNIGHT))
 			{
 				String color = SkillInventory.getClassColor(c.classType);
@@ -158,6 +159,7 @@ public class ClassInventory
 						"&c",
 						"&7Level: " + c.getLevel()));
 			}
+			*/
 
 			if (c.classType.equals(ClassType.MAGE))
 			{
@@ -172,6 +174,7 @@ public class ClassInventory
 						"&c",
 						"&7Level: " + c.getLevel()));
 			}
+			/*
 			if (c.classType.equals(ClassType.SORCERER))
 			{
 				String color = SkillInventory.getClassColor(c.classType);
@@ -224,6 +227,7 @@ public class ClassInventory
 						"&c",
 						"&7Level: " + c.getLevel()));
 			}
+			*/
 
 			if (c.classType.equals(ClassType.PRIEST))
 			{
@@ -238,6 +242,7 @@ public class ClassInventory
 						"&c",
 						"&7Level: " + c.getLevel()));
 			}
+			/*
 			if (c.classType.equals(ClassType.FRIAR))
 			{
 				String color = SkillInventory.getClassColor(c.classType);
@@ -263,8 +268,9 @@ public class ClassInventory
 						"&c",
 						"&7Level: " + c.getLevel()));
 			}
+			*/
 
-			if (c.classType.equals(ClassType.THIEF))
+			if (c.classType.equals(ClassType.ASSASSIN))
 			{
 				String color = SkillInventory.getClassColor(c.classType);
 				inv.setItem(21, CakeLibrary.addLore(SkillInventory.getClassIcon(c.classType),
@@ -277,6 +283,7 @@ public class ClassInventory
 						"&c",
 						"&7Level: " + c.getLevel()));
 			}
+			/*
 			if (c.classType.equals(ClassType.ASSASSIN))
 			{
 				String color = SkillInventory.getClassColor(c.classType);
@@ -302,6 +309,7 @@ public class ClassInventory
 						"&c",
 						"&7Level: " + c.getLevel()));
 			}
+			*/
 		}
 		return inv;
 	}

@@ -13,32 +13,48 @@ public class RPGSkill
 	public Player player;
 	public double baseDamageMultiplier;
 	public int casterDamage;
-	public 	String skillName;
+	public String skillName;
+	public int skillTier;
+	public ClassType classType;
 	
-	public static RPGSkill[] skillList = { //ADDSKILL (not needed for passives)
+	public static RPGSkill[] skillList = { //ADDSKILL
 			new ArcaneBarrage(),
 			new ArcaneBlast(),
 			new ArcaneBolt(),
+			new Armageddon(),
+			new BladeMastery(),
 			new Dash(),
 			new Enlightenment(),
 			new Heal(),
+			new Heartspan(),
 			new HolyBolt(),
+			new IceBolt(),
+			new IronBody(),
 			new Kunai(),
+			new Leap(),
+			new LightFeet(),
+			new PoisonBolt(),
 			new PowerPierce(),
 			new Propulsion(),
 			new ShadowStab(),
-			new Heartspan(),
 			new TripleKunai(),
-			new Armageddon(),
-			new IceBolt(),
-			new PoisonBolt(),
-			new Leap(),
 			new Warcry(),
+			new Wisdom()
 	};
 	
-	public RPGSkill(String skillName, RPlayer caster, int castDelay, double baseDamageMultiplier, ClassType classType)
+	public static RPGSkill getSkill(String skillName)
+	{
+		for (RPGSkill skill: skillList)
+			if (skill.skillName.equals(skillName))
+				return skill;
+		return null;
+	}
+	
+	public RPGSkill(String skillName, RPlayer caster, int castDelay, double baseDamageMultiplier, ClassType classType, int skillTier)
 	{
 		this.skillName = skillName;
+		this.classType = classType;
+		this.skillTier = skillTier;
 		if (caster == null)
 			return;
 		this.caster = caster;
@@ -49,10 +65,12 @@ public class RPGSkill
 			return;
 		if (this.player.getPlayer() == null)
 			return;
+		
+		/*
 		if (!caster.currentClass.getAdvancementTree().contains(classType))
 			return;
-		if (caster.getSkillLevel(skillName) < 1)
-			return;
+		*/
+		
 		for (int i = 0; i < caster.cooldowns.size(); i++)
 		{
 			String cd = caster.cooldowns.get(i);
@@ -88,7 +106,8 @@ public class RPGSkill
 		return (int) (casterDamage * baseDamageMultiplier);
 	}
 	
-	public void activate(){}
+	public void activate() {}
+	public ItemStack getSkillItem() { return null; }
 	
 	public void insantiate(RPlayer rp) {}
 }

@@ -28,8 +28,12 @@ import rpgcore.main.RPGCore;
 import rpgcore.npc.CustomNPC;
 import rpgcore.sideclasses.RPGSideClass;
 import rpgcore.sideclasses.RPGSideClass.SideClassType;
+import rpgcore.skills.BladeMastery;
 import rpgcore.skills.Buff;
+import rpgcore.skills.Enlightenment;
+import rpgcore.skills.IronBody;
 import rpgcore.skills.LightFeet;
+import rpgcore.skills.Warcry;
 import rpgcore.tutorial.Tutorial;
 
 public class RPlayer 
@@ -40,8 +44,9 @@ public class RPlayer
 	public ClassType currentClass;
 	public int castDelay;
 	public String lastSkill;
+	public ArrayList<ClassType> unlockedClasses;
 	public ArrayList<String> skills;
-	public ArrayList<Integer> skillLevels;
+	//public ArrayList<Integer> skillLevels;
 	public ArrayList<String> cooldowns;
 	public ArrayList<Integer> cooldownValues;
 	public ArrayList<String> instantCast;
@@ -60,6 +65,8 @@ public class RPlayer
 	public boolean tutorialCompleted;
 	private int gold;
 	private int tokens;
+	public int lastSkillbookTier = 1;
+	public int skillbookTierSwitchTicks = 0;
 	public Location pos1, pos2;
 
 	public int sneakTicks;
@@ -75,7 +82,7 @@ public class RPlayer
 		for (SideClassType ct: SideClassType.values())
 			sideClasses.add(new RPGSideClass(ct, 0));
 		this.skills = new ArrayList<String>();
-		this.skillLevels = new ArrayList<Integer>();
+		//this.skillLevels = new ArrayList<Integer>();
 		this.cooldowns = new ArrayList<String>();
 		this.cooldownValues = new ArrayList<Integer>();
 		this.instantCast = new ArrayList<String>();
@@ -92,13 +99,13 @@ public class RPlayer
 		initializeScoreboard();
 	}
 
-	public RPlayer(UUID uuid, ArrayList<RPGClass> classes, ArrayList<RPGSideClass> sideClasses, ClassType currentClass, ArrayList<String> skills, ArrayList<Integer> skillLevels, int gold, int tokens)
+	public RPlayer(UUID uuid, ArrayList<RPGClass> classes, ArrayList<RPGSideClass> sideClasses, ClassType currentClass, ArrayList<String> skills, int gold, int tokens)
 	{
 		this.uuid = uuid;
 		this.classes = classes;
 		this.sideClasses = sideClasses;
 		this.skills = skills;
-		this.skillLevels = skillLevels;
+		//this.skillLevels = skillLevels;
 		this.currentClass = currentClass;
 		this.gold = gold;
 		for (ClassType ct: ClassType.values())
@@ -231,13 +238,12 @@ public class RPlayer
 		Player p = getPlayer();
 		if (p == null)
 			return;
-		if (currentClass.getTier1Class().equals(ClassType.THIEF))
+		if (currentClass.getTier1Class().equals(ClassType.ASSASSIN))
 		{
-			int lightFeet = getSkillLevel("Light Feet");
-			if (lightFeet > 0) //Light Feet functionality
+			if (skills.contains(LightFeet.skillName)) //Light Feet functionality
 			{
-				CakeLibrary.addPotionEffectIfBetterOrEquivalent(p, new PotionEffect(PotionEffectType.SPEED, 19, LightFeet.getSwiftnessLevel(lightFeet)));
-				CakeLibrary.addPotionEffectIfBetterOrEquivalent(p, new PotionEffect(PotionEffectType.JUMP, 19, LightFeet.getJumpLevel(lightFeet)));
+				CakeLibrary.addPotionEffectIfBetterOrEquivalent(p, new PotionEffect(PotionEffectType.SPEED, 19, LightFeet.swiftness));
+				CakeLibrary.addPotionEffectIfBetterOrEquivalent(p, new PotionEffect(PotionEffectType.JUMP, 19, LightFeet.jump));
 			}
 		}
 		if (!tutorialCompleted)
@@ -249,9 +255,11 @@ public class RPlayer
 		Player p = getPlayer();
 		if (p == null)
 			return;
+		if (skillbookTierSwitchTicks > 0)
+			skillbookTierSwitchTicks--;
 		if (castDelay > 0)
 			castDelay--;
-		if (currentClass.getTier1Class().equals(ClassType.THIEF))
+		if (currentClass.getTier1Class().equals(ClassType.ASSASSIN))
 		{
 			if (heartspanTicks > 0) //Heartspan functionality
 			{
@@ -429,14 +437,6 @@ public class RPlayer
 		RPGCore.playerManager.writeData(this);
 	}
 
-	public int getSkillLevel(String skill)
-	{
-		for (int i = 0; i < skills.size(); i++)
-			if (skills.get(i).equalsIgnoreCase(skill))
-				return skillLevels.get(i);
-		return 0;
-	}
-
 	public void updatePlayerREquips()
 	{
 		EntityEquipment ee = getPlayer().getEquipment();
@@ -490,12 +490,12 @@ public class RPlayer
 		{
 			if (currentClass.getTier1Class().equals(ClassType.MAGE))
 				if(skills.get(i).equalsIgnoreCase("wisdom"))
-					additions += skillLevels.get(i);
+					additions += 10;
 		}
 		for (Buff b: buffs)
 		{
 			if (b.buffName.equalsIgnoreCase("Enlightenment"))
-				multiplier += 0.05D + (b.buffLevel / 50.0D);
+				multiplier += Enlightenment.damageMultiplierAdd;
 		}
 		return (int) ((equipment + additions) * multiplier);
 	}
@@ -507,15 +507,15 @@ public class RPlayer
 			equipment += eq.bruteDamage;
 
 		int additions = 1;
-		if (currentClass.getAdvancementTree().contains(ClassType.THIEF))
-			additions += getSkillLevel("Blade Mastery");
+		if (skills.contains(BladeMastery.skillName))
+			additions += 10;
 		double multiplier = 1.0D;
 		for (Buff b: buffs)
 		{
 			if (b.buffName.equalsIgnoreCase("Enlightenment"))
-				multiplier += 0.05D + (b.buffLevel / 50.0D);
+				multiplier += Enlightenment.damageMultiplierAdd;
 			if (b.buffName.equalsIgnoreCase("Warcry"))
-				multiplier += 0.1D + (b.buffLevel * 2.0D / 100.0D);
+				multiplier += Warcry.bruteDamageMultiplierAdd;
 		}
 		return (int) ((equipment + additions) * multiplier);
 	}
@@ -527,8 +527,8 @@ public class RPlayer
 			equipment += eq.cooldownReduction;
 		int additions = 0;
 
-		if (currentClass.getAdvancementTree().contains(ClassType.THIEF))
-			additions += getSkillLevel("Blade Mastery");
+		if (skills.contains(BladeMastery.skillName))
+			additions += 10;
 
 		return equipment + additions;
 	}
@@ -540,8 +540,8 @@ public class RPlayer
 			equipment += eq.damageReduction;
 		int additions = 0;
 
-		if (currentClass.getAdvancementTree().contains(ClassType.WARRIOR))
-			additions += getSkillLevel("iron body") * 5;
+		if (skills.contains(IronBody.skillName))
+			additions += 20;
 
 		return Math.min(100, equipment + additions);
 	}
@@ -553,8 +553,8 @@ public class RPlayer
 			equipment += eq.attackSpeed;
 
 		double modifier = 1.0D;
-		if (currentClass.getAdvancementTree().contains(ClassType.THIEF))
-			modifier -= getSkillLevel("Blade Mastery") / 100.0D;
+		if (skills.contains(BladeMastery.skillName))
+			modifier -= 10 / 100.0D;
 
 		return (equipment == 0 ? 1 : (1.0D / equipment)) * modifier;
 	}
@@ -564,17 +564,5 @@ public class RPlayer
 		Random rand = new Random();
 		int max = (int) Math.ceil(damage / 10.0D);
 		return damage + rand.nextInt((max * 2) + 1) - max;
-	}
-
-	public void offsetSkillLevel(String skill, int levels)
-	{
-		for (int i = 0; i < skills.size(); i++)
-			if (skill.equals(skills.get(i)))
-			{
-				skillLevels.set(i, skillLevels.get(i) + levels);
-				return;
-			}
-		skills.add(skill);
-		skillLevels.add(levels);
 	}
 }

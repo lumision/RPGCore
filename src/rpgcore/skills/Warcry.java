@@ -9,21 +9,24 @@ import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGEvents;
 import rpgcore.player.RPlayer;
-import rpgcore.skillinventory.SkillInventory;
 
 public class Warcry extends RPGSkill
 {
 	public final static String skillName = "Warcry";
+	public final static int skillTier = 2;
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.WARRIOR;
+	public final static int heal = 10;
+	public final static float bruteDamageMultiplierAdd = 1.3F;
+	public final static int buffLength = 15 * 20;
 	public Warcry(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, 0, classType);
+		super(skillName, caster, castDelay, 0, classType, skillTier);
 	}
 
 	public Warcry()
 	{
-		super(skillName, null, castDelay, 0, classType);
+		super(skillName, null, castDelay, 0, classType, skillTier);
 	}
 
 	@Override
@@ -32,29 +35,22 @@ public class Warcry extends RPGSkill
 		new Warcry(rp);
 	}
 
-	@Override 
-	public ItemStack instanceGetSkillItem(RPlayer player)
+	@Override
+	public ItemStack getSkillItem()
 	{
-		return getSkillItem(player);
-	}
-
-	public static ItemStack getSkillItem(RPlayer player)
-	{
-		int level = player.getSkillLevel(skillName);
-		boolean unlocked = level > 0;
-		level += unlocked ? 0 : 1;
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.GOLDEN_APPLE, 1), 
 				"&4Warcry"),
-				"&7Skill Level: " + (unlocked ? level : 0),
 				"&7Buff:",
-				"&7 * Brute Damage: +" + (10 + (level * 2)) + "%",
-				"&7 * Buff Duration: " + (30 + (level * 3)) + "s",
-				"&7Heal: " + (level) + " hearts",
+				"&7 * Brute Damage: +" + bruteDamageMultiplierAdd + "%",
+				"&7 * Buff Duration: " + (buffLength / 20) + "s",
+				"&7Heal: " + (heal / 2.0F) + " hearts",
 				"&7Cooldown: 30s",
 				"&f",
-				"&8&oLet out a warrior's battlecry,",
-				"&8&orestoring some health and increases",
+				"&8&oLet out a warrior's battlecry;",
+				"&8&orestoring some health and increasing",
 				"&8&odamage dealt for a short time.",
+				"&f",
+				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
 				"&7Class: " + classType.getClassName());
 	}
 
@@ -62,11 +58,10 @@ public class Warcry extends RPGSkill
 	public void activate()
 	{
 		super.applyCooldown(30);
-		int level = caster.getSkillLevel(skillName);
-		applyEffect(caster, caster, level);
+		applyEffect(caster, caster);
 	}
 
-	public static void applyEffect(RPlayer caster, RPlayer rp, int level)
+	public static void applyEffect(RPlayer caster, RPlayer rp)
 	{
 		Player castPlayer = caster.getPlayer();
 		Player player = rp.getPlayer();
@@ -75,12 +70,12 @@ public class Warcry extends RPGSkill
 		if (player.getLocation().distance(castPlayer.getLocation()) > 16.0D)
 			return;
 		RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, player, 251), 0);
-		player.sendMessage(CakeLibrary.recodeColorCodes("&e--- Buff &6[Warcry &7Lv. " + level + "&6] &eapplied ---"));
+		player.sendMessage(CakeLibrary.recodeColorCodes("&e--- Buff &6[&4Warcry&6] &eapplied ---"));
 		rp.removeBuff("Warcry");
-		rp.buffs.add(new Buff(caster, classType.getTier1Class(), level, "Warcry", 30 + (level * 3), "&e--- Buff &6[Warcry] &eran out ---"));
+		rp.buffs.add(new Buff(caster, classType.getTier1Class(), "Warcry", buffLength, "&e--- Buff &6[ &4Warcry&6 ] &eran out ---"));
 		
 		double health = player.getHealth();
-		health += level * 2;
+		health += heal;
 		player.setHealth(health > player.getMaxHealth() ? player.getMaxHealth() : health);
 	}
 }

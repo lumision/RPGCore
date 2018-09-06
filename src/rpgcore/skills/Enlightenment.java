@@ -10,21 +10,24 @@ import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
 import rpgcore.main.RPGEvents;
 import rpgcore.player.RPlayer;
-import rpgcore.skillinventory.SkillInventory;
 
 public class Enlightenment extends RPGSkill
 {
 	public final static String skillName = "Enlightenment";
-	public final static int castDelay = 10;
+	public final static int skillTier = 2;
+	public final static int castDelay = 0;
 	public final static ClassType classType = ClassType.PRIEST;
+	public final static float damageMultiplierAdd = 0.1F;
+	public final static int buffLength = 120;
+	public final static int cooldown = 60;
 	public Enlightenment(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, 0, classType);
+		super(skillName, caster, castDelay, 0, classType, skillTier);
 	}
 	
 	public Enlightenment()
 	{
-		super(skillName, null, castDelay, 0, classType);
+		super(skillName, null, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -32,30 +35,23 @@ public class Enlightenment extends RPGSkill
 	{
 		new Enlightenment(rp);
 	}
-	
-	@Override 
-	public ItemStack instanceGetSkillItem(RPlayer player)
-	{
-		return getSkillItem(player);
-	}
 
-	public static ItemStack getSkillItem(RPlayer player)
+	@Override
+	public ItemStack getSkillItem()
 	{
-		int level = player.getSkillLevel(skillName);
-		boolean unlocked = level > 0;
-		level += unlocked ? 0 : 1;
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.GOLDEN_APPLE, 1), 
 				"&eEnlightenment"),
-				"&7Skill Level: " + (unlocked ? level : 0),
 				"&7Buff:",
-				"&7 * Magic Damage: +" + (5 + (level * 2)) + "%",
-				"&7 * Brute Damage: +" + (5 + (level * 2)) + "%",
-				"&7 * Buff Duration: " + (60 + (level * 6)) + "s",
+				"&7 * Magic Damage: +" + (int) (damageMultiplierAdd * 100.0F) + "%",
+				"&7 * Brute Damage: +" + (int) (damageMultiplierAdd * 100.0F) + "10%",
+				"&7 * Buff Duration: 120s",
 				"&7Cooldown: 60s",
 				"&f",
 				"&8&oApplies a buff with the above",
 				"&8&oeffects to the user and all",
 				"&8&oparty members within 16 blocks.",
+				"&f",
+				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
 				"&7Class: " + classType.getClassName());
 	}
 
@@ -63,15 +59,14 @@ public class Enlightenment extends RPGSkill
 	public void activate()
 	{
 		super.applyCooldown(60);
-		int level = caster.getSkillLevel(skillName);
 		if (caster.partyID == -1)
-			applyEffect(caster, caster, level);
+			applyEffect(caster, caster);
 		else 
 			for (RPlayer partyMember: RPGCore.partyManager.getParty(caster.partyID).players)
-				applyEffect(caster, partyMember, level);
+				applyEffect(caster, partyMember);
 	}
 
-	public static void applyEffect(RPlayer caster, RPlayer rp, int level)
+	public static void applyEffect(RPlayer caster, RPlayer rp)
 	{
 		Player castPlayer = caster.getPlayer();
 		Player player = rp.getPlayer();
@@ -80,8 +75,8 @@ public class Enlightenment extends RPGSkill
 		if (player.getLocation().distance(castPlayer.getLocation()) > 16.0D)
 			return;
 		RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, player, 251), 0);
-		player.sendMessage(CakeLibrary.recodeColorCodes("&e--- Buff &6[Enlightenment &7Lv. " + level + "&6] &eapplied ---"));
+		player.sendMessage(CakeLibrary.recodeColorCodes("&e--- Buff &6[&eEnlightenment&6] &eapplied ---"));
 		rp.removeBuff("Enlightenment");
-		rp.buffs.add(new Buff(caster, classType.getTier1Class(), level, "Enlightenment", 60 + (level * 6), "&e--- Buff &6[Enlightenment] &eran out ---"));
+		rp.buffs.add(new Buff(caster, classType.getTier1Class(), "Enlightenment", buffLength, "&e--- Buff &6[ &eEnlightenment&6 ] &eran out ---"));
 	}
 }

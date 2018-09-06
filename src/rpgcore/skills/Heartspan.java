@@ -5,9 +5,9 @@ import java.util.ArrayList;
 import org.bukkit.Color;
 import org.bukkit.Effect;
 import org.bukkit.FireworkEffect;
+import org.bukkit.FireworkEffect.Type;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.FireworkEffect.Type;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -17,21 +17,23 @@ import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGEvents;
 import rpgcore.player.RPlayer;
-import rpgcore.skillinventory.SkillInventory;
 
 public class Heartspan extends RPGSkill
 {
 	public final static String skillName = "Heartspan";
+	public final static int skillTier = 8;
 	public final static int castDelay = 50;
-	public final static ClassType classType = ClassType.THIEF;
+	public final static ClassType classType = ClassType.ASSASSIN;
+	public final static int duration = 10 * 20;
+	public final static float damage = 4.8F;
 	public Heartspan(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, 0, classType);
+		super(skillName, caster, castDelay, 0, classType, skillTier);
 	}
 	
 	public Heartspan()
 	{
-		super(skillName, null, castDelay, 0, classType);
+		super(skillName, null, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -39,17 +41,14 @@ public class Heartspan extends RPGSkill
 	{
 		new Heartspan(rp);
 	}
-	
-	public static ItemStack getSkillItem(RPlayer player)
+
+	@Override
+	public ItemStack getSkillItem()
 	{
-		int level = player.getSkillLevel(skillName);
-		boolean unlocked = level > 0;
-		level += unlocked ? 0 : 1;
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.ARROW, 1), 
 				"&4H&7e&ca&4r&7t&cs&4p&7a&cn"),
-				"&7Skill Level: " + (unlocked ? level : 0),
-				"&7Damage per strike: " + (int) (calculateDamage(level) * 100) + "%",
-				"&7Duration: " + calculateDuration(level) + "s",
+				"&7Damage per strike: " + (int) (damage * 100) + "%",
+				"&7Duration: 10s",
 				"&7Cooldown: 60s",
 				"&f",
 				"&8&oEnters a frenzy where you are",
@@ -57,23 +56,15 @@ public class Heartspan extends RPGSkill
 				"&8&ostriking anything in your path.",
 				"&c",
 				"&8&oNote: Click to dash",
+				"&f",
+				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
 				"&7Class: " + classType.getClassName());
-	}
-	
-	public static double calculateDuration(int level)
-	{
-		return 5.0D + (level / 2.0D);
-	}
-
-	public static double calculateDamage(int level)
-	{
-		return 2.8D + (level / 5.0D);
 	}
 	
 	@Override
 	public void activate()
 	{
-		caster.heartspanTicks = (int) calculateDuration(caster.getSkillLevel("Heartspan")) * 20;
+		caster.heartspanTicks = duration;
 		strike(caster);
 		caster.getPlayer().sendMessage(CakeLibrary.recodeColorCodes("&c**HEARTSPAN ACTIVATED**"));
 		super.applyCooldown(60);
@@ -111,7 +102,7 @@ public class Heartspan extends RPGSkill
 		{
 			Location check = start.clone().add(vector.clone().multiply(i));
 			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithFireworkEffect(hit, check, 2.0D,
-					(int) (caster.getDamageOfClass() * calculateDamage(caster.getSkillLevel("Heartspan"))), player, fe), 0);
+					(int) (caster.getDamageOfClass() * damage), player, fe), 0);
 			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, check, 20), 0);
 		}
 		

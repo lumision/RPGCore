@@ -30,9 +30,11 @@ commands:
     description: Spawns crystals for testing
   npc:
     description: Test npc
-  si:
+  saveitem:
+    aliases: si
     description: Saves the item as an item
-  gi:
+  getitem:
+    aliases: gi
     description: Gets a saved item
   shop:
     description: Test-opens a shop
@@ -45,3 +47,8 @@ commands:
     description: NPC Conversation command
   pc:
     description: Toggles a chest between preview and normal type
+  npcflag:
+    description: Edits player NPC flags for testing
+  skillbook:
+    aliases: sb
+    description: Obtains a skillbook for a skill

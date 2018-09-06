@@ -7,21 +7,21 @@ import org.bukkit.inventory.ItemStack;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
 import rpgcore.player.RPlayer;
-import rpgcore.skillinventory.SkillInventory;
 
 public class ArcaneBlast extends RPGSkill
 {
 	public final static String skillName = "Arcane Blast";
+	public final static int skillTier = 4;
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.MAGE;
 	public ArcaneBlast(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, calculateDamage(caster.getSkillLevel(skillName)), classType);
+		super(skillName, caster, castDelay, calculateDamage(10), classType, skillTier);
 	}
 	
 	public ArcaneBlast()
 	{
-		super(skillName, null, castDelay, 0, classType);
+		super(skillName, null, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -29,27 +29,20 @@ public class ArcaneBlast extends RPGSkill
 	{
 		new ArcaneBlast(rp);
 	}
-	
-	@Override 
-	public ItemStack instanceGetSkillItem(RPlayer player)
+
+	@Override
+	public ItemStack getSkillItem()
 	{
-		return getSkillItem(player);
-	}
-	
-	public static ItemStack getSkillItem(RPlayer player)
-	{
-		int level = player.getSkillLevel(skillName);
-		boolean unlocked = level > 0;
-		level += unlocked ? 0 : 1;
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.FEATHER, 1), 
 				"&fArcane Blast"),
-				"&7Skill Level: " + (unlocked ? level : 0),
-				"&7Damage: " + (int) (calculateDamage(level) * 100.0D) + "%",
-				"&7Radius: " + calculateRadius(level) + " blocks",
+				"&7Damage: " + (int) (calculateDamage(10) * 100.0D) + "%",
+				"&7Radius: " + calculateRadius(10) + " blocks",
 				"&7Cooldown: 2s",
 				"&f",
 				"&8&oBlasts a plane of arcane energy",
 				"&8&ounto the target area.",
+				"&f",
+				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
 				"&7Class: " + classType.getClassName());
 	}
 	

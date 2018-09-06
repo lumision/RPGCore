@@ -3,27 +3,34 @@ package rpgcore.skills;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
+import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
-import rpgcore.player.RPlayer;
-import rpgcore.skillinventory.SkillInventory;
 
-public class Evade
+public class Evade extends RPGSkill
 {
 	public final static String skillName = "Evade";
-	public static ItemStack getSkillItem(RPlayer player)
+	public final static int skillTier = 2;
+	public final static int castDelay = 0;
+	public final static ClassType classType = ClassType.ASSASSIN;
+	
+	public Evade()
 	{
-		int level = player.getSkillLevel(skillName);
-		boolean unlocked = level > 0;
-		level += unlocked ? 0 : 1;
+		super(skillName, null, castDelay, 0, classType, skillTier);
+	}
+
+	@Override
+	public ItemStack getSkillItem()
+	{
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.FEATHER, 1), 
 				"&8Evade"),
-				"&7Skill Level: " + (unlocked ? level : 0),
 				"&7Passive Skill:",
-				"&7 * Evasion Time: " + (0.2D + (level / 50.0D)) + "s",
+				"&7 * Evasion Time: 0.4s",
 				"&f",
 				"&8&oCompletely nullifies an attack if",
 				"&8&oyou sneak within the Evasion Time",
 				"&8&owindow given.",
-				"&7Class: Thief");
+				"&f",
+				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
+				"&7Class: " + classType.getClassName());
 	}
 }

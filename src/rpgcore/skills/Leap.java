@@ -9,21 +9,22 @@ import org.bukkit.util.Vector;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
 import rpgcore.player.RPlayer;
-import rpgcore.skillinventory.SkillInventory;
 
 public class Leap extends RPGSkill
 {
 	public final static String skillName = "Leap";
+	public final static int skillTier = 2;
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.WARRIOR;
+	public final static int cooldown = 2;
 	public Leap(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, 0, classType);
+		super(skillName, caster, castDelay, 0, classType, skillTier);
 	}
 	
 	public Leap()
 	{
-		super(skillName, null, castDelay, 0, classType);
+		super(skillName, null, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -31,26 +32,20 @@ public class Leap extends RPGSkill
 	{
 		new Leap(rp);
 	}
-	
-	public static ItemStack getSkillItem(RPlayer player)
+
+	@Override
+	public ItemStack getSkillItem()
 	{
-		int level = player.getSkillLevel(skillName);
-		boolean unlocked = level > 0;
-		level += unlocked ? 0 : 1;
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.ARROW, 1), 
 				"&eLeap"),
-				"&7Skill Level: " + (unlocked ? level : 0),
-				"&7Cooldown: " + getCooldown(level) + "s",
+				"&7Cooldown: " + cooldown + "s",
 				"&f",
 				"&8&oLeaps forward in the direction",
 				"&8&oyou face. Hold down &7&o[SNEAK] &8&oto",
 				"&8&oleap in the opposite direction.",
+				"&f",
+				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
 				"&7Class: " + classType.getClassName());
-	}
-	
-	public static float getCooldown(int level)
-	{
-		return level < 3 ? 3 : level < 6 ? 2 : level < 10 ? 2 : 1;
 	}
 
 	@Override
@@ -64,6 +59,6 @@ public class Leap extends RPGSkill
 		player.setVelocity(vector);
 		player.setFallDistance(0);
 		location.getWorld().playEffect(location, Effect.STEP_SOUND, 20);
-		super.applyCooldown(getCooldown(caster.getSkillLevel(skillName)));
+		super.applyCooldown(cooldown);
 	}
 }

@@ -6,21 +6,21 @@ import org.bukkit.inventory.ItemStack;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
 import rpgcore.player.RPlayer;
-import rpgcore.skillinventory.SkillInventory;
 
 public class A1Template extends RPGSkill
 {
 	public final static String skillName = ""; //Change
+	public final static int skillTier = 1; //Change
 	public final static int castDelay = 0; //Change
 	public final static ClassType classType = ClassType.WARRIOR; //Change
 	public A1Template(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, calculateDamage(caster.getSkillLevel(skillName)), classType);
+		super(skillName, caster, castDelay, calculateDamage(10), classType, skillTier);
 	}
 	
 	public A1Template()
 	{
-		super(skillName, null, castDelay, 0, classType);
+		super(skillName, null, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -37,13 +37,10 @@ public class A1Template extends RPGSkill
 
 	public static ItemStack getSkillItem(RPlayer player) //Change
 	{
-		int level = player.getSkillLevel(skillName);
-		boolean unlocked = level > 0;
-		level += unlocked ? 0 : 1;
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.BRICK, 1), 
 				"&f"),
-				"&7Skill Level: " + (unlocked ? level : 0),
-				"&7Damage: " + (int) (calculateDamage(level) * 100) + "%",
+				"&7Class: " + classType.getClassName(),
+				"&7Damage: 100%",
 				"&7Interval: s",
 				"&f",
 				"&8&oSkill description.",

@@ -67,8 +67,9 @@ public class SkillInventory
 		int size = 9 * (player.currentClass.getTier() + 2);
 		switch(player.currentClass)
 		{
+		/*
 		//tier 1
-		case THIEF:
+		case ASSASSIN:
 			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Thief"));
 			setThiefSkills(inv, player, 0);
 			setUI(inv, size / 9, player, mode);
@@ -88,7 +89,9 @@ public class SkillInventory
 			setMageSkills(inv, player, 0);
 			setUI(inv, size / 9, player, mode);
 			return inv;
-			
+		 */
+
+		/*
 		//tier 2
 		case SORCERER:
 			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Sorcerer"));
@@ -170,10 +173,12 @@ public class SkillInventory
 			setBishopSkills(inv, player, 0);
 			setUI(inv, size / 9, player, mode);
 			return inv;
+		 */
 		default: return null;
 		}
 	}
 
+	/*
 	public static void updateSkillInventory(Inventory inv, RPlayer player)
 	{
 		String invName = CakeLibrary.removeColorCodes(inv.getName());
@@ -253,6 +258,7 @@ public class SkillInventory
 		}
 		updateSkillPointsIcon(inv, player);
 	}
+	 */
 
 	public static void updateSkillPointsIcon(Inventory inv, RPlayer player)
 	{
@@ -304,6 +310,7 @@ public class SkillInventory
 		{
 		case WARRIOR:
 			return CakeLibrary.renameItem(new ItemStack(Material.IRON_SWORD), "&fClass: " + getClassColor(classType) + "Warrior");
+			/*
 		case KNIGHT:
 			return CakeLibrary.renameItem(new ItemStack(Material.IRON_CHESTPLATE), "&fClass: " + getClassColor(classType) + "Knight");
 		case HERO:
@@ -312,8 +319,10 @@ public class SkillInventory
 			return CakeLibrary.renameItem(new ItemStack(Material.GOLD_SWORD), "&fClass: " + getClassColor(classType) + "Paladin");
 		case ODIN:
 			return CakeLibrary.renameItem(new ItemStack(Material.DIAMOND_SWORD), "&fClass: " + getClassColor(classType) + "Odin");
+			 */
 		case MAGE:
 			return CakeLibrary.renameItem(new ItemStack(Material.STICK), "&fClass: " + getClassColor(classType) + "Mage");
+			/*
 		case SHAMAN:
 			return CakeLibrary.renameItem(new ItemStack(Material.PAPER), "&fClass: " + getClassColor(classType) + "Shaman");
 		case THAUMATURGE:
@@ -322,18 +331,23 @@ public class SkillInventory
 			return CakeLibrary.renameItem(new ItemStack(Material.SUGAR), "&fClass: " + getClassColor(classType) + "Sorcerer");
 		case ARCHMAGE:
 			return CakeLibrary.renameItem(new ItemStack(Material.GLOWSTONE_DUST), "&fClass: " + getClassColor(classType) + "Archmage");
+			 */
 		case PRIEST:
 			return CakeLibrary.renameItem(new ItemStack(38, 1, (short) 3), "&fClass: " + getClassColor(classType) + "Priest");
+			/*
 		case FRIAR:
 			return CakeLibrary.renameItem(new ItemStack(38, 1, (short) 6), "&fClass: " + getClassColor(classType) + "Friar");
 		case BISHOP:
 			return CakeLibrary.renameItem(new ItemStack(38, 1, (short) 8), "&fClass: " + getClassColor(classType) + "Bishop");
-		case THIEF:
+			 */
+		case ASSASSIN:
 			return CakeLibrary.renameItem(new ItemStack(Material.ENDER_PEARL), "&fClass: " + getClassColor(classType) + "Thief");
+			/*
 		case ASSASSIN:
 			return CakeLibrary.renameItem(new ItemStack(Material.EYE_OF_ENDER), "&fClass: " + getClassColor(classType) + "Assassin");
 		case DUALIST:
 			return CakeLibrary.renameItem(new ItemStack(Material.NETHER_STAR), "&fClass: " + getClassColor(classType) + "Dualist");
+			 */
 		}
 		return null;
 	}
@@ -398,7 +412,7 @@ case DUALIST:
 				continue;
 			name = CakeLibrary.removeColorCodes(name);
 			ItemStack change = null;
-			
+
 			for (RPGSkill skill: RPGSkill.skillList)
 				if (name.equals(skill.skillName))
 					change = skill.instanceGetSkillItem(player);
@@ -409,6 +423,7 @@ case DUALIST:
 		}
 	}
 
+	/*
 	//ADDSKILL
 	public static void setWarriorSkills(Inventory inv, RPlayer player, int row)
 	{
@@ -481,4 +496,5 @@ case DUALIST:
 		inv.setItem(0 + (row * 9), ArcaneBarrage.getSkillItem(player));
 		inv.setItem(4 + (row * 9), Armageddon.getSkillItem(player));
 	}
+	 */
 }

@@ -2,7 +2,6 @@ package rpgcore.main;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Random;
 import java.util.Timer;
 
@@ -48,7 +47,8 @@ import rpgcore.recipes.RPGRecipe;
 import rpgcore.shop.Shop;
 import rpgcore.shop.ShopManager;
 import rpgcore.sideclasses.RPGSideClass;
-import rpgcore.skillinventory.SkillInventory;
+import rpgcore.skillinventory2.SkillInventory2;
+import rpgcore.skills.RPGSkill;
 import rpgcore.songs.RPGSong;
 import rpgcore.songs.RSongManager;
 import rpgcore.songs.RunningTrack;
@@ -484,6 +484,34 @@ public class RPGCore extends JavaPlugin
 				p.openInventory(shop.getShopInventory());
 				return true;
 			}
+			if (command.getName().equalsIgnoreCase("skillbook"))
+			{
+				if (!p.hasPermission("rpgcore.skillbook"))
+				{
+					msg(p, "You do not have permissions to do this.");
+					return true;
+				}
+				if (args.length < 1)
+				{
+					msg(p, "Usage: /skillbook <skillname>");
+					return true;
+				}
+				RPGSkill skill = null;
+				for (RPGSkill check: RPGSkill.skillList)
+					if (check.skillName.toLowerCase().replace(" ", "").equals(args[0].toLowerCase()))
+						skill = check;
+				if (skill == null)
+				{
+					msg(p, "Skill does not exist");
+					return true;
+				}
+				ItemStack skillItem = skill.getSkillItem();
+				skillItem = CakeLibrary.renameItem(skillItem, "&eSkillbook &6< " + CakeLibrary.getItemName(skillItem) + "&6 >");
+				skillItem.setType(Material.ENCHANTED_BOOK);
+				p.getInventory().addItem(skillItem);
+				msg(p, "Skillbook for \"" + skill.skillName + "\" received.");
+				return true;
+			}
 			if (command.getName().equalsIgnoreCase("pc"))
 			{
 				if (!p.hasPermission("rpgcore.previewchest"))
@@ -537,7 +565,7 @@ public class RPGCore extends JavaPlugin
 				}
 				return true;
 			}
-			if (command.getName().equalsIgnoreCase("si"))
+			if (command.getName().equalsIgnoreCase("saveitem"))
 			{
 				if (!p.hasPermission("rpgcore.item"))
 				{
@@ -552,7 +580,7 @@ public class RPGCore extends JavaPlugin
 				}
 				if (args.length < 1)
 				{
-					msg(p, "Usage: /si [filename]");
+					msg(p, "Usage: /saveitem <filename>");
 					return true;
 				}
 				RItem ri = new RItem(is, args[0]);
@@ -561,7 +589,7 @@ public class RPGCore extends JavaPlugin
 				msg(p, "Item saved");
 				return true;
 			}
-			if (command.getName().equalsIgnoreCase("gi"))
+			if (command.getName().equalsIgnoreCase("getitem"))
 			{
 				if (!p.hasPermission("rpgcore.item"))
 				{
@@ -570,9 +598,7 @@ public class RPGCore extends JavaPlugin
 				}
 				if (args.length < 1)
 				{
-					p.sendMessage(CakeLibrary.recodeColorCodes("&4Item Database List:"));
-					for (RItem ri: itemDatabase)
-						p.sendMessage(CakeLibrary.recodeColorCodes("&c - " + ri.databaseName));
+					msg(p, "Usage: /getitem <item>");
 					return true;
 				}
 				RItem ri = getItemFromDatabase(args[0]);
@@ -585,6 +611,59 @@ public class RPGCore extends JavaPlugin
 					ri.itemVanilla.setAmount(Math.min(64, Integer.valueOf(args[1])));
 				p.getInventory().addItem(ri.createItem());	
 				msg(p, "Item obtained");
+				return true;
+			}
+			if (command.getName().equalsIgnoreCase("npcflag"))
+			{
+				if (!p.hasPermission("rpgcore.npc"))
+				{
+					msg(p, "You do not have permissions to do this.");
+					return true;
+				}
+				if (args.length == 0)
+				{
+					msg(p, "Usage: /npcflag <list/del/set> [flagName] [newValue]");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("list"))
+				{
+					Object[] keys = rp.npcFlags.keySet().toArray();
+					Object[] values = rp.npcFlags.values().toArray();
+					for (int i = 0; i < keys.length; i++)
+						msgNoTag(p, (String) keys[i] + ": " + (String) values[i]);
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("del") || args[0].equalsIgnoreCase("delete") || args[0].equalsIgnoreCase("remove"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /npcflag del <flagName>");
+						return true;
+					}
+					if (rp.npcFlags.remove(args[1]) == null)
+					{
+						msg(p, "You do not have a \"" + args[1] + "\" NPC Flag (case-sensitive)");
+						return true;
+					}
+					msg(p, "NPC Flag \"" + args[1] + "\" removed.");
+					playerManager.writeData(rp);
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("set"))
+				{
+					if (args.length < 3)
+					{
+						msg(p, "Usage: /npcflag set <flagName> <newValue>");
+						return true;
+					}
+					if (rp.npcFlags.containsKey(args[1]))
+						rp.npcFlags.remove(args[1]);
+					rp.npcFlags.put(args[1], args[2]);
+					msg(p, "NPC Flag\"" + args[1] + "\" set to \"" + args[2] + "\".");
+					playerManager.writeData(rp);
+					return true;
+				}
+				msg(p, "Usage: /npcflag <del/set> <flagName> [newValue]");
 				return true;
 			}
 			if (command.getName().equalsIgnoreCase("npc"))
@@ -1404,7 +1483,7 @@ public class RPGCore extends JavaPlugin
 			}
 			if (command.getName().equalsIgnoreCase("class"))
 			{
-				p.openInventory(ClassInventory.getClassInventory(rp));
+				p.openInventory(ClassInventory.getClassInventory1(rp));
 				return true;
 			}
 			if (command.getName().equalsIgnoreCase("skills"))
@@ -1467,7 +1546,7 @@ public class RPGCore extends JavaPlugin
 					}
 					return true;
 				}
-				p.openInventory(SkillInventory.getSkillInventory(rp, 0));
+				p.openInventory(SkillInventory2.getSkillInventory(rp, rp.lastSkillbookTier));
 				return true;
 			}
 		}
