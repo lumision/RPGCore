@@ -2,6 +2,7 @@ package rpgcore.main;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
 import java.util.Timer;
 
@@ -38,11 +39,12 @@ import rpgcore.item.RItem;
 import rpgcore.npc.ConversationData;
 import rpgcore.npc.CustomNPC;
 import rpgcore.npc.NPCManager;
-import rpgcore.party.Party;
-import rpgcore.party.RPartyManager;
+import rpgcore.party.PartyManager;
+import rpgcore.party.RPGParty;
 import rpgcore.player.RPlayer;
 import rpgcore.player.RPlayerManager;
 import rpgcore.previewchests.PreviewChestManager;
+import rpgcore.recipes.RPGRecipe;
 import rpgcore.shop.Shop;
 import rpgcore.shop.ShopManager;
 import rpgcore.sideclasses.RPGSideClass;
@@ -60,13 +62,14 @@ public class RPGCore extends JavaPlugin
 	public static RPGListener listener;
 	public static RPlayerManager playerManager;
 	public static RSongManager songManager;
-	public static RPartyManager partyManager;
+	public static PartyManager partyManager;
 	public static PreviewChestManager previewChestManager;
 	public static RPGCore instance;
 	public static Random rand = new Random();
 	public static Timer timer = new Timer();
 	public static NPCManager npcManager;
 	public static long serverAliveTicks;
+	
 
 	static final String[] helpGold = new String[] { 
 			"&6===[&e /gold Help &6]===", 
@@ -121,7 +124,7 @@ public class RPGCore extends JavaPlugin
 		RPGSideClass.setXPTable();
 		playerManager = new RPlayerManager(this);
 		songManager = new RSongManager(this);
-		partyManager = new RPartyManager(this);
+		partyManager = new PartyManager(this);
 		previewChestManager = new PreviewChestManager(this);
 		listener = new RPGListener(this);
 		getServer().getPluginManager().registerEvents(listener, this);
@@ -129,7 +132,8 @@ public class RPGCore extends JavaPlugin
 		events = new RPGEvents(this);
 		RPGEvents.stopped = false;
 		ShopManager.readShopDatabase();
-		ConversationData.loadConversationData();
+		ConversationData.readConversationData();
+		RPGRecipe.readRecipeData();
 
 		RPGEvents.scheduleRunnable(new RPGEvents.ConsoleCommand("gamerule sendCommandFeedback false"), 1);
 		RPGEvents.scheduleRunnable(new RPGEvents.ConsoleCommand("gamerule mobGriefing false"), 1);
@@ -282,7 +286,8 @@ public class RPGCore extends JavaPlugin
 				songManager.readSongs();
 				for (CustomNPC npc: npcManager.npcs)
 					npc.conversationData = null;
-				ConversationData.loadConversationData();
+				ConversationData.readConversationData();
+				RPGRecipe.readRecipeData();
 				msg(p, "Reloaded RPGCore v" + getDescription().getVersion());
 				return true;
 			}
@@ -705,10 +710,10 @@ public class RPGCore extends JavaPlugin
 				{
 					if (rp.partyID == -1)
 					{
-						Party.msg(p, "You are not in a party.");
+						RPGParty.msg(p, "You are not in a party.");
 						return true;
 					}
-					Party party = partyManager.getParty(rp.partyID);
+					RPGParty party = partyManager.getParty(rp.partyID);
 					party.updatePartyInventory();
 
 					/**msgNoTag(p, "&5---[&d Party Info &5]---");
@@ -731,53 +736,53 @@ public class RPGCore extends JavaPlugin
 				{
 					if (rp.partyID != -1)
 					{
-						Party.msg(p, "You are already in a party.");
-						Party.msg(p, "Use &5/party disband &dto disband it.");
+						RPGParty.msg(p, "You are already in a party.");
+						RPGParty.msg(p, "Use &5/party disband &dto disband it.");
 						return true;
 					}
 					partyManager.createNewParty(rp);
-					Party.msg(p, "Party created.");
-					Party.msg(p, "&dUse &5/party <invite/kick/disband> [player] &dto manage.");
+					RPGParty.msg(p, "Party created.");
+					RPGParty.msg(p, "&dUse &5/party <invite/kick/disband> [player] &dto manage.");
 					return true;
 				}
 				if (args[0].equalsIgnoreCase("join"))
 				{
 					if (args.length < 2)
 					{
-						Party.msg(p, "Usage: /party join <host>");
+						RPGParty.msg(p, "Usage: /party join <host>");
 						return true;
 					}
 					if (rp.partyID != -1)
 					{
-						Party.msg(p, "You are already in a party.");
-						Party.msg(p, "Use &5/party leave &dto leave.");
+						RPGParty.msg(p, "You are already in a party.");
+						RPGParty.msg(p, "Use &5/party leave &dto leave.");
 						return true;
 					}
 					RPlayer target = playerManager.getRPlayer(CakeLibrary.completeName(args[1]));
 					if (target == null)
 					{
-						Party.msg(p, "No player by that name was found.");
+						RPGParty.msg(p, "No player by that name was found.");
 						return true;
 					}
 					if (target.partyID == -1)
 					{
-						Party.msg(p, "That player is not even in a party.");
+						RPGParty.msg(p, "That player is not even in a party.");
 						return true;
 					}
-					Party party = partyManager.getParty(target.partyID);
+					RPGParty party = partyManager.getParty(target.partyID);
 					if (party.host != target)
 					{
-						Party.msg(p, "That player is not the host of his party.");
+						RPGParty.msg(p, "That player is not the host of his party.");
 						return true;
 					}
 					if (!party.invites.contains(p.getName()))
 					{
-						Party.msg(p, "You aren't invited to this party.");
+						RPGParty.msg(p, "You aren't invited to this party.");
 						return true;
 					}
 					if (party.players.size() >= 9)
 					{
-						Party.msg(p, "This party is full (9 players).");
+						RPGParty.msg(p, "This party is full (9 players).");
 						return true;
 					}
 					party.invites.remove(p.getName());
@@ -790,65 +795,65 @@ public class RPGCore extends JavaPlugin
 				{
 					if (rp.partyID == -1)
 					{
-						Party.msg(p, "You aren't even in a party.");
+						RPGParty.msg(p, "You aren't even in a party.");
 						return true;
 					}
-					Party party = partyManager.getParty(rp.partyID);
+					RPGParty party = partyManager.getParty(rp.partyID);
 					if (party.host == rp)
 					{
-						Party.msg(p, "You can't leave the party as a host.");
-						Party.msg(p, "Either disband the party or pass host to someone else.");
+						RPGParty.msg(p, "You can't leave the party as a host.");
+						RPGParty.msg(p, "Either disband the party or pass host to someone else.");
 						return true;
 					}
 					party.removePlayer(rp);
 					party.updatePartyInventory();
 					party.broadcastMessage("&5" + p.getName() + " &dhas left the party.");
-					Party.msg(p, "You have left the party.");
+					RPGParty.msg(p, "You have left the party.");
 					return true;
 				}
 				if (args[0].equalsIgnoreCase("invite"))
 				{
 					if (args.length < 2)
 					{
-						Party.msg(p, "Usage: /party invite <player>");
+						RPGParty.msg(p, "Usage: /party invite <player>");
 						return true;
 					}
 					if (rp.partyID == -1)
 					{
-						Party.msg(p, "You are not in a party.");
+						RPGParty.msg(p, "You are not in a party.");
 						return true;
 					}
-					Party party = partyManager.getParty(rp.partyID);
+					RPGParty party = partyManager.getParty(rp.partyID);
 					if (party.host != rp)
 					{
-						Party.msg(p, "You are not the host, try asking &5" + party.host.getPlayerName() + " &dto do it.");
+						RPGParty.msg(p, "You are not the host, try asking &5" + party.host.getPlayerName() + " &dto do it.");
 						return true;
 					}
 					RPlayer target = playerManager.getRPlayer(CakeLibrary.completeName(args[1]));
 					if (target == null)
 					{
-						Party.msg(p, "No player by that name was found.");
+						RPGParty.msg(p, "No player by that name was found.");
 						return true;
 					}
 					if (party.players.contains(target))
 					{
-						Party.msg(p, "That player is already in the party.");
+						RPGParty.msg(p, "That player is already in the party.");
 						return true;
 					}
 					Player t = target.getPlayer();
 					if (t == null)
 					{
-						Party.msg(p, "That player is not online.");
+						RPGParty.msg(p, "That player is not online.");
 						return true;
 					}
 					if (party.invites.contains(target.getPlayerName()))
 					{
-						Party.msg(p, "You have already invited the player.");
+						RPGParty.msg(p, "You have already invited the player.");
 						return true;
 					}
 					party.invites.add(target.getPlayerName());
-					Party.msg(t, "You have been invited to join &5" + p.getName() + "&d's party.");
-					Party.msg(t, "Type &5/party join " + p.getName() + " &dto join.");
+					RPGParty.msg(t, "You have been invited to join &5" + p.getName() + "&d's party.");
+					RPGParty.msg(t, "Type &5/party join " + p.getName() + " &dto join.");
 					party.broadcastMessage("&5" + target.getPlayerName() + " &dhas been invited to the party.");
 					return true;
 				}
@@ -856,34 +861,34 @@ public class RPGCore extends JavaPlugin
 				{
 					if (args.length < 2)
 					{
-						Party.msg(p, "Usage: /party kick <player>");
+						RPGParty.msg(p, "Usage: /party kick <player>");
 						return true;
 					}
 					if (rp.partyID == -1)
 					{
-						Party.msg(p, "You are not in a party.");
+						RPGParty.msg(p, "You are not in a party.");
 						return true;
 					}
-					Party party = partyManager.getParty(rp.partyID);
+					RPGParty party = partyManager.getParty(rp.partyID);
 					if (party.host != rp)
 					{
-						Party.msg(p, "You are not the host, try asking &5" + party.host.getPlayerName() + " &dto do it.");
+						RPGParty.msg(p, "You are not the host, try asking &5" + party.host.getPlayerName() + " &dto do it.");
 						return true;
 					}
 					RPlayer target = playerManager.getRPlayer(CakeLibrary.completeName(args[1]));
 					if (target == null)
 					{
-						Party.msg(p, "No player by that name was found.");
+						RPGParty.msg(p, "No player by that name was found.");
 						return true;
 					}
 					if (party.host == target)
 					{
-						Party.msg(p, "You can't kick yourself from your party.");
+						RPGParty.msg(p, "You can't kick yourself from your party.");
 						return true;
 					}
 					if (!party.players.contains(target))
 					{
-						Party.msg(p, "That player is not in the party.");
+						RPGParty.msg(p, "That player is not in the party.");
 						return true;
 					}
 					Player t = target.getPlayer();
@@ -891,36 +896,36 @@ public class RPGCore extends JavaPlugin
 					party.updatePartyInventory();
 					party.broadcastMessage("&5" + target.getPlayerName() + " &dhas been kicked from the party.");
 					if (t != null)
-						Party.msg(t, "You have been kicked from the party.");
+						RPGParty.msg(t, "You have been kicked from the party.");
 					return true;
 				}
 				if (args[0].equalsIgnoreCase("sethost"))
 				{
 					if (args.length < 2)
 					{
-						Party.msg(p, "Usage: /party sethost <player>");
+						RPGParty.msg(p, "Usage: /party sethost <player>");
 						return true;
 					}
 					if (rp.partyID == -1)
 					{
-						Party.msg(p, "You are not in a party.");
+						RPGParty.msg(p, "You are not in a party.");
 						return true;
 					}
-					Party party = partyManager.getParty(rp.partyID);
+					RPGParty party = partyManager.getParty(rp.partyID);
 					if (party.host != rp)
 					{
-						Party.msg(p, "You are not the host, try asking &5" + party.host.getPlayerName() + " &dto do it.");
+						RPGParty.msg(p, "You are not the host, try asking &5" + party.host.getPlayerName() + " &dto do it.");
 						return true;
 					}
 					RPlayer target = playerManager.getRPlayer(CakeLibrary.completeName(args[1]));
 					if (target == null)
 					{
-						Party.msg(p, "No player by that name was found.");
+						RPGParty.msg(p, "No player by that name was found.");
 						return true;
 					}
 					if (!party.players.contains(target))
 					{
-						Party.msg(p, "That player is not in the party.");
+						RPGParty.msg(p, "That player is not in the party.");
 						return true;
 					}
 					party.host = target;
@@ -932,13 +937,13 @@ public class RPGCore extends JavaPlugin
 				{
 					if (rp.partyID == -1)
 					{
-						Party.msg(p, "You are not in a party.");
+						RPGParty.msg(p, "You are not in a party.");
 						return true;
 					}
-					Party party = partyManager.getParty(rp.partyID);
+					RPGParty party = partyManager.getParty(rp.partyID);
 					if (party.host != rp)
 					{
-						Party.msg(p, "You are not the host, try asking &5" + party.host.getPlayerName() + " &dto do it.");
+						RPGParty.msg(p, "You are not the host, try asking &5" + party.host.getPlayerName() + " &dto do it.");
 						return true;
 					}
 					party.disbandParty();

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.util.UUID;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -16,6 +17,7 @@ import org.bukkit.entity.Chicken;
 import org.bukkit.entity.Cow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Pig;
@@ -40,13 +42,16 @@ import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.server.TabCompleteEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Vector;
 
 import net.minecraft.server.v1_12_R1.EnumParticle;
@@ -58,6 +63,7 @@ import rpgcore.entities.mobs.ReinforcedZombie;
 import rpgcore.entities.mobs.WarriorZombie;
 import rpgcore.entities.mobs.WeakSlime;
 import rpgcore.item.BonusStat.BonusStatCrystal;
+import rpgcore.item.RItem;
 import rpgcore.main.RPGEvents.EntityDamageHistory;
 import rpgcore.npc.ConversationData.ConversationPart;
 import rpgcore.npc.ConversationData.ConversationPartType;
@@ -65,6 +71,7 @@ import rpgcore.npc.CustomNPC;
 import rpgcore.npc.NPCConversation;
 import rpgcore.player.RPlayer;
 import rpgcore.player.RPlayerManager;
+import rpgcore.recipes.RPGRecipe;
 import rpgcore.shop.Shop;
 import rpgcore.shop.ShopItem;
 import rpgcore.shop.ShopManager;
@@ -79,7 +86,7 @@ public class RPGListener implements Listener
 	public RPGCore instance;
 	public RPlayerManager playerManager;
 	public static Random dropsRand = new Random();
-	
+
 	ItemStack calcite, platinum, topaz, sapphire, ruby, etheryte, excaryte, luminyte;
 	public RPGListener(RPGCore instance)
 	{
@@ -94,6 +101,40 @@ public class RPGListener implements Listener
 		etheryte = RPGCore.getItemFromDatabase("Etheryte").createItem();
 		excaryte = RPGCore.getItemFromDatabase("Excaryte").createItem();
 		luminyte = RPGCore.getItemFromDatabase("Luminyte").createItem();
+	}
+
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void handlePrepareItemCraft(PrepareItemCraftEvent event)
+	{
+		ItemStack[] matrix = event.getInventory().getMatrix();
+		for (RPGRecipe recipe: RPGRecipe.recipes)
+			if (recipe.crafted(matrix))
+			{
+				event.getInventory().setResult(recipe.result.createItem());
+				if (recipe.sound != null)
+					for (HumanEntity player: event.getViewers())
+						if (player instanceof Player)
+							((Player) player).playSound(player.getLocation(), recipe.sound, recipe.volume, recipe.pitch);
+				return;
+			}
+
+		//Prevents crafting vanilla recipes with custom items
+		for (int i = 0; i < matrix.length; i++)
+		{
+			if (!CakeLibrary.isItemStackNull(matrix[i]) && CakeLibrary.hasColor(CakeLibrary.getItemName(matrix[i])))
+				event.getInventory().setResult(new ItemStack(Material.AIR));
+		}
+	}
+
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void handleItemCraft(CraftItemEvent event)
+	{
+		ItemStack[] matrix = event.getInventory().getMatrix();
+		for (int i = 0; i < matrix.length; i++)
+		{
+			if (!CakeLibrary.isItemStackNull(matrix[i]) && CakeLibrary.hasColor(CakeLibrary.getItemName(matrix[i])))
+				event.setCancelled(true);
+		}
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -287,7 +328,7 @@ public class RPGListener implements Listener
 		RPlayer rp = RPGCore.playerManager.getRPlayer(p.getUniqueId());
 		if (rp == null)
 			return;
-		
+
 		Inventory inv = event.getInventory();
 		InventoryHolder holder = inv.getHolder();
 		if (holder instanceof Chest)
@@ -312,7 +353,7 @@ public class RPGListener implements Listener
 					event.setCancelled(true);
 				return;
 			}
-			
+
 			l = ((Chest) ((DoubleChest) holder).getRightSide()).getLocation();
 			if (RPGCore.previewChestManager.getPreviewChest(l) != null)
 			{
@@ -323,7 +364,7 @@ public class RPGListener implements Listener
 				return;
 			}
 		}
-		
+
 		String name = inv.getName();
 		if (!CakeLibrary.hasColor(name))
 			return;
@@ -580,12 +621,12 @@ public class RPGListener implements Listener
 					}
 			}
 		}
-		
+
 		Block b = event.getBlock();
 		if (b.getType().equals(Material.STONE))
 		{
 			RPGSideClass prospector = rp.getSideClass(SideClassType.PROSPECTOR);
-			
+
 			int xp = 0;
 			switch (b.getData())
 			{
@@ -602,7 +643,7 @@ public class RPGListener implements Listener
 				xp = 5;
 				break;
 			}
-			
+
 			if (prospector.lastCheckedLevel >= 0 && RPGCore.rand.nextInt(20) == 0)
 			{
 				xp += 10;
@@ -611,16 +652,16 @@ public class RPGListener implements Listener
 			rp.addSideclassXP(SideClassType.PROSPECTOR, xp);
 		} else if (b.getType().equals(Material.COBBLESTONE))
 			rp.addSideclassXP(SideClassType.PROSPECTOR, 2);
-		 else if (b.getType().equals(Material.COAL_ORE))
-				rp.addSideclassXP(SideClassType.PROSPECTOR, 10);
-		 else if (b.getType().equals(Material.IRON_ORE))
-				rp.addSideclassXP(SideClassType.PROSPECTOR, 15);
-		 else if (b.getType().equals(Material.GOLD_ORE))
-				rp.addSideclassXP(SideClassType.PROSPECTOR, 25);
-		 else if (b.getType().equals(Material.DIAMOND_ORE))
-				rp.addSideclassXP(SideClassType.PROSPECTOR, 100);
-		 else if (b.getType().equals(Material.OBSIDIAN))
-				rp.addSideclassXP(SideClassType.PROSPECTOR, 25);
+		else if (b.getType().equals(Material.COAL_ORE))
+			rp.addSideclassXP(SideClassType.PROSPECTOR, 10);
+		else if (b.getType().equals(Material.IRON_ORE))
+			rp.addSideclassXP(SideClassType.PROSPECTOR, 15);
+		else if (b.getType().equals(Material.GOLD_ORE))
+			rp.addSideclassXP(SideClassType.PROSPECTOR, 25);
+		else if (b.getType().equals(Material.DIAMOND_ORE))
+			rp.addSideclassXP(SideClassType.PROSPECTOR, 100);
+		else if (b.getType().equals(Material.OBSIDIAN))
+			rp.addSideclassXP(SideClassType.PROSPECTOR, 25);
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -655,15 +696,6 @@ public class RPGListener implements Listener
 
 			event.setDamage(event.getDamage() - (event.getDamage() / 100D * rp.calculateDamageReduction()));
 		}
-	}
-
-	@EventHandler(priority = EventPriority.HIGHEST)
-	public void handleItemCraft(CraftItemEvent event)
-	{
-		Inventory inv = event.getInventory();
-		for (ItemStack item: inv.getContents())
-			if (CakeLibrary.hasColor(CakeLibrary.getItemName(item)))
-				event.setCancelled(true);
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -746,6 +778,32 @@ public class RPGListener implements Listener
 		}
 		handleSkillCast(event.getPlayer());
 	}
+	
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void handleTab(TabCompleteEvent event)
+	{
+		String msg = event.getBuffer();
+		if (msg.length() < 1)
+			return;
+		
+		String s = event.getSender() instanceof Player ? "/" : "";
+		ArrayList<String> completions = new ArrayList<String>();
+		
+		if (msg.startsWith(s + "gi "))
+		{
+			String[] split = msg.split(" ");
+			if (split.length >= 2 && split[1].length() > 0)
+			{
+				for (RItem ri: RPGCore.itemDatabase)
+					if (ri.databaseName.toLowerCase().startsWith(split[1].toLowerCase()))
+						completions.add(ri.databaseName);
+			}
+				
+		}
+		
+		if (completions.size() > 0)
+			event.setCompletions(completions);
+	}
 
 	public boolean handleSkillCast(Player p)
 	{
@@ -770,32 +828,12 @@ public class RPGListener implements Listener
 			if (skill != null)
 				if (skill.skillName != null)
 					if (name.contains(skill.skillName))
+					{
 						skill.insantiate(rp);
+						return true;
+					}
 
-		/** - don't use this anymore
-		if (name.contains(ArcaneBolt.skillName))
-			new ArcaneBolt(rp);
-		if (name.contains(ArcaneBarrage.skillName))
-			new ArcaneBarrage(rp);
-		if (name.contains(HolyBolt.skillName))
-			new HolyBolt(rp);
-		if (name.contains(PowerPierce.skillName))
-			new PowerPierce(rp);
-		if (name.contains(Kunai.skillName))
-			new Kunai(rp);
-		if (name.contains(Dash.skillName))
-			new Dash(rp);
-		if (name.contains(ShadowStab.skillName))
-			new ShadowStab(rp);
-		if (name.contains(Heal.skillName))
-			new Heal(rp);
-		if (name.contains(Enlightenment.skillName))
-			new Enlightenment(rp);
-		if (name.contains(Propulsion.skillName))
-			new Propulsion(rp);
-		- don't use this anymore
-		 */
-		return true;
+		return false;
 	} 
 
 	public boolean isSkill(String itemName, RPlayer rp)

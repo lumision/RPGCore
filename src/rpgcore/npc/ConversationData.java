@@ -90,7 +90,7 @@ public class ConversationData
 		NPC, PLAYER, OPENING, CLOSING;
 	}
 
-	public static void loadConversationData()
+	public static void readConversationData()
 	{
 		dataList.clear();
 		for (File file: dataFolder.listFiles())

@@ -28,7 +28,7 @@ public class RItem
 
 	//BONUS STATS
 	public BonusStat bonusStat;
-	
+
 	//ENHANCEMENT
 	private int tier;
 	public int addedMagicDamage, addedBruteDamage;
@@ -52,41 +52,33 @@ public class RItem
 	static Random rand = new Random();
 	static final String statColor = CakeLibrary.recodeColorCodes("&6");
 	static final String statColorSecondary = CakeLibrary.recodeColorCodes("&e");
-	
+
 	public static final String[] tiers1 = {
 			CakeLibrary.recodeColorCodes("&a [&2I&a]"),
 			CakeLibrary.recodeColorCodes("&b [&3II&b]"),
 			CakeLibrary.recodeColorCodes("&c [&4III&c]"),
 			CakeLibrary.recodeColorCodes("&d [&5IV&d]"),
 			CakeLibrary.recodeColorCodes("&e [&6V&e]")
-			};
-	
+	};
+
 	public static final String[] tiers2 = {
-			CakeLibrary.recodeColorCodes("&e (&6I&e)"),
-			CakeLibrary.recodeColorCodes("&e (&6II&e)"),
-			CakeLibrary.recodeColorCodes("&e (&6III&e)"),
-			CakeLibrary.recodeColorCodes("&e (&6IV&e)"),
-			CakeLibrary.recodeColorCodes("&e (&6V&e)")
-			};
-	
-	public static final String[] tiers3 = {
-			CakeLibrary.recodeColorCodes("&1&e  ✮"),
-			CakeLibrary.recodeColorCodes("&2&e  ✮✮"),
-			CakeLibrary.recodeColorCodes("&3&e  ✮✮✮"),
-			CakeLibrary.recodeColorCodes("&4&e  ✮✮✮✮"),
-			CakeLibrary.recodeColorCodes("&5&e  ✮✮✮✮✮")
-			};
-	
-	public static final String[] tiers = {
 			CakeLibrary.recodeColorCodes("&6  [ &e✮&6 ]"),
 			CakeLibrary.recodeColorCodes("&6  [ &e✮✮&6 ]"),
 			CakeLibrary.recodeColorCodes("&6  [ &e✮✮✮&6 ]"),
 			CakeLibrary.recodeColorCodes("&6  [ &e✮✮✮✮&6 ]"),
 			CakeLibrary.recodeColorCodes("&6  [ &e✮✮✮✮✮&6 ]")
-			};
-	
-	static final boolean tierLore = true;
-	
+	};
+
+	public static final String[] tiers = {
+			CakeLibrary.recodeColorCodes("&e ✮"),
+			CakeLibrary.recodeColorCodes("&e ✮✮"),
+			CakeLibrary.recodeColorCodes("&e ✮✮✮"),
+			CakeLibrary.recodeColorCodes("&e ✮✮✮✮"),
+			CakeLibrary.recodeColorCodes("&e ✮✮✮✮✮")
+	};
+
+	static final boolean tierLore = false;
+
 	static final float tierStatMultiplier = 1.2F;
 
 	public RItem(ItemStack is)
@@ -100,6 +92,51 @@ public class RItem
 		setItemStats(is);
 	}
 
+	//Might be a redundant function but I'll make this for now
+	public boolean compare(RItem other)
+	{
+		if (!itemVanilla.getType().equals(other.itemVanilla.getType()))
+			return false;
+
+		if (itemVanilla.getDurability() != other.itemVanilla.getDurability())
+			return false;
+
+		if (levelRequirement != other.levelRequirement
+				|| magicDamage != other.magicDamage
+				|| bruteDamage != other.bruteDamage
+				|| cooldownReduction != other.cooldownReduction
+				|| critChance != other.critChance
+				|| critDamage != other.critDamage
+				|| damageReduction != other.damageReduction
+				|| attackSpeed != other.attackSpeed
+				|| tier != other.tier
+				|| addedMagicDamage != other.addedMagicDamage
+				|| addedBruteDamage != other.addedBruteDamage)
+			return false;
+
+		ItemMeta im = itemVanilla.getItemMeta();
+		ItemMeta imOther = other.itemVanilla.getItemMeta();
+
+		if ((im.getDisplayName() == null) != (imOther.getDisplayName() == null))
+			return false;
+		if (im.getDisplayName() != null && imOther.getDisplayName() != null && !im.getDisplayName().equals(imOther.getDisplayName()))
+			return false;
+
+		if ((im.getLore() == null) != (imOther.getLore() == null))
+			return false;
+		if (im.getLore() != null && imOther.getLore() != null)
+		{
+			if (im.getLore().size() != imOther.getLore().size())
+				return false;
+
+			for (int i = 0; i < im.getLore().size(); i++)
+				if (!im.getLore().get(i).equals(imOther.getLore().get(i)))
+					return false;
+		}
+
+		return true;
+	}
+
 	public void cleanItemStats()
 	{
 		levelRequirement
@@ -109,15 +146,15 @@ public class RItem
 		= addedMagicDamage = addedBruteDamage
 		= tier
 		= 0;
-		
+
 		attackSpeed = 0.0D;
-		
+
 		lifeDrain = lifeDrainChance = 
 				iceDamage = slowChance = slowLevel = slowDuration = 
 				fireDamage = burnChance = burnDPS = burnDuration = 
 				lightningDamage = stunChance = stunDuration =
 				poisonChance = poisonDPS = poisonDuration = 0.0D;
-		
+
 		bonusStat = null;
 		itemLore = null;
 		itemVanilla = null;
@@ -129,10 +166,11 @@ public class RItem
 	{
 		if (CakeLibrary.isItemStackNull(is))
 			return;
-		
+
 		bonusStat = BonusStat.getItemStats(is);
 
 		String name = CakeLibrary.getItemName(is);
+		boolean nameChange = false;
 		if (!tierLore)
 		{
 			for (int i = 0; i < tiers.length; i++)
@@ -140,6 +178,7 @@ public class RItem
 				{
 					tier = i + 1;
 					name = name.substring(0, name.length() - tiers[i].length());
+					nameChange = true;
 				}
 		}
 
@@ -262,14 +301,14 @@ public class RItem
 		lore.removeAll(loreRemove);
 
 		itemLore = lore;
-		itemVanilla = CakeLibrary.renameItem(is.clone(), name);
+		itemVanilla = nameChange ? CakeLibrary.renameItem(is.clone(), name) : is.clone(); 
 	}
 
 	public ItemStack createItem()
 	{
 		ItemStack is = itemVanilla.clone();
 		ArrayList<String> lore = new ArrayList<String>();
-		
+
 		//ENHANCEMENT
 		if (tier > 0)
 		{
@@ -321,12 +360,12 @@ public class RItem
 		is = CakeLibrary.setItemLore(is, lore);
 		return is;
 	}
-	
+
 	public int getTier()
 	{
 		return tier;
 	}
-	
+
 	public void setTier(int num)
 	{
 		tier = num;

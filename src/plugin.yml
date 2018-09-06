@@ -43,3 +43,5 @@ commands:
     description: Gold command
   convo:
     description: NPC Conversation command
+  pc:
+    description: Toggles a chest between preview and normal type
