@@ -140,7 +140,7 @@ public class RPGRecipe
 		if (inputItems != items)
 			return false;
 
-		String[] matrixShape = { "", "", "" };
+		String[] matrixShape = { "", "", craftingTable ? "" : "XXX" };
 		for (int i = 0; i < craftingMatrix.length; i++)
 		{
 			ItemStack item = craftingMatrix[i];
@@ -165,7 +165,7 @@ public class RPGRecipe
 		int equate = 0;
 		for (int row = 0; row < 4 - shape.length; row++)
 		{
-			for (int ss = 0; ss < 3; ss++)
+			for (int ss = 0; ss < (craftingTable ? 3 : 2); ss++)
 			{
 				equate = 0;
 				for (int i = 0; i < matrixShape.length; i++)
