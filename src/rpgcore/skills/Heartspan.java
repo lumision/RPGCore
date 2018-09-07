@@ -21,7 +21,7 @@ import rpgcore.player.RPlayer;
 public class Heartspan extends RPGSkill
 {
 	public final static String skillName = "Heartspan";
-	public final static int skillTier = 8;
+	public final static int skillTier = 6;
 	public final static int castDelay = 50;
 	public final static ClassType classType = ClassType.ASSASSIN;
 	public final static int duration = 10 * 20;

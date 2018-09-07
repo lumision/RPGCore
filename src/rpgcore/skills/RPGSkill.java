@@ -18,28 +18,49 @@ public class RPGSkill
 	public ClassType classType;
 	
 	public static RPGSkill[] skillList = { //ADDSKILL
+			
 			new ArcaneBarrage(),
-			new ArcaneBlast(),
-			new ArcaneBolt(),
 			new Armageddon(),
-			new BladeMastery(),
-			new Dash(),
-			new Enlightenment(),
-			new Heal(),
 			new Heartspan(),
-			new HolyBolt(),
-			new IceBolt(),
-			new IronBody(),
-			new Kunai(),
-			new Leap(),
-			new LightFeet(),
-			new PoisonBolt(),
-			new PowerPierce(),
-			new Propulsion(),
-			new ShadowStab(),
 			new TripleKunai(),
+			
+			//WARRIOR TIER 1
+			new PowerPierce(),
+			new IronBody(),
+			new Leap(),
+			
+			//MAGE TIER 1
+			new ArcaneBolt(),
+			new ArcaneBlast(),
+			new WindDrive(),
+			new Wisdom(),
+			
+			//PRIEST TIER 1
+			new HolyBolt(),
+			new Heal(),
+			new Enlightenment(),
+			
+			//ASSASSIN TIER 1
+			new ShadowStab(),
+			new Dash(),
+			new BladeMastery(),
+			
+			
+			
+			//MAGE TIER 2
+			new IceBolt(),
+			new PoisonBolt(),
+			new Accelerate(),
+			
+			//PRIEST TIER 2
+			
+			//WARRIOR TIER 2
 			new Warcry(),
-			new Wisdom()
+			
+			//ASSASSIN TIER 2
+			new Kunai(),
+			new LightFeet(),
+			
 	};
 	
 	public static RPGSkill getSkill(String skillName)

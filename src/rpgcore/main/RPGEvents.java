@@ -41,7 +41,7 @@ public class RPGEvents implements Runnable
 {
 	public static RPGCore instance;
 	public static boolean stopped;
-	
+
 	public static LivingEntity customHit;
 	public RPGEvents(RPGCore instance)
 	{
@@ -69,11 +69,11 @@ public class RPGEvents implements Runnable
 			ce.tick();
 		RPGMonster.entities.removeAll(RPGMonster.remove);
 		RPGMonster.remove.clear();
-		
+
 		ArmageddonE.globalTick();
 		DamageOverTime.globalTick();
 	}
-	
+
 	public static class EntityDamageHistory
 	{
 		public int entityID;
@@ -86,12 +86,12 @@ public class RPGEvents implements Runnable
 			this.entityID = entityID;
 			damageHistories.add(this);
 		}
-		
+
 		public static void ApplyDamage(int entityID, UUID damager, int damage)
 		{
 			damageHistories.removeAll(remove);
 			remove.clear();
-			
+
 			for (EntityDamageHistory history: damageHistories)
 			{
 				if (history.entityID == entityID)
@@ -101,12 +101,12 @@ public class RPGEvents implements Runnable
 					return;
 				}
 			}
-			
+
 			EntityDamageHistory history = new EntityDamageHistory(entityID);
 			history.damageHistory.put(damager, damage);
 		}
 	}
-	
+
 	public static class DamageOverTime
 	{
 		public int length;
@@ -115,10 +115,10 @@ public class RPGEvents implements Runnable
 		public int tick;
 		public LivingEntity victim;
 		public Entity damager;
-		
+
 		public static ArrayList<DamageOverTime> list = new ArrayList<DamageOverTime>();
 		public static ArrayList<DamageOverTime> remove = new ArrayList<DamageOverTime>();
-		
+
 		public DamageOverTime(int length, int interval, int damage, Entity damager, LivingEntity victim)
 		{
 			this.length = length;
@@ -126,11 +126,11 @@ public class RPGEvents implements Runnable
 			this.damage = damage;
 			this.damager = damager;
 			this.victim = victim;
-			
+
 			this.tick = interval;
 			list.add(this);
 		}
-		
+
 		public static void globalTick()
 		{
 			for (DamageOverTime dot: list)
@@ -140,16 +140,16 @@ public class RPGEvents implements Runnable
 					remove.add(dot);
 					continue;
 				}
-				
+
 				dot.length--;
 				dot.tick--;
-				
+
 				if (dot.tick <= 0)
 				{
 					new ApplyDamage(dot.damager, dot.victim, dot.damage).run();
 					dot.tick = dot.interval;
 				}
-				
+
 				if (dot.length <= 0)
 					remove.add(dot);
 			}
@@ -364,7 +364,7 @@ public class RPGEvents implements Runnable
 				}
 		}
 	}**/
-		
+
 	public static class ColoredParticle implements Runnable
 	{
 		public Location l;
@@ -407,14 +407,14 @@ public class RPGEvents implements Runnable
 				this.l = e.getLocation();
 			//PacketPlayOutWorldParticles packet = new PacketPlayOutWorldParticles(particleType, true, (float) l.getX(), (float) l.getY(), (float) l.getZ(), r / 255F, g / 255F, b / 255F, 0, particles, 0);
 			//PacketPlayOutWorldParticles packet = new PacketPlayOutWorldParticles(particleType, true, (float) l.getX(), (float) l.getY(), (float) l.getZ(), range, range, range, 255, particles, 0, 128, 128);
-			
+
 			for (Player p: CakeLibrary.getNearbyPlayers(l, 16))
 				//p.spawnParticle(Particle.REDSTONE, l.getX(), l.getY(), l.getZ(), 0, r / 255D, g / 255D, b / 255D, 1);
 				p.spawnParticle(particleType, l, particles, r / 255D, g / 255D, b / 255D, 1);
-				//((CraftPlayer) p).getHandle().playerConnection.sendPacket(packet);
+			//((CraftPlayer) p).getHandle().playerConnection.sendPacket(packet);
 		}
 	}
-	
+
 	public static class CrystalInvCheck implements Runnable
 	{
 		public Player player;
@@ -497,6 +497,40 @@ public class RPGEvents implements Runnable
 		public void run()
 		{
 			l.getWorld().playSound(l, sound, volume, pitch);
+		}
+	}
+
+	public static class InitializePlayerScoreboard implements Runnable
+	{
+		public RPlayer player;
+
+		public InitializePlayerScoreboard(RPlayer player)
+		{
+			this.player = player;
+		}
+
+		@Override
+		public void run()
+		{
+			if (player.getPlayer() != null)
+				player.initializeScoreboard();
+		}
+	}
+
+	public static class UpdatePlayerScoreboard implements Runnable
+	{
+		public RPlayer player;
+
+		public UpdatePlayerScoreboard(RPlayer player)
+		{
+			this.player = player;
+		}
+
+		@Override
+		public void run()
+		{
+			if (player.getPlayer() != null)
+				player.updateScoreboard();
 		}
 	}
 
@@ -597,7 +631,7 @@ public class RPGEvents implements Runnable
 				if (hit.contains(e))
 					continue;
 				hit.add(e);
-				
+
 				try {
 					customHit = e;
 					func.call();

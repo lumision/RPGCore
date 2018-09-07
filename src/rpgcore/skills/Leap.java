@@ -13,7 +13,7 @@ import rpgcore.player.RPlayer;
 public class Leap extends RPGSkill
 {
 	public final static String skillName = "Leap";
-	public final static int skillTier = 2;
+	public final static int skillTier = 1;
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.WARRIOR;
 	public final static int cooldown = 2;

@@ -17,7 +17,7 @@ import rpgcore.player.RPlayer;
 public class Kunai extends RPGSkill
 {
 	public final static String skillName = "Kunai";
-	public final static int skillTier = 1;
+	public final static int skillTier = 2;
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.ASSASSIN;
 	public final static float damage = 2.4F;

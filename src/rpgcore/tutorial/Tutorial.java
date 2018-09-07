@@ -31,10 +31,10 @@ public class Tutorial
 	public static Title titleEquipment3 = new Title("", "&cWhat you hold in your &nmain hand&c...", 20, 60, 20);
 	public static Title titleEquipment4 = new Title("", "&c...has &nno effect&c on your stats.", 20, 60, 20);
 	public static Title titleEquipment5 = new Title("", "&cBe sure to keep that in mind.", 20, 60, 20);
-	public static Title titleSkills = new Title("&cType &n/skills", "&c...and apply some skill points.", 20, 32767, 20);
+	public static Title titleSkills = new Title("&cType &n/skills", "&c...and click on some skills.", 20, 32767, 20);
 	public static Title titleSkills1 = new Title("&cLeft/Right Click", "&cwith the skill in your &nmain hand&c to cast it.", 20, 140, 20);
 	public static Title titleConclude = new Title("", "&fThat concludes this small tutorial.", 20, 80, 20);
-	public static Title titleConclude1 = new Title("", "&f&nWe hope you enjoy the game", 20, 120, 20);
+	public static Title titleConclude1 = new Title("", "&f&nWe hope you enjoy the game.", 20, 120, 20);
 	public long ticks;
 	public long equipTicks = Long.MAX_VALUE;
 	public long skillsTicks = Long.MAX_VALUE;
@@ -53,7 +53,7 @@ public class Tutorial
 		String name = p.getOpenInventory().getTitle();
 		if (CakeLibrary.hasColor(name))
 		{
-			if (ticks - equipTicks >= 840 && name.contains("Skillbook: "))
+			if (ticks - equipTicks >= 840 && name.contains("Learnt Skills"))
 				skillsTicks = ticks;
 			return;
 		}
@@ -73,7 +73,7 @@ public class Tutorial
 			classSelect = true;
 		} else if (ticks >= 300 && !classResponse)
 		{
-			Title title = new Title("&c< " + player.currentClass.getClassName() + " >", "&e...class you have chosen.", 20, 60, 20);
+			Title title = new Title("&c< " + player.currentClass.getClassName() + " >", "&e...is the class you have chosen.", 20, 60, 20);
 			title.sendPlayer(p);
 			p.sendMessage(CakeLibrary.recodeColorCodes("&7&oPsst... you are able to change your class later on if you want to!"));
 			classResponse = true;

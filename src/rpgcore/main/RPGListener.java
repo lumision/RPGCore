@@ -52,6 +52,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
+import rpgcore.classes.RPGClass;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.entities.mobs.MageZombie;
 import rpgcore.entities.mobs.RPGMonster;
@@ -215,7 +216,7 @@ public class RPGListener implements Listener
 			//p.openInventory(ClassInventory.getClassInventory(rp));
 		}
 		rp.updatePlayerREquips();
-		p.setScoreboard(rp.scoreboard);
+		RPGEvents.scheduleRunnable(new RPGEvents.InitializePlayerScoreboard(rp), 20);
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -452,7 +453,6 @@ public class RPGListener implements Listener
 		if (name.equals("Class Selection"))
 		{
 			event.setCancelled(true);
-			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 169), 0);
 			ItemStack is = event.getCurrentItem();
 			if (CakeLibrary.isItemStackNull(is))
 				return;
@@ -463,9 +463,11 @@ public class RPGListener implements Listener
 				if (itemName.toLowerCase().contains(ct.toString().toLowerCase()))
 					change = ct;
 			rp.currentClass = change;
+			RPGClass.unlockBasicSkills(rp, change);
 
 			RPGCore.playerManager.writeData(rp);
-			p.getWorld().playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.2F, 1.0F);
+			p.getWorld().playSound(p.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.1F, 1.0F);
+			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 169), 0);
 			if (inv.getSize() == 27)
 				p.openInventory(SkillInventory.getSkillInventory(rp, 0));
 			else
@@ -491,7 +493,7 @@ public class RPGListener implements Listener
 					return;
 				rp.lastSkillbookTier--;
 				inv.setContents(SkillInventory2.getSkillInventory(rp, rp.lastSkillbookTier).getContents());
-				p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.1F, 0.9F);
+				p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.1F, 0.9F);
 				rp.skillbookTierSwitchTicks = 3;
 			} else if (itemName.startsWith("Next Tier"))
 			{
@@ -499,7 +501,7 @@ public class RPGListener implements Listener
 					return;
 				rp.lastSkillbookTier++;
 				inv.setContents(SkillInventory2.getSkillInventory(rp, rp.lastSkillbookTier).getContents());
-				p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.1F, 1.1F);
+				p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.1F, 1.1F);
 				rp.skillbookTierSwitchTicks = 3;
 			} else
 			{
@@ -812,7 +814,7 @@ public class RPGListener implements Listener
 						if (check.skillName.equals(skillName))
 							skill = check;
 					
-					if (skill != null && !rp.skills.contains(skillName))
+					if (skill != null && !rp.skills.contains(skillName) && skill.classType.equals(rp.currentClass))
 					{
 						rp.skills.add(skillName);
 						rp.titleQueue.add(new Title("&6 < " + CakeLibrary.getItemName(skill.getSkillItem()) + "&6 >", "&eSkill Learnt", 20, 60, 20));
@@ -821,6 +823,7 @@ public class RPGListener implements Listener
 						p.setItemInHand(null);
 						RPGCore.playerManager.writeData(rp);
 					}
+					rp.updateScoreboard();
 					event.setCancelled(true);
 					return;
 				}
@@ -885,6 +888,19 @@ public class RPGListener implements Listener
 					String skillName = skill.skillName.replace(" ", "");
 					if (skillName.toLowerCase().startsWith(split[1].toLowerCase()))
 						completions.add(skillName);
+				}
+			}
+		}
+
+		if (msg.startsWith(s + "sound "))
+		{
+			String[] split = msg.split(" ");
+			if (split.length >= 2 && split[1].length() > 0 && split.length < 3)
+			{
+				for (Sound sound: Sound.values())
+				{
+					if (sound.name().toLowerCase().startsWith(split[1].toLowerCase()))
+						completions.add(sound.name());
 				}
 			}
 		}

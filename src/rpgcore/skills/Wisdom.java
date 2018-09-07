@@ -11,7 +11,7 @@ public class Wisdom extends RPGSkill
 	public final static int skillTier = 1;
 	public final static int castDelay = 0;
 	public final static ClassType classType = ClassType.MAGE;
-	public final static float magicDamageAdd = 10;
+	public final static float magicDamagePercentageAdd = 0.2F;
 	
 	public Wisdom()
 	{
@@ -24,10 +24,10 @@ public class Wisdom extends RPGSkill
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(6, 1, (short) 5), 
 				"&eWisdom"),
 				"&7Passive Skill:",
-				"&7 * Magic Damage: +" + magicDamageAdd,
+				"&7 * Magic Damage: +" + (int) (magicDamagePercentageAdd * 100.0F) + "%",
 				"&f",
-				"&8&oIncreases knowledge in channeling",
-				"&8&omagic which adds to magic power.",
+				"&8&oIncreased knowledge in",
+				"&8&ochanneling magic power.",
 				"&f",
 				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
 				"&7Class: " + classType.getClassName());

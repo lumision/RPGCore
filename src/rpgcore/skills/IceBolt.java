@@ -46,7 +46,7 @@ public class IceBolt extends RPGSkill
 	@Override
 	public ItemStack getSkillItem()
 	{
-		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.ICE, 1), 
+		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.SNOW_BALL, 1), 
 				"&bIce Bolt"),
 				"&7Damage: " + (int) (damage * 100.0F) + "%",
 				"&7Interval: 0.5s",
@@ -67,7 +67,7 @@ public class IceBolt extends RPGSkill
 		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
 		Vector vector = player.getLocation().getDirection().normalize().multiply(0.5D);
 		int multiplier = 0;
-        player.getWorld().playSound(player.getEyeLocation(), Sound.BLOCK_ANVIL_LAND, 0.1F, 1.0F);
+        player.getWorld().playSound(player.getEyeLocation(), Sound.BLOCK_ANVIL_LAND, 0.05F, 1.0F);
 		while (multiplier < 30)
 		{
 			multiplier++;
@@ -75,7 +75,7 @@ public class IceBolt extends RPGSkill
 			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
 				break;
 			RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0, 1), multiplier);
-			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.1F, 1.25F), multiplier);
+			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.05F, 1.25F), multiplier);
 			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionCustom(hit, point, 1.25D, player, new Callable<Void>()
 					{
 						@Override

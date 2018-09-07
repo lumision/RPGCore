@@ -118,6 +118,7 @@ public class RPGCore extends JavaPlugin
 	public void onEnable()
 	{
 		RPGCore.instance = this;
+		events = new RPGEvents(this);
 		pluginFolder.mkdirs();
 		readItemDatabase();
 		RPGClass.setXPTable();
@@ -129,7 +130,6 @@ public class RPGCore extends JavaPlugin
 		listener = new RPGListener(this);
 		getServer().getPluginManager().registerEvents(listener, this);
 		npcManager = new NPCManager(this);
-		events = new RPGEvents(this);
 		RPGEvents.stopped = false;
 		ShopManager.readShopDatabase();
 		ConversationData.readConversationData();
@@ -1056,7 +1056,7 @@ public class RPGCore extends JavaPlugin
 				msgNoTag(p, "&4 * Brute Damage: &c" + target.calculateBruteDamage());
 				msgNoTag(p, "&4 * Crit Chance: &c" + target.calculateCritChance() + "%");
 				msgNoTag(p, "&4 * Crit Damage: &c" + (int) (target.calculateCritDamageMultiplier() * 100.0D) + "%");
-				msgNoTag(p, "&2 * Attack Speed: &ax" + Double.parseDouble(String.format("%.1f", (1.0D / target.calculateCastDelayMultiplier()))));
+				msgNoTag(p, "&2 * Attack Speed: &ax" + Float.parseFloat(String.format("%.1f", (1.0D / target.calculateCastDelayMultiplier()))));
 				msgNoTag(p, "&2 * Cooldowns: &a-" + target.calculateCooldownReduction() + "%");
 				return true;
 			}
@@ -1483,6 +1483,11 @@ public class RPGCore extends JavaPlugin
 			}
 			if (command.getName().equalsIgnoreCase("class"))
 			{
+				if (!p.hasPermission("rpgcore.class"))
+				{
+					msg(p, "You do not have permissions to use this.");
+					return true;
+				}
 				p.openInventory(ClassInventory.getClassInventory1(rp));
 				return true;
 			}
@@ -1547,6 +1552,7 @@ public class RPGCore extends JavaPlugin
 					return true;
 				}
 				p.openInventory(SkillInventory2.getSkillInventory(rp, rp.lastSkillbookTier));
+				p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.1F, 0.8F);
 				return true;
 			}
 		}

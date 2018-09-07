@@ -86,7 +86,10 @@ public class RPlayerManager
 	{
 		for (RPlayer rp: players)
 			if (rp.getPlayer() != null)
+			{
 				rp.updatePlayerREquips();
+				rp.updateScoreboard();
+			}
 	}
 
 	public int getRPlayerAmount()
@@ -234,6 +237,7 @@ public class RPlayerManager
 				rp.lastSkillbookTier = lastSkillbookTier;
 			} catch (Exception e) {
 				RPGCore.msgConsole("&4Error reading RPlayer file: " + file.getName());
+				e.printStackTrace();
 			}
 		}
 	}

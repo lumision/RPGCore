@@ -27,7 +27,7 @@ import rpgcore.skills.Leap;
 import rpgcore.skills.LightFeet;
 import rpgcore.skills.PoisonBolt;
 import rpgcore.skills.PowerPierce;
-import rpgcore.skills.Propulsion;
+import rpgcore.skills.WindDrive;
 import rpgcore.skills.RPGSkill;
 import rpgcore.skills.ShadowStab;
 import rpgcore.skills.TripleKunai;
@@ -424,7 +424,6 @@ case DUALIST:
 	}
 
 	/*
-	//ADDSKILL
 	public static void setWarriorSkills(Inventory inv, RPlayer player, int row)
 	{
 		inv.setItem(0 + (row * 9), PowerPierce.getSkillItem(player));

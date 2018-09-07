@@ -19,7 +19,7 @@ import rpgcore.player.RPlayer;
 public class ShadowStab extends RPGSkill
 {
 	public final static String skillName = "Shadow Stab";
-	public final static int skillTier = 2;
+	public final static int skillTier = 1;
 	public final static int castDelay = 5;
 	public final static ClassType classType = ClassType.ASSASSIN;
 	public final static float damage = 1.3F;
@@ -71,7 +71,7 @@ public class ShadowStab extends RPGSkill
 			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
 				break;
 			RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0, 1), 0);
-			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.1F, 1.25F), 0);
+			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.05F, 1.25F), 0);
 			for (LivingEntity e: CakeLibrary.getNearbyLivingEntities(point, 0.75D))
 			{
 				if (e instanceof Player)

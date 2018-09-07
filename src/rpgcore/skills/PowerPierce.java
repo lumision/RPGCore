@@ -58,7 +58,7 @@ public class PowerPierce extends RPGSkill
 		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
 		Vector vector = player.getLocation().getDirection().normalize();
 		int multiplier = 1;
-        player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_GHAST_SHOOT, 0.2F, 1.5F);
+        player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_GHAST_SHOOT, 0.1F, 1.5F);
 		while (multiplier < 7)
 		{
 			multiplier++;

@@ -25,15 +25,18 @@ import rpgcore.external.Title;
 import rpgcore.item.RItem;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
+import rpgcore.main.RPGEvents;
 import rpgcore.npc.CustomNPC;
 import rpgcore.sideclasses.RPGSideClass;
 import rpgcore.sideclasses.RPGSideClass.SideClassType;
+import rpgcore.skills.Accelerate;
 import rpgcore.skills.BladeMastery;
 import rpgcore.skills.Buff;
 import rpgcore.skills.Enlightenment;
 import rpgcore.skills.IronBody;
 import rpgcore.skills.LightFeet;
 import rpgcore.skills.Warcry;
+import rpgcore.skills.Wisdom;
 import rpgcore.tutorial.Tutorial;
 
 public class RPlayer 
@@ -96,7 +99,6 @@ public class RPlayer
 		this.tokens = 0;
 		this.npcFlags = new HashMap<String, String>();
 		this.tutorial = new Tutorial(this);
-		initializeScoreboard();
 	}
 
 	public RPlayer(UUID uuid, ArrayList<RPGClass> classes, ArrayList<RPGSideClass> sideClasses, ClassType currentClass, ArrayList<String> skills, int gold, int tokens)
@@ -147,7 +149,6 @@ public class RPlayer
 		this.partyID = -1;
 		this.npcFlags = new HashMap<String, String>();
 		this.tutorial = new Tutorial(this);
-		initializeScoreboard();
 	}
 
 	public int getPowerLevel()
@@ -170,16 +171,24 @@ public class RPlayer
 		objective.setDisplayName(CakeLibrary.recodeColorCodes("&6Class: " + getCurrentClass().classType.getClassName()));
 		this.objective = objective;
 		updateScoreboard();
+		Player p = getPlayer();
+		if (p != null)
+			getPlayer().setScoreboard(scoreboard);
 	}
 
 	public void updateScoreboard()
 	{
+		if (objective == null)
+			return;
+		if (getPlayer() == null)
+			return;
 		objective.setDisplayName(CakeLibrary.recodeColorCodes("&6" + currentClass.getClassName()));
 
 		//objective.getScore(CakeLibrary.recodeColorCodes("&bPower Level: ")).setScore(getPowerLevel());
 		objective.getScore(CakeLibrary.recodeColorCodes("&eLevel: ")).setScore(getLevel());
 		objective.getScore(CakeLibrary.recodeColorCodes("&e% EXP: ")).setScore(getPercentageToNextLevel());
 		objective.getScore(CakeLibrary.recodeColorCodes("&aGold: ")).setScore(gold);
+		objective.getScore(CakeLibrary.recodeColorCodes("&cDamage: ")).setScore(getDamageOfClass());
 	}
 
 	public void addGold(int amount)
@@ -463,9 +472,10 @@ public class RPlayer
 	{
 		int equipment = 0;
 		for (RItem eq: rEquips)
-			equipment += eq.critChance;
+			if (eq != null)
+				equipment += eq.critChance;
 		int additions = 5;
-		double multiplier = 1.0D;
+		float multiplier = 1.0F;
 		return (int) ((equipment + additions) * multiplier);
 	}
 
@@ -473,9 +483,10 @@ public class RPlayer
 	{
 		int equipment = 0;
 		for (RItem eq: rEquips)
-			equipment += eq.critDamage;
-		double additions = 1.5D;
-		double multiplier = 1.0D;
+			if (eq != null)
+				equipment += eq.critDamage;
+		float additions = 1.5F;
+		float multiplier = 1.0F;
 		return ((equipment / 100.0D) + additions) * multiplier;
 	}
 
@@ -483,20 +494,22 @@ public class RPlayer
 	{
 		int equipment = 0;
 		for (RItem eq: rEquips)
-			equipment += eq.magicDamage;
+			if (eq != null)
+				equipment += eq.magicDamage;
 		int additions = 1;
-		double multiplier = 1.0D;
-		for (int i = 0; i < skills.size(); i++)
+		float multiplier = 1.0F;
+
+		for (String skill: skills)
 		{
-			if (currentClass.getTier1Class().equals(ClassType.MAGE))
-				if(skills.get(i).equalsIgnoreCase("wisdom"))
-					additions += 10;
+			if(skill.equals(Wisdom.skillName))
+				multiplier += Wisdom.magicDamagePercentageAdd;
 		}
 		for (Buff b: buffs)
 		{
-			if (b.buffName.equalsIgnoreCase("Enlightenment"))
+			if (b.buffName.equalsIgnoreCase(Enlightenment.skillName))
 				multiplier += Enlightenment.damageMultiplierAdd;
 		}
+
 		return (int) ((equipment + additions) * multiplier);
 	}
 
@@ -504,17 +517,23 @@ public class RPlayer
 	{
 		int equipment = 0;
 		for (RItem eq: rEquips)
-			equipment += eq.bruteDamage;
+			if (eq != null)
+				equipment += eq.bruteDamage;
 
 		int additions = 1;
-		if (skills.contains(BladeMastery.skillName))
-			additions += 10;
-		double multiplier = 1.0D;
+		float multiplier = 1.0F;
+
+		for (String skill: skills)
+		{
+			if(skill.equals(BladeMastery.skillName))
+				multiplier += BladeMastery.bruteDamageMultiplierAdd;
+		}
+
 		for (Buff b: buffs)
 		{
-			if (b.buffName.equalsIgnoreCase("Enlightenment"))
+			if (b.buffName.equalsIgnoreCase(Enlightenment.skillName))
 				multiplier += Enlightenment.damageMultiplierAdd;
-			if (b.buffName.equalsIgnoreCase("Warcry"))
+			if (b.buffName.equalsIgnoreCase(Warcry.skillName))
 				multiplier += Warcry.bruteDamageMultiplierAdd;
 		}
 		return (int) ((equipment + additions) * multiplier);
@@ -524,11 +543,15 @@ public class RPlayer
 	{
 		int equipment = 0;
 		for (RItem eq: rEquips)
-			equipment += eq.cooldownReduction;
+			if (eq != null)
+				equipment += eq.cooldownReduction;
 		int additions = 0;
 
-		if (skills.contains(BladeMastery.skillName))
-			additions += 10;
+		for (String skill: skills)
+		{
+			if(skill.equals(BladeMastery.skillName))
+				additions += 10;
+		}
 
 		return equipment + additions;
 	}
@@ -537,26 +560,40 @@ public class RPlayer
 	{
 		int equipment = 0;
 		for (RItem eq: rEquips)
-			equipment += eq.damageReduction;
+			if (eq != null)
+				equipment += eq.damageReduction;
 		int additions = 0;
 
-		if (skills.contains(IronBody.skillName))
-			additions += 20;
+		for (String skill: skills)
+		{
+			if (skill.equals(IronBody.skillName))
+				additions += 20;
+		}
 
 		return Math.min(100, equipment + additions);
 	}
 
-	public double calculateCastDelayMultiplier()
+	public float calculateCastDelayMultiplier()
 	{
-		double equipment = 0;
+		float equipment = 0;
 		for (RItem eq: rEquips)
-			equipment += eq.attackSpeed;
+			if (eq != null)
+				equipment += eq.attackSpeed;
 
-		double modifier = 1.0D;
-		if (skills.contains(BladeMastery.skillName))
-			modifier -= 10 / 100.0D;
+		float multiplier = 1.0F;
 
-		return (equipment == 0 ? 1 : (1.0D / equipment)) * modifier;
+		for (String skill: skills)
+		{
+			if (skill.equals(BladeMastery.skillName))
+				multiplier -= BladeMastery.attackSpeedMultiplierAdd;
+		}
+		for (Buff b: buffs)
+		{
+			if (b.buffName.equals(Accelerate.skillName))
+				multiplier -= Accelerate.attackSpeedMultiplierAdd;
+		}
+
+		return (equipment == 0 ? 1 : (1.0F / equipment)) * multiplier;
 	}
 
 	public static int varyDamage(int damage) //Makes the number random up to a 10% change

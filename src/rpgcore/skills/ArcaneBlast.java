@@ -1,29 +1,36 @@
 package rpgcore.skills;
 
+import java.util.ArrayList;
+
+import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.inventory.ItemStack;
 
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
+import rpgcore.main.RPGEvents;
 import rpgcore.player.RPlayer;
 
 public class ArcaneBlast extends RPGSkill
 {
 	public final static String skillName = "Arcane Blast";
-	public final static int skillTier = 4;
+	public final static int skillTier = 1;
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.MAGE;
+	public final static float damage = 2.2F;
+	public final static int radius = 4;
 	public ArcaneBlast(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, calculateDamage(10), classType, skillTier);
+		super(skillName, caster, castDelay, damage, classType, skillTier);
 	}
-	
+
 	public ArcaneBlast()
 	{
 		super(skillName, null, castDelay, 0, classType, skillTier);
 	}
-	
+
 	@Override
 	public void insantiate(RPlayer rp)
 	{
@@ -33,10 +40,10 @@ public class ArcaneBlast extends RPGSkill
 	@Override
 	public ItemStack getSkillItem()
 	{
-		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.FEATHER, 1), 
-				"&fArcane Blast"),
-				"&7Damage: " + (int) (calculateDamage(10) * 100.0D) + "%",
-				"&7Radius: " + calculateRadius(10) + " blocks",
+		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.INK_SACK, 1, (short) 15), 
+				"&dArcane Blast"),
+				"&7Damage: " + (int) (damage * 100.0D) + "%",
+				"&7Radius: " + radius + " blocks",
 				"&7Cooldown: 2s",
 				"&f",
 				"&8&oBlasts a plane of arcane energy",
@@ -45,17 +52,7 @@ public class ArcaneBlast extends RPGSkill
 				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
 				"&7Class: " + classType.getClassName());
 	}
-	
-	public static double calculateDamage(int level)
-	{
-		return 1.0D + (level / 5.0D);
-	}
-	
-	public static int calculateRadius(int level)
-	{
-		return (int) (2.0D + (level / 5.0D));
-	}
-	
+
 	@Override
 	public void activate()
 	{
@@ -63,5 +60,36 @@ public class ArcaneBlast extends RPGSkill
 
 		Location target = player.getTargetBlock(CakeLibrary.getPassableBlocks(), 16).getLocation();
 		
+		int x = -radius;
+		int z = 0;
+		for (z = -radius; z < radius; z++)
+		{
+			Location l = target.clone().add(x, 1, z);
+			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, l, 20), z + radius);
+		}
+		
+		z = -radius;
+		for (x = -radius; x < radius; x++)
+		{
+			Location l = target.clone().add(x, 1, z);
+			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, l, 20), x + radius);
+		}
+		
+		x = radius;
+		for (z = radius; z > -radius + 1; z--)
+		{
+			Location l = target.clone().add(x, 1, z);
+			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, l, 20), -z + radius);
+		}
+		
+		z = radius;
+		for (x = radius; x > -radius + 1; x--)
+		{
+			Location l = target.clone().add(x, 1, z);
+			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, l, 20), -x + radius);
+		}
+		
+		new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(new ArrayList<LivingEntity>(), target, radius, getUnvariedDamage(), player, 20).run();
+
 	}
 }

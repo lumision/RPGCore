@@ -48,6 +48,8 @@ public class SkillInventory2
 		for (String skill: player.skills)
 		{
 			RPGSkill s = RPGSkill.getSkill(skill);
+			if (!s.classType.equals(player.currentClass))
+				continue;
 			if (s.skillTier >= tier)
 				continue;
 			amounts[s.skillTier - 1]++;
@@ -71,6 +73,8 @@ public class SkillInventory2
 		for (String skill: player.skills)
 		{
 			RPGSkill s = RPGSkill.getSkill(skill);
+			if (!s.classType.equals(player.currentClass))
+				continue;
 			if (s.skillTier <= tier)
 				continue;
 			amounts[s.skillTier - 1 - tier]++;

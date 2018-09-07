@@ -13,7 +13,7 @@ import rpgcore.player.RPlayer;
 public class Dash extends RPGSkill
 {
 	public final static String skillName = "Dash";
-	public final static int skillTier = 2;
+	public final static int skillTier = 1;
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.ASSASSIN;
 	public Dash(RPlayer caster)
