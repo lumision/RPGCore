@@ -47,6 +47,8 @@ public class ShopManager
 						if (header.equals("items:"))
 						{
 							String[] split = s.split(", ");
+							if (split.length < 3)
+								continue;
 							RItem ri = RPGCore.getItemFromDatabase(split[0]);
 							if (ri == null)
 							{

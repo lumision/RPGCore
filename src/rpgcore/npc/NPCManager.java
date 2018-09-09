@@ -35,8 +35,9 @@ public class NPCManager
 {
 	public RPGCore instance;
 	public ArrayList<SkinData> skinDatas = new ArrayList<SkinData>();
-	public ArrayList<CustomNPC> npcs = new ArrayList<CustomNPC>();
+	public static ArrayList<CustomNPC> npcs = new ArrayList<CustomNPC>();
 	public File skinDataFile = new File("plugins/RPGCore/SkinData.yml");
+	public File skinDataFetchedFile = new File("plugins/RPGCore/SkinDataFetched.yml");
 	public File npcFolder = new File("plugins/RPGCore/npcs");
 
 	private static TinyProtocol protocol = null;
@@ -63,11 +64,16 @@ public class NPCManager
 
 	public void loadNPCs()
 	{
+		npcs.clear();
 		for (File file: npcFolder.listFiles())
 		{
 			Location location = new Location(null, 0, 0, 0);
 			String name = null;
 			String skin = null;
+			boolean lockRotation = false;
+			String fileName = file.getName();
+			String databaseName = fileName.substring(0, fileName.length() - 4);
+			float chatRangeDistance = 5.0f;
 			try
 			{
 				ArrayList<String> lines = CakeLibrary.readFile(file);
@@ -109,6 +115,10 @@ public class NPCManager
 							skin = split[1];
 						if (split[0].equals("name"))
 							name = split[1];
+						if (split[0].equals("lockRotation"))
+							lockRotation = Boolean.parseBoolean(split[1]);
+						if (split[0].equals("chatRangeDistance"))
+							chatRangeDistance = Float.parseFloat(split[1]);
 					}
 				}
 			} catch (Exception e)
@@ -117,10 +127,10 @@ public class NPCManager
 			}
 			if (location == null || location.getWorld() == null)
 				continue;
-			if (skin == null)
-				createNPC(location, name);
-			else
-				createNPCUsernameSkin(location, name, skin);
+			CustomNPC npc = skin == null ? createNPC(location, name) : createNPCUsernameSkin(location, name, skin);
+			npc.databaseName = databaseName;
+			npc.lockRotation = lockRotation;
+			npc.chatRangeDistance = chatRangeDistance;
 		}
 	}
 
@@ -185,19 +195,58 @@ public class NPCManager
 	{
 		ArrayList<String> lines = new ArrayList<String>();
 		for (SkinData sd: skinDatas)
-			lines.add(sd.skinName + "::" + sd.getValue() + "::" + sd.getSignature());
-		CakeLibrary.writeFile(lines, skinDataFile);
+		{
+			if (!sd.fetched)
+				continue;
+			lines.add(sd.skinName);
+			lines.add(" " + sd.getValue());
+			lines.add(" " + sd.getSignature());
+		}
+		CakeLibrary.writeFile(lines, skinDataFetchedFile);
 	}
 
 	public void readSkinDatas()
 	{
 		skinDatas.clear();
-		for (String line: CakeLibrary.readFile(skinDataFile))
+		readSkinDataFile(skinDataFile, false);
+		readSkinDataFile(skinDataFetchedFile, true);
+	}
+	
+	public void readSkinDataFile(File file, boolean fetched)
+	{
+		String name = "";
+		String value = "";
+		String signature = "";
+		for (String line: CakeLibrary.readFile(file))
 		{
 			try
 			{
-				String[] split = line.split("::");
-				skinDatas.add(new SkinData(split[0], split[1], split[2]));
+				if (line.startsWith(" "))
+				{
+					if (value.length() == 0)
+						value = line.substring(1);
+					else
+					{
+						signature = line.substring(1);
+						if (name.length() > 0 && value.length() > 0 && signature.length() > 0)
+						{
+							boolean duplicate = false;
+							for (SkinData sd: skinDatas)
+								if (sd.skinName.equalsIgnoreCase(name))
+									duplicate = true;
+							if (!duplicate)
+							{
+								SkinData add = new SkinData(name, value, signature);
+								add.fetched = fetched;
+								skinDatas.add(add);
+							}
+						}
+					}
+				} else
+				{
+					name = line;
+					value = signature = "";
+				}
 			} catch (Exception e) {
 				RPGCore.msgConsole("&4Error reading a line in skin data");
 			}
@@ -240,7 +289,6 @@ public class NPCManager
 			npc.skinData = cached;
 			profile.getProperties().put("textures", new Property("textures", cached.getValue(), cached.getSignature()));
 			npc.reloadForVisiblePlayers();
-			npc.saveNPC();
 			return npc;
 		}
 		npcSkin.getSkinDataAsync(new SkinDataReply() 
@@ -252,6 +300,7 @@ public class NPCManager
 					return;
 
 				skinData.skinName = skinUsername;
+				skinData.fetched = true;
 
 				ArrayList<SkinData> remove = new ArrayList<SkinData>();
 				for (SkinData sd: skinDatas)
@@ -264,7 +313,6 @@ public class NPCManager
 				npc.skinData = skinData;
 				profile.getProperties().put("textures", new Property("textures", skinData.getValue(), skinData.getSignature()));
 				npc.reloadForVisiblePlayers();
-				npc.saveNPC();
 			}
 		});
 		return npc;

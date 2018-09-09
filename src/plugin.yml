@@ -1,5 +1,5 @@
 main: rpgcore.main.RPGCore
-version: 3.5
+version: 4.0
 name: RPGCore
 depend: [WorldEdit]
 

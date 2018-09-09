@@ -33,16 +33,18 @@ import rpgcore.player.RPlayer;
 
 public class CustomNPC extends EntityPlayer 
 {
-	public static double visibleDistance = 32.0D;
-	public static double outRangeDistance = 5.0D;
+	public static double visibleDistance = 32.0D * 32.0D;
+	public float chatRangeDistance = 5.0F;
 	public static int globalID;
 	public String name;
+	public String databaseName;
 	public UUID uuid;
 	public SkinData skinData;
 	public int id;
 	public int tick;
 	public int randomLookTicks;
 	public boolean removed;
+	public boolean lockRotation;
 	public float targetYaw, targetPitch, lastUpdatedYaw, lastUpdatedPitch;
 	public ConversationData conversationData;
 	public static final float rotationStepYaw = 25;
@@ -52,6 +54,7 @@ public class CustomNPC extends EntityPlayer
 	public CustomNPC(MinecraftServer srv, WorldServer world, GameProfile game, PlayerInteractManager interact, Location location)
 	{
 		super(srv, world, game, interact);
+		this.lockRotation = true;
 		this.id = globalID++;
 		this.name = game.getName();
 		this.uuid = game.getId();
@@ -60,12 +63,14 @@ public class CustomNPC extends EntityPlayer
 		locZ = location.getZ();
 		yaw = location.getYaw();
 		pitch = location.getPitch();
+		setDatabaseName(name);
 		checkForVisibility();
 	}
 
 	public CustomNPC(MinecraftServer srv, WorldServer world, GameProfile game, PlayerInteractManager interact, SkinData skinData, Location location) 
 	{
 		super(srv, world, game, interact);
+		this.lockRotation = true;
 		this.id = globalID++;
 		this.name = game.getName();
 		this.uuid = game.getId();
@@ -75,7 +80,45 @@ public class CustomNPC extends EntityPlayer
 		locZ = location.getZ();
 		yaw = location.getYaw();
 		pitch = location.getPitch();
+		setDatabaseName(name);
 		checkForVisibility();
+	}
+	
+	public void changeDatabaseName(String change)
+	{
+		if (databaseName == null)
+		{
+			setDatabaseName(change);
+			return;
+		}
+		if (databaseName.length() == 0)
+		{
+			setDatabaseName(change);
+			return;
+		}
+		File file = new File("plugins/RPGCore/npcs/" + databaseName + ".yml");
+		file.delete();
+		setDatabaseName(change);
+		saveNPC();
+	}
+	
+	public void setDatabaseName(String set)
+	{
+		this.databaseName = CakeLibrary.removeColorCodes(set).toLowerCase();
+		int index = 0;
+		for (int checkIndex = 0; checkIndex < NPCManager.npcs.size(); checkIndex++)
+		{
+			CustomNPC check = NPCManager.npcs.get(checkIndex);
+			if (check.id == id)
+				continue;
+			if ((index == 0 && check.databaseName.equals(databaseName)) || (index > 0 && check.databaseName.equals(databaseName + index)))
+			{
+				index++;
+				checkIndex = 0;
+			}
+		}
+		if (index > 0)
+			databaseName += index;
 	}
 
 	public void tick()
@@ -94,59 +137,67 @@ public class CustomNPC extends EntityPlayer
 			tick = 0;
 		}
 		
-		while (targetYaw > 180)
-			targetYaw = -180 + (targetYaw - 180);
-		while (targetYaw < -180)
-			targetYaw = 180 - (targetYaw * -1 - 180);
-		
-		float multiplierYaw = 0;
-		
-		if (targetYaw < 0 && yaw > 0)
-			multiplierYaw = ((180 - targetYaw * -1) + (180 - yaw) < yaw - targetYaw) ? 1 : -1;
-		else if (targetYaw > 0 && yaw < 0)
-			multiplierYaw = ((180 - targetYaw) + (180 - yaw * -1) < targetYaw - yaw) ? -1 : 1;
-		else
-			multiplierYaw = yaw < targetYaw ? 1 : -1;
-		
-		yaw += Math.min(rotationStepYaw, Math.abs(targetYaw - yaw)) * multiplierYaw;
-		
-		float multiplierPitch = pitch < targetPitch ? 1 : -1;
-		pitch += Math.min(rotationStepPitch, Math.abs(targetPitch - pitch)) * multiplierPitch;
-		
-		while (yaw > 180)
+		if (!lockRotation)
 		{
-			yaw = -180 + (yaw - 180);
-			if (Math.abs(targetYaw - yaw) < rotationStepYaw)
-				yaw = targetYaw;
-		}
-		
-		while (yaw < -180)
-		{
-			yaw = 180 - (yaw * -1 - 180);
-			if (Math.abs(targetYaw - yaw) < rotationStepYaw)
-				yaw = targetYaw;
+			while (targetYaw > 180)
+				targetYaw = -180 + (targetYaw - 180);
+			while (targetYaw < -180)
+				targetYaw = 180 - (targetYaw * -1 - 180);
+			
+			float multiplierYaw = 0;
+			
+			if (targetYaw < 0 && yaw > 0)
+				multiplierYaw = ((180 - targetYaw * -1) + (180 - yaw) < yaw - targetYaw) ? 1 : -1;
+			else if (targetYaw > 0 && yaw < 0)
+				multiplierYaw = ((180 - targetYaw) + (180 - yaw * -1) < targetYaw - yaw) ? -1 : 1;
+			else
+				multiplierYaw = yaw < targetYaw ? 1 : -1;
+			
+			yaw += Math.min(rotationStepYaw, Math.abs(targetYaw - yaw)) * multiplierYaw;
+			
+			float multiplierPitch = pitch < targetPitch ? 1 : -1;
+			pitch += Math.min(rotationStepPitch, Math.abs(targetPitch - pitch)) * multiplierPitch;
+			
+			while (yaw > 180)
+			{
+				yaw = -180 + (yaw - 180);
+				if (Math.abs(targetYaw - yaw) < rotationStepYaw)
+					yaw = targetYaw;
+			}
+			
+			while (yaw < -180)
+			{
+				yaw = 180 - (yaw * -1 - 180);
+				if (Math.abs(targetYaw - yaw) < rotationStepYaw)
+					yaw = targetYaw;
+			}
+			updateRotation();
 		}
 
-		updateRotation();
 	}
 
 	public void tick2()
 	{
+		if (visiblePlayers.size() == 0)
+			return;
+		if (lockRotation)
+			return;
 		ArrayList<Player> near = CakeLibrary.getNearbyPlayers(getBukkitLocation(), 5);
 		if (near.size() > 0)
 		{
 			lookAt(near.get(near.size() - 1).getLocation());
-		} else {
+		} else
+		{
 			randomLookTicks -= 2;
 			if (randomLookTicks <= 0)
 			{
 				randomLookTicks = 40 + RPGCore.rand.nextInt(40);
 				targetYaw += 50 - RPGCore.rand.nextInt(101);
 				targetPitch += 20 - RPGCore.rand.nextInt(41);
-				if (targetPitch < -45)
-					targetPitch = -45 - (targetPitch + 45);
-				if (targetPitch > 45)
-					targetPitch = 45 - (targetPitch - 45);
+				if (targetPitch < -30)
+					targetPitch = -30 - (targetPitch + 30);
+				if (targetPitch > 30)
+					targetPitch = 30 - (targetPitch - 30);
 			}
 		}
 	}
@@ -207,7 +258,7 @@ public class CustomNPC extends EntityPlayer
 
 	public void deleteNPC()
 	{
-		File file = new File("plugins/RPGCore/npcs/" + getName() + ".yml");
+		File file = new File("plugins/RPGCore/npcs/" + databaseName + ".yml");
 		file.delete();
 		for (Player p: Bukkit.getOnlinePlayers())
 			despawnFor(p);
@@ -221,7 +272,7 @@ public class CustomNPC extends EntityPlayer
 			if (p.getWorld() != (org.bukkit.World) this.getWorld().getWorld())
 				continue;
 			RPlayer rp = RPGCore.playerManager.getRPlayer(p.getUniqueId());
-			double distance = p.getLocation().distance(getBukkitLocation());
+			double distance = p.getLocation().distanceSquared(getBukkitLocation());
 			if (visiblePlayers.contains(p.getUniqueId()) && distance > visibleDistance)
 			{
 				despawnFor(p);
@@ -232,7 +283,7 @@ public class CustomNPC extends EntityPlayer
 				visiblePlayers.add(p.getUniqueId());
 			}
 			
-			if (!inRangePlayers.contains(p.getUniqueId()) && distance < outRangeDistance)
+			if (!inRangePlayers.contains(p.getUniqueId()) && distance < chatRangeDistance * chatRangeDistance)
 			{
 				inRangePlayers.add(p.getUniqueId());
 				if (getConversationData() != null && getConversationData().conversationLines != null)
@@ -253,7 +304,7 @@ public class CustomNPC extends EntityPlayer
 					if (chat != null)
 						p.sendMessage(chat.getChatLine(getName()));
 				}
-			} else if (inRangePlayers.contains(p.getUniqueId()) && distance > outRangeDistance)
+			} else if (inRangePlayers.contains(p.getUniqueId()) && distance > chatRangeDistance * chatRangeDistance)
 			{
 				inRangePlayers.remove(p.getUniqueId());
 				if (getConversationData() != null && getConversationData().conversationLines != null && rp.npcClosure == this)
@@ -282,7 +333,7 @@ public class CustomNPC extends EntityPlayer
 		if (conversationData != null)
 			return conversationData;
 		for (ConversationData cd: ConversationData.dataList)
-			if (cd.npcName.equals(getName()))
+			if (cd.npcName.equalsIgnoreCase(databaseName))
 				conversationData = cd;
 		return conversationData;
 	}
@@ -305,10 +356,12 @@ public class CustomNPC extends EntityPlayer
 		PacketPlayOutPlayerInfo pi = new PacketPlayOutPlayerInfo(EnumPlayerInfoAction.ADD_PLAYER, this);
 		PacketPlayOutNamedEntitySpawn spawn = new PacketPlayOutNamedEntitySpawn(this);
 		PacketPlayOutEntityHeadRotation rotation = new PacketPlayOutEntityHeadRotation(this, (byte) ((int) (yaw * 256.0F / 360.0F)));
+		PacketPlayOutEntityLook look = new PacketPlayOutEntityLook(getId(), (byte) ((int) (yaw * 256.0F / 360.0F)), (byte) pitch, true);
 
 		PlayerConnection co = ((CraftPlayer) p).getHandle().playerConnection;
 		co.sendPacket(pi);
 		co.sendPacket(spawn);
+		co.sendPacket(look);
 		co.sendPacket(rotation);
 	}
 
@@ -330,12 +383,12 @@ public class CustomNPC extends EntityPlayer
 		for (UUID uuid: visiblePlayers)
 		{
 			Player p = Bukkit.getPlayer(uuid);
-			PacketPlayOutEntityHeadRotation packet = new PacketPlayOutEntityHeadRotation(this, (byte) ((int) (yaw * 256.0F / 360.0F)));
-			PacketPlayOutEntityLook l = new PacketPlayOutEntityLook(getId(), (byte) ((int) (yaw * 256.0F / 360.0F)), (byte) pitch, true);
+			PacketPlayOutEntityHeadRotation rotation = new PacketPlayOutEntityHeadRotation(this, (byte) ((int) (yaw * 256.0F / 360.0F)));
+			PacketPlayOutEntityLook look = new PacketPlayOutEntityLook(getId(), (byte) ((int) (yaw * 256.0F / 360.0F)), (byte) pitch, true);
 
 			PlayerConnection co = ((CraftPlayer) p).getHandle().playerConnection;
-			co.sendPacket(l);
-			co.sendPacket(packet);
+			co.sendPacket(look);
+			co.sendPacket(rotation);
 		}
 		
 		lastUpdatedYaw = yaw;
@@ -356,10 +409,12 @@ public class CustomNPC extends EntityPlayer
 	
 	public void saveNPC()
 	{
-		File file = new File("plugins/RPGCore/npcs/" + getName() + ".yml");
+		File file = new File("plugins/RPGCore/npcs/" + databaseName + ".yml");
 		ArrayList<String> lines = new ArrayList<String>();
 		Location l = getBukkitLocation();
 		lines.add("name: " + getName());
+		lines.add("lockRotation: " + lockRotation);
+		lines.add("chatRangeDistance: " + chatRangeDistance);
 		lines.add("location:");
 		lines.add(" world: " + l.getWorld().getName());
 		lines.add(" position: " + l.getX() + ", " + l.getY() + ", " + l.getZ());

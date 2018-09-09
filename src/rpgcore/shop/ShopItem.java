@@ -20,7 +20,7 @@ public class ShopItem
 	{
 		ItemStack is = item.createItem();
 		//is = CakeLibrary.addLore(is, "&f ", "&6Cost: &e&n" + cost + " Gold");
-		is = CakeLibrary.renameItem(is, CakeLibrary.getItemName(is) + "&f &6(&e" + cost + " Gold&6)");
+		is = CakeLibrary.renameItem(is, "&f" + CakeLibrary.getItemName(is) + "&f &6(&e" + cost + " Gold&6)");
 		return is;
 	}
 }

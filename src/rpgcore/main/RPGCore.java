@@ -83,11 +83,13 @@ public class RPGCore extends JavaPlugin
 
 	static final String[] helpGold = new String[] { 
 			"&6===[&e /gold Help &6]===", 
-	"&6/gold withdraw/w <amt>: &eWithdraws Gold into item form"};
+	"&6/gold withdraw/w <amt>: &eWithdraws Gold into item form"
+			};
 
 	static final String[] helpGoldAdmin = new String[] { 
 			"&6/gold add/a <amt> [player]: &eAdds Gold to a player",  
-	"&6/gold remove/r <amt> [player]: &eRemoves Gold from a player"};
+	"&6/gold remove/r <amt> [player]: &eRemoves Gold from a player"
+			};
 
 	static final String[] helpParty = new String[] { 
 			"&5===[&d /party Help &5]===",  
@@ -99,7 +101,8 @@ public class RPGCore extends JavaPlugin
 			"&5/party kick <player>: &dKicks a player from your party (Host)",
 			"&5/party sethost <player>: &dPasses host to a member (Host)",
 			"&5/party disband: &dDisbands your party (Host)",
-	"&dBegin a message with '\\' to chat in the party."};
+	"&dBegin a message with '\\' to chat in the party."
+			};
 
 	static final String[] helpItem = new String[] { 
 			"&6===[&e /item Help &6]===",
@@ -112,7 +115,8 @@ public class RPGCore extends JavaPlugin
 			"&6/item critdamage <percentage>",
 			"&6/item cooldowns <percentage>",
 			"&6/item dmgreduction <percentage>",
-	"&6/item unbreakable"};
+	"&6/item unbreakable"
+			};
 
 	static final String[] helpArea = new String[] { 
 			"&4===[&c /area Help &4]===",  
@@ -120,7 +124,8 @@ public class RPGCore extends JavaPlugin
 			"&4/area create <name>: &cCreates an area",
 			"&4/area list: &cLists all areas",
 			"&4/area editable <areaName>: &cToggles the editability of an area",
-	"&4/area bgm <areaName> <bgmName>: &cSets the BGM of an area"};
+	"&4/area bgm <areaName> <bgmName>: &cSets the BGM of an area"
+			};
 
 	static final String[] helpArena = new String[] { 
 			"&6===[&e /arena Help &6]===",  
@@ -131,7 +136,19 @@ public class RPGCore extends JavaPlugin
 			"&6/arena tpspawntest <arenaName>: &eTeleports you to the test location for adding mob spawns",
 			"&6/arena addmobspawn <arenaName> <mobName>: &eAdds a mob spawn based on your current location",
 			"&6/arena enter <arenaName>: &eEnters an instance of an arena if it's been created",
-	"&6/arena leave: &eLeaves your current arena"};
+	"&6/arena leave: &eLeaves your current arena"
+			};
+
+	static final String[] helpNPC = new String[] { 
+			"&6===[&e /npc Help &6]===",  
+			"&6/npc create <npcName>: &eCreates an NPC",
+			"&6/npc skin <skinName>: &eSets the skin of an NPC (tab-completable)",
+			"&6/npc rename <npcName>: &eRenames an NPC",
+			"&6/npc del: &eDeletes an NPC",
+			"&6/npc lockrotation: &eToggles head rotation lock on an NPC",
+			"&6/npc chatrange <blocks>: &eSets the chat range for an NPC",
+			"&6/npc databasename <databaseName>: &eSets the databaseName for an NPC"
+			};
 
 	public static void main(String[] args) {}
 
@@ -354,6 +371,26 @@ public class RPGCore extends JavaPlugin
 	@Override
 	public boolean onCommand(CommandSender sender, Command command, String cmd, String[] args)
 	{
+		if (command.getName().equalsIgnoreCase("rr"))
+		{
+			if (!sender.hasPermission("rpgcore.rr"))
+			{
+				msg(sender, "You do not have permissions to do this.");
+				return true;
+			}
+			readConfig();
+			readHeads();
+			readItemDatabase();
+			npcManager.readSkinDatas();
+			ShopManager.readShopDatabase();
+			songManager.readSongs();
+			for (CustomNPC npc: NPCManager.npcs)
+				npc.conversationData = null;
+			ConversationData.readConversationData();
+			RPGRecipe.readRecipeData();
+			msg(sender, "Reloaded RPGCore v" + getDescription().getVersion());
+			return true;
+		}
 		if (sender instanceof Player)
 		{
 			Player p = (Player) sender;
@@ -380,26 +417,6 @@ public class RPGCore extends JavaPlugin
 				String value = heads.get(args[0]);
 				p.getInventory().addItem(CakeLibrary.getSkullWithTexture(value));
 				msg(p, "Skull obtained.");
-				return true;
-			}
-			if (command.getName().equalsIgnoreCase("rr"))
-			{
-				if (!p.hasPermission("rpgcore.rr"))
-				{
-					msg(p, "You do not have permissions to do this.");
-					return true;
-				}
-				readConfig();
-				readHeads();
-				readItemDatabase();
-				npcManager.readSkinDatas();
-				ShopManager.readShopDatabase();
-				songManager.readSongs();
-				for (CustomNPC npc: npcManager.npcs)
-					npc.conversationData = null;
-				ConversationData.readConversationData();
-				RPGRecipe.readRecipeData();
-				msg(p, "Reloaded RPGCore v" + getDescription().getVersion());
 				return true;
 			}
 			if (command.getName().equalsIgnoreCase("area"))
@@ -786,7 +803,7 @@ public class RPGCore extends JavaPlugin
 				}
 				if (args.length == 0)
 				{
-					msg(p, "Usage: /npc <create/rename/delete/skin> <npcName/skinName>");
+					msg(p, helpNPC);
 					return true;
 				}
 				if (args[0].equalsIgnoreCase("create"))
@@ -802,7 +819,19 @@ public class RPGCore extends JavaPlugin
 					msg(p, "NPC Created and selected.");
 					return true;
 				}
-				if (args[0].equalsIgnoreCase("delete"))
+				if (args[0].equalsIgnoreCase("lockrotation"))
+				{
+					if (rp.selectedNPC == null)
+					{
+						msg(p, "Select an NPC by sneak-clicking it first");
+						return true;
+					}
+					rp.selectedNPC.lockRotation = !rp.selectedNPC.lockRotation;
+					rp.selectedNPC.saveNPC();
+					msg(p, "NPC lockRotation: " + rp.selectedNPC.lockRotation);
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("delete") || args[0].equalsIgnoreCase("del"))
 				{
 					if (rp.selectedNPC == null)
 					{
@@ -830,11 +859,80 @@ public class RPGCore extends JavaPlugin
 					for (int i = 2; i < args.length; i++)
 						name += " " + args[i];
 					CustomNPC prev = rp.selectedNPC;
+					boolean lockRotation = prev.lockRotation;
 					rp.selectedNPC = prev.skinData != null ? npcManager.createNPCUsernameSkin(prev.getBukkitLocation(), CakeLibrary.recodeColorCodes(name), prev.skinData.skinName)
 							: npcManager.createNPC(prev.getBukkitLocation(), CakeLibrary.recodeColorCodes(name));
+					rp.selectedNPC.lockRotation = lockRotation;
 					prev.deleteNPC();
 					rp.selectedNPC.saveNPC();
 					msg(p, "NPC Renamed.");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("move"))
+				{
+					if (rp.selectedNPC == null)
+					{
+						msg(p, "Select an NPC by sneak-clicking it first");
+						return true;
+					}
+					Location l = p.getLocation();
+					rp.selectedNPC.setLocation(l.getX(), l.getY(), l.getZ(), l.getYaw(), l.getPitch());
+					rp.selectedNPC.updatePosition();
+					rp.selectedNPC.updateRotation();
+					rp.selectedNPC.saveNPC();
+					msg(p, "NPC moved.");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("databasename"))
+				{
+					if (rp.selectedNPC == null)
+					{
+						msg(p, "Select an NPC by sneak-clicking it first");
+						return true;
+					}
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /npc databasename <databaseName>");
+						return true;
+					}
+					rp.selectedNPC.changeDatabaseName(args[1]);
+					msg(p, "NPC databaseName set to " + rp.selectedNPC.databaseName + ".");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("chatrange"))
+				{
+					if (rp.selectedNPC == null)
+					{
+						msg(p, "Select an NPC by sneak-clicking it first");
+						return true;
+					}
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /npc chatrange <blocks>");
+						return true;
+					}
+					float distance = -1;
+					try
+					{
+						distance = Float.parseFloat(args[1]);
+					} catch (Exception e) 
+					{
+						msg(p, "That is not a number");
+						return true;
+					}
+					if (distance > 10)
+					{
+						msg (p, "That chat distance is too great!");
+						return true;
+					}
+					if (distance < 0)
+					{
+						msg(p, ":thinking:");
+						return true;
+					}
+					rp.selectedNPC.chatRangeDistance = distance;
+					rp.selectedNPC.saveNPC();
+					msg(p, "NPC chatDistanceRange set to " + distance + ".");
 					return true;
 				}
 				if (args[0].equalsIgnoreCase("skin"))
@@ -856,7 +954,7 @@ public class RPGCore extends JavaPlugin
 					msg(p, "NPC Skin changed.");
 					return true;
 				}
-				msg(p, "Usage: /npc <create/rename/delete/skin>");
+				msg(p, helpNPC);
 				return true;
 			}
 			if (command.getName().equalsIgnoreCase("crystal"))

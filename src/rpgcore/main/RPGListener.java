@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.util.UUID;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -13,17 +12,12 @@ import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.block.DoubleChest;
-import org.bukkit.entity.Chicken;
-import org.bukkit.entity.Cow;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
-import org.bukkit.entity.Pig;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Skeleton;
-import org.bukkit.entity.Slime;
 import org.bukkit.entity.Zombie;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -53,6 +47,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
+import es.eltrueno.npc.skin.SkinData;
 import rpgcore.areas.Arena;
 import rpgcore.classes.RPGClass;
 import rpgcore.classes.RPGClass.ClassType;
@@ -61,7 +56,6 @@ import rpgcore.entities.mobs.RPGMonster;
 import rpgcore.entities.mobs.ReinforcedSkeleton;
 import rpgcore.entities.mobs.ReinforcedZombie;
 import rpgcore.entities.mobs.WarriorZombie;
-import rpgcore.entities.mobs.WeakSlime;
 import rpgcore.external.Title;
 import rpgcore.item.BonusStat.BonusStatCrystal;
 import rpgcore.item.RItem;
@@ -78,7 +72,6 @@ import rpgcore.shop.ShopItem;
 import rpgcore.shop.ShopManager;
 import rpgcore.sideclasses.RPGSideClass;
 import rpgcore.sideclasses.RPGSideClass.SideClassType;
-import rpgcore.skillinventory.SkillInventory;
 import rpgcore.skillinventory2.SkillInventory2;
 import rpgcore.skills.Heartspan;
 import rpgcore.skills.RPGSkill;
@@ -178,6 +171,7 @@ public class RPGListener implements Listener
 				return;
 			}
 		}
+		/*
 		if (e instanceof Pig || e instanceof Cow || e instanceof Chicken)
 		{
 			if (spawnDistance < 150.0D && rand.nextInt(5) == 0)
@@ -187,6 +181,7 @@ public class RPGListener implements Listener
 				new WeakSlime(slime);
 			}
 		}
+		 */
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -872,7 +867,7 @@ public class RPGListener implements Listener
 			if (split.length < 2)
 			{
 				for (RItem ri: RPGCore.itemDatabase)
-						completions.add(ri.databaseName);
+					completions.add(ri.databaseName);
 			}
 			else if (split.length >= 2 && split[1].length() > 0)
 			{
@@ -888,7 +883,7 @@ public class RPGListener implements Listener
 			if (split.length < 2)
 			{
 				for (RPGSkill skill: RPGSkill.skillList)
-						completions.add(skill.skillName);
+					completions.add(skill.skillName);
 			}
 			else if (split.length >= 2 && split[1].length() > 0)
 			{
@@ -931,17 +926,70 @@ public class RPGListener implements Listener
 			}
 		}
 
+		if (msg.startsWith(s + "npc skin "))
+		{
+			String[] split = msg.split(" ");
+			if (split.length < 3)
+			{
+				for (SkinData sd: RPGCore.npcManager.skinDatas)
+					completions.add(sd.skinName);
+			}
+			else if (split.length >= 3 && split[2].length() > 0)
+			{
+				for (SkinData sd: RPGCore.npcManager.skinDatas)
+					if (sd.skinName.toLowerCase().startsWith(split[2].toLowerCase()))
+						completions.add(sd.skinName);
+			}
+		}
+
+		if (msg.startsWith(s + "npcflag "))
+		{
+			RPlayer rp = RPGCore.playerManager.getRPlayer(event.getSender().getName());
+			if (rp == null)
+				return;
+			String[] split = msg.split(" ");
+			if (split.length < 2)
+				return;
+			if (!split[1].equalsIgnoreCase("del") && !split[1].equalsIgnoreCase("set"))
+				return;
+			if (split.length == 2 && msg.endsWith(" "))
+				completions.addAll(rp.npcFlags.keySet());
+			else if (split.length >= 3 && split[2].length() > 0)
+			{
+				for (String key: rp.npcFlags.keySet())
+					if (key.toLowerCase().startsWith(split[2].toLowerCase()))
+						completions.add(key);
+			}
+		}
+
+		if (msg.startsWith(s + "npc "))
+		{
+			String[] split = msg.split(" ");
+			String[] arg1 = { "create", "skin", "rename", "del", "lockRotation", "chatRange", "databaseName" };
+			if (split.length == 1 && msg.endsWith(" "))
+			{
+				for (String a: arg1)
+					completions.add(a);
+			}
+			else if (split.length == 2 && !msg.endsWith(" "))
+			{
+				for (String a: arg1)
+					if (a.toLowerCase().startsWith(split[1].toLowerCase()))
+						completions.add(a);
+			}
+		}
+
 		if (msg.startsWith(s + "arena "))
 		{
 			String[] split = msg.split(" ");
-			String[] arg1 = { "list", "create", "del", "setspawnrotation", "tpspawntest", "addmobspawn", "enter", "leave" };
+			String[] arg1 = { "list", "create", "del", "setSpawnRotation", "tpSpawnTest", "addMobSpawn", "enter", "leave" };
 			String[] arg2Arena = { "create", "del", "setspawnrotation", "tpspawntest", "addmobspawn", "enter" };
 			boolean complete = false;
 			if (split.length >= 2)
 				for (String check: arg2Arena)
 					if (split[1].equalsIgnoreCase(check))
 						complete = true;
-			if (split.length == 1)
+			if (split.length == 1 && msg.endsWith(" "))
 			{
 				for (String a: arg1)
 					completions.add(a);

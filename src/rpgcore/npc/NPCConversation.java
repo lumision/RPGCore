@@ -70,17 +70,17 @@ public class NPCConversation
 		return lastClickedSlot >= 4 ? lastClickedSlot - 1 - index : lastClickedSlot + 1 + index;
 	}
 
-	public boolean checkCommands()
+	public int checkCommands()
 	{
 		if (part == null)
-			return false;
+			return -1;
 
 		Player p = player.getPlayer();
 
 		if (part.string.toLowerCase().startsWith("@exit"))
 		{
 			RPGEvents.scheduleRunnable(new RPGEvents.InventoryClose(p), 1);
-			return false;
+			return -1;
 		} else if (part.string.toLowerCase().startsWith("@shop: "))
 		{
 			Shop shop = ShopManager.getShopWithDB(part.string.split(": ")[1]);
@@ -89,7 +89,7 @@ public class NPCConversation
 				part = null;
 			else
 				part = part.next.get(0);
-			return false;
+			return -1;
 		} else if (part.string.toLowerCase().startsWith("@giveitem: "))
 		{
 			String[] vars = part.string.split(": ");
@@ -97,19 +97,19 @@ public class NPCConversation
 			if (item == null)
 			{
 				RPGCore.msgConsole("&4Error while executing @giveitem in " + conversationData.npcName + "'s conversation data: &c" + vars[1] + " &4is not an existing RItem.");
-				return false;
+				return -1;
 			}
 			if (!CakeLibrary.playerHasVacantSlots(p))
 			{
 				RPGCore.msg(p, "Please clear up an inventory slot to receive an item!");
-				return false;
+				return -1;
 			}
 			p.getInventory().addItem(item.createItem());
 			if (part.next.size() <= 0)
 				part = null;
 			else
 				part = part.next.get(0);
-			return true;
+			return 0;
 		} else if (part.string.toLowerCase().startsWith("@setflag: "))
 		{
 			String[] vars = part.string.split(": ");
@@ -120,7 +120,7 @@ public class NPCConversation
 			else
 				part = part.next.get(0);
 			RPGCore.playerManager.writeData(player);
-			return true;
+			return 0;
 		} else if (part.string.toLowerCase().startsWith("@delflag: "))
 		{
 			String[] vars = part.string.split(": ");
@@ -130,9 +130,9 @@ public class NPCConversation
 			else
 				part = part.next.get(0);
 			RPGCore.playerManager.writeData(player);
-			return true;
+			return 0;
 		}
-		return true;
+		return 1;
 	}
 
 	public void updateUI()
@@ -157,7 +157,10 @@ public class NPCConversation
 			return;
 		}
 
-		if (!checkCommands())
+		int check = checkCommands();
+		while (check == 0)
+			check = checkCommands();
+		if (check == -1)
 			return;
 
 		Player p = player.getPlayer();
