@@ -10,7 +10,7 @@ import org.bukkit.inventory.ItemStack;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
 import rpgcore.player.RPlayer;
-import rpgcore.skillinventory.SkillInventory;
+import rpgcore.skillinventory2.SkillInventory2;
 
 public class RPGParty 
 {
@@ -44,10 +44,10 @@ public class RPGParty
 		{
 			RPlayer rp = players.get(i);
 			Player p = rp.getPlayer();
-			String color = SkillInventory.getClassColor(rp.currentClass);
-			ItemStack is = CakeLibrary.editNameAndLore(SkillInventory.getClassIcon(rp.currentClass),
+			String color = SkillInventory2.getClassColor(rp.currentClass);
+			ItemStack is = CakeLibrary.editNameAndLore(SkillInventory2.getClassIcon(rp.currentClass),
 					color + rp.getPlayerName(),
-					"&7Class: " + SkillInventory.getClassColor(rp.currentClass) + rp.currentClass.toString(),
+					"&7Class: " + SkillInventory2.getClassColor(rp.currentClass) + rp.currentClass.toString(),
 					"&7Level: " + color + rp.getCurrentClass().getLevel());
 
 			if (p != null)

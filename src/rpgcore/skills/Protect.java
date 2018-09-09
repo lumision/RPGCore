@@ -11,22 +11,22 @@ import rpgcore.main.RPGCore;
 import rpgcore.main.RPGEvents;
 import rpgcore.player.RPlayer;
 
-public class Accelerate extends RPGSkill
+public class Protect extends RPGSkill
 {
-	public final static String skillName = "Accelerate";
+	public final static String skillName = "Protect";
 	public final static boolean passiveSkill = false;
-	public final static int skillTier = 2;
+	public final static int skillTier = 1;
 	public final static int castDelay = 0;
-	public final static ClassType classType = ClassType.MAGE;
-	public final static float attackSpeedMultiplierAdd = 0.2F;
+	public final static ClassType classType = ClassType.PRIEST;
+	public final static int damageReductionAdd = 20;
 	public final static int buffLength = 120 * 20;
 	public final static int cooldown = 60;
-	public Accelerate(RPlayer caster)
+	public Protect(RPlayer caster)
 	{
 		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 	
-	public Accelerate()
+	public Protect()
 	{
 		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
@@ -34,18 +34,18 @@ public class Accelerate extends RPGSkill
 	@Override
 	public void insantiate(RPlayer rp)
 	{
-		new Accelerate(rp);
+		new Protect(rp);
 	}
 
 	@Override
 	public ItemStack getSkillItem()
 	{
-		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.FEATHER, 1), 
-				"&bAccelerate"),
+		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.IRON_INGOT, 1), 
+				"&dProtect"),
 				"&7Buff:",
-				"&7 * Attack Speed: +" + (int) (attackSpeedMultiplierAdd * 100.0F) + "%",
+				"&7 * Damage received: -" + damageReductionAdd + "%",
 				"&7 * Buff Duration: " + (buffLength / 20) + "s",
-				"&7Cooldown: 60s",
+				"&7Cooldown: " + cooldown + "s",
 				"&f",
 				"&8&oApplies a buff with the above",
 				"&8&oeffects to the user and all",
@@ -74,9 +74,10 @@ public class Accelerate extends RPGSkill
 			return;
 		if (player.getLocation().distance(castPlayer.getLocation()) > 16.0D)
 			return;
-		RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, player, 169), 0);
-		player.sendMessage(CakeLibrary.recodeColorCodes("&e--- Buff &6[ &bAccelerate&6 ] &eapplied ---"));
+		RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, player, 42), 0);
+		player.sendMessage(CakeLibrary.recodeColorCodes("&e--- Buff &6[ &dProtect&6 ] &eapplied ---"));
 		rp.removeBuff(skillName);
-		rp.buffs.add(new Buff(caster, classType, skillName, buffLength, "&e--- Buff &6[ &bAccelerate&6 ] &eran out ---"));
+		rp.buffs.add(new Buff(caster, classType, skillName, buffLength, "&e--- Buff &6[ &dProtect&6 ] &eran out ---"));
+		rp.updateScoreboard();
 	}
 }

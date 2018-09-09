@@ -16,19 +16,20 @@ import rpgcore.player.RPlayer;
 public class ArcaneBlast extends RPGSkill
 {
 	public final static String skillName = "Arcane Blast";
+	public final static boolean passiveSkill = false;
 	public final static int skillTier = 1;
-	public final static int castDelay = 10;
+	public final static int castDelay = 15;
 	public final static ClassType classType = ClassType.MAGE;
-	public final static float damage = 2.2F;
+	public final static float damage = 1.7F;
 	public final static int radius = 4;
 	public ArcaneBlast(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, damage, classType, skillTier);
+		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	public ArcaneBlast()
 	{
-		super(skillName, null, castDelay, 0, classType, skillTier);
+		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override
@@ -44,21 +45,19 @@ public class ArcaneBlast extends RPGSkill
 				"&dArcane Blast"),
 				"&7Damage: " + (int) (damage * 100.0D) + "%",
 				"&7Radius: " + radius + " blocks",
-				"&7Cooldown: 2s",
+				"&7Interval: " + (castDelay / 20.0F) + "s",
 				"&f",
 				"&8&oBlasts a plane of arcane energy",
 				"&8&ounto the target area.",
 				"&f",
-				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
+				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
 	}
 
 	@Override
 	public void activate()
 	{
-		super.applyCooldown(2.0D);
-
-		Location target = player.getTargetBlock(CakeLibrary.getPassableBlocks(), 16).getLocation();
+		Location target = player.getTargetBlock(CakeLibrary.getPassableBlocks(), 32).getLocation();
 		
 		int x = -radius;
 		int z = 0;

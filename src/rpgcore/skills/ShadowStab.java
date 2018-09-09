@@ -19,18 +19,19 @@ import rpgcore.player.RPlayer;
 public class ShadowStab extends RPGSkill
 {
 	public final static String skillName = "Shadow Stab";
+	public final static boolean passiveSkill = false;
 	public final static int skillTier = 1;
 	public final static int castDelay = 5;
 	public final static ClassType classType = ClassType.ASSASSIN;
 	public final static float damage = 1.3F;
 	public ShadowStab(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, damage, classType, skillTier);
+		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 	
 	public ShadowStab()
 	{
-		super(skillName, null, castDelay, 0, classType, skillTier);
+		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -51,7 +52,7 @@ public class ShadowStab extends RPGSkill
 				"&8&othe cooldown of &7&o[Dash] &8&owhen",
 				"&8&oa successful hit is landed.",
 				"&f",
-				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
+				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
 	}
 	

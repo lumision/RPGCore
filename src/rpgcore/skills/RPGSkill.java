@@ -1,9 +1,12 @@
 package rpgcore.skills;
 
+import java.util.Random;
+
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import rpgcore.classes.RPGClass.ClassType;
+import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
 import rpgcore.player.RPlayer;
 
@@ -13,16 +16,21 @@ public class RPGSkill
 	public Player player;
 	public double baseDamageMultiplier;
 	public int casterDamage;
+	public boolean passiveSkill;
 	public String skillName;
 	public int skillTier;
 	public ClassType classType;
+	public static Random rand = new Random();
 	
-	public static RPGSkill[] skillList = { //ADDSKILL
+	public static final RPGSkill[] skillList = { //ADDSKILL
 			
 			new ArcaneBarrage(),
 			new Armageddon(),
 			new Heartspan(),
 			new TripleKunai(),
+			//new Supernova(),
+			//new BlackHole(),
+			//new Asteroid(),
 			
 			//WARRIOR TIER 1
 			new PowerPierce(),
@@ -31,13 +39,15 @@ public class RPGSkill
 			
 			//MAGE TIER 1
 			new ArcaneBolt(),
-			new ArcaneBlast(),
 			new WindDrive(),
+			new ArcaneBlast(),
+			new ArcaneSpears(),
 			new Wisdom(),
 			
 			//PRIEST TIER 1
 			new HolyBolt(),
 			new Heal(),
+			new Protect(),
 			new Enlightenment(),
 			
 			//ASSASSIN TIER 1
@@ -61,6 +71,35 @@ public class RPGSkill
 			new Kunai(),
 			new LightFeet(),
 			
+			//MISC
+			new Vitality1(),
+			new Vitality2(),
+			new Vitality3(),
+			new Vitality4(),
+			new Vitality5(),
+			new Vitality6(),
+			new Vitality7(),
+			new Vitality8(),
+			new Vitality9(),
+			new Vitality10(),
+			
+	};
+	
+	public static final String[] skillTierNames = {
+			"",
+			"I",
+			"II",
+			"III",
+			"IV",
+			"V",
+			"VI",
+			"VII",
+			"VIII",
+			"IX",
+			"X",
+			CakeLibrary.recodeColorCodes("&c&lAlpha"),
+			CakeLibrary.recodeColorCodes("&e&lDelta"),
+			CakeLibrary.recodeColorCodes("&b&m&lZ&b&leta"),
 	};
 	
 	public static RPGSkill getSkill(String skillName)
@@ -71,8 +110,9 @@ public class RPGSkill
 		return null;
 	}
 	
-	public RPGSkill(String skillName, RPlayer caster, int castDelay, double baseDamageMultiplier, ClassType classType, int skillTier)
+	public RPGSkill(String skillName, RPlayer caster, boolean passiveSkill, int castDelay, double baseDamageMultiplier, ClassType classType, int skillTier)
 	{
+		this.passiveSkill = passiveSkill;
 		this.skillName = skillName;
 		this.classType = classType;
 		this.skillTier = skillTier;
@@ -111,11 +151,11 @@ public class RPGSkill
 		return null;
 	}
 	
-	public void applyCooldown(double seconds)
+	public void applyCooldown(float seconds)
 	{
 		double reductionPercentage = caster.calculateCooldownReduction();
-		double total = seconds * 20.0D;
-		total -= (total * reductionPercentage / 100.0D);
+		double total = seconds * 20.0F;
+		total -= (total * reductionPercentage / 100.0F);
 		if (total <= 0)
 			return;
 		caster.cooldowns.add(skillName);

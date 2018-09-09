@@ -14,18 +14,19 @@ import rpgcore.player.RPlayer;
 public class Heal extends RPGSkill
 {
 	public final static String skillName = "Heal";
+	public final static boolean passiveSkill = false;
 	public final static int skillTier = 1;
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.PRIEST;
 	public final static float healAmount = 2;
 	public Heal(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, 0, classType, skillTier);
+		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 	
 	public Heal()
 	{
-		super(skillName, null, castDelay, 0, classType, skillTier);
+		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -45,7 +46,7 @@ public class Heal extends RPGSkill
 				"&8&oHeals the user and all party",
 				"&8&omembers within 16 blocks.",
 				"&f",
-				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
+				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
 	}
 

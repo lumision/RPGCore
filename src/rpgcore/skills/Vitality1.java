@@ -5,16 +5,16 @@ import org.bukkit.inventory.ItemStack;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
 
-public class Wisdom extends RPGSkill
+public class Vitality1 extends RPGSkill
 {
-	public final static String skillName = "Wisdom";
+	public final static String skillName = "Vitality I";
 	public final static boolean passiveSkill = true;
 	public final static int skillTier = 1;
 	public final static int castDelay = 0;
-	public final static ClassType classType = ClassType.MAGE;
-	public final static float magicDamagePercentageAdd = 0.2F;
+	public final static ClassType classType = ClassType.ALL;
+	public final static int maxHealthAdd = 1;
 	
-	public Wisdom()
+	public Vitality1()
 	{
 		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
@@ -22,13 +22,13 @@ public class Wisdom extends RPGSkill
 	@Override
 	public ItemStack getSkillItem()
 	{
-		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(6, 1, (short) 5), 
-				"&eWisdom"),
+		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(351, 1, (short) 1), 
+				"&cVitality I"),
 				"&7Passive Skill:",
-				"&7 * Magic Damage: +" + (int) (magicDamagePercentageAdd * 100.0F) + "%",
+				"&7 * Max Health: +" + (maxHealthAdd / 2.0F) + " Hearts",
 				"&f",
-				"&8&oIncreased knowledge in",
-				"&8&ochanneling magic power.",
+				"&8&oIncreased fortitude to",
+				"&8&oreceiving damage.",
 				"&f",
 				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());

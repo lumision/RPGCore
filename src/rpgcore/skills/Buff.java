@@ -27,7 +27,7 @@ public class Buff
 	{
 		if (this.duration > 0)
 			this.duration--;
-		if (!buffer.currentClass.getTier1Class().equals(tier1Class))
+		if (!buffer.currentClass.equals(tier1Class))
 			this.duration = 0;
 	}
 	

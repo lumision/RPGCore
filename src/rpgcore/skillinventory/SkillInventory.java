@@ -1,6 +1,5 @@
 package rpgcore.skillinventory;
 
-
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
@@ -36,6 +35,7 @@ import rpgcore.skills.Wisdom;
 
 public class SkillInventory 
 {
+	/*
 	public static ItemStack locked = new SpawnEgg(EntityType.ENDERMAN).toItemStack(1);
 	public static ItemStack levelSkills = CakeLibrary.editNameAndLore(new ItemStack(Material.WOOL, 1, (short) 5),
 			"&a&nSpend skill points",
@@ -67,7 +67,6 @@ public class SkillInventory
 		int size = 9 * (player.currentClass.getTier() + 2);
 		switch(player.currentClass)
 		{
-		/*
 		//tier 1
 		case ASSASSIN:
 			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Thief"));
@@ -89,9 +88,7 @@ public class SkillInventory
 			setMageSkills(inv, player, 0);
 			setUI(inv, size / 9, player, mode);
 			return inv;
-		 */
 
-		/*
 		//tier 2
 		case SORCERER:
 			inv = Bukkit.createInventory(null, size, CakeLibrary.recodeColorCodes("&9Skillbook: Sorcerer"));
@@ -173,12 +170,10 @@ public class SkillInventory
 			setBishopSkills(inv, player, 0);
 			setUI(inv, size / 9, player, mode);
 			return inv;
-		 */
 		default: return null;
 		}
 	}
 
-	/*
 	public static void updateSkillInventory(Inventory inv, RPlayer player)
 	{
 		String invName = CakeLibrary.removeColorCodes(inv.getName());
@@ -258,8 +253,7 @@ public class SkillInventory
 		}
 		updateSkillPointsIcon(inv, player);
 	}
-	 */
-
+	
 	public static void updateSkillPointsIcon(Inventory inv, RPlayer player)
 	{
 		for (int i = 0; i < inv.getSize(); i++)
@@ -310,7 +304,6 @@ public class SkillInventory
 		{
 		case WARRIOR:
 			return CakeLibrary.renameItem(new ItemStack(Material.IRON_SWORD), "&fClass: " + getClassColor(classType) + "Warrior");
-			/*
 		case KNIGHT:
 			return CakeLibrary.renameItem(new ItemStack(Material.IRON_CHESTPLATE), "&fClass: " + getClassColor(classType) + "Knight");
 		case HERO:
@@ -319,10 +312,8 @@ public class SkillInventory
 			return CakeLibrary.renameItem(new ItemStack(Material.GOLD_SWORD), "&fClass: " + getClassColor(classType) + "Paladin");
 		case ODIN:
 			return CakeLibrary.renameItem(new ItemStack(Material.DIAMOND_SWORD), "&fClass: " + getClassColor(classType) + "Odin");
-			 */
 		case MAGE:
 			return CakeLibrary.renameItem(new ItemStack(Material.STICK), "&fClass: " + getClassColor(classType) + "Mage");
-			/*
 		case SHAMAN:
 			return CakeLibrary.renameItem(new ItemStack(Material.PAPER), "&fClass: " + getClassColor(classType) + "Shaman");
 		case THAUMATURGE:
@@ -331,23 +322,18 @@ public class SkillInventory
 			return CakeLibrary.renameItem(new ItemStack(Material.SUGAR), "&fClass: " + getClassColor(classType) + "Sorcerer");
 		case ARCHMAGE:
 			return CakeLibrary.renameItem(new ItemStack(Material.GLOWSTONE_DUST), "&fClass: " + getClassColor(classType) + "Archmage");
-			 */
 		case PRIEST:
 			return CakeLibrary.renameItem(new ItemStack(38, 1, (short) 3), "&fClass: " + getClassColor(classType) + "Priest");
-			/*
 		case FRIAR:
 			return CakeLibrary.renameItem(new ItemStack(38, 1, (short) 6), "&fClass: " + getClassColor(classType) + "Friar");
 		case BISHOP:
 			return CakeLibrary.renameItem(new ItemStack(38, 1, (short) 8), "&fClass: " + getClassColor(classType) + "Bishop");
-			 */
 		case ASSASSIN:
 			return CakeLibrary.renameItem(new ItemStack(Material.ENDER_PEARL), "&fClass: " + getClassColor(classType) + "Thief");
-			/*
 		case ASSASSIN:
 			return CakeLibrary.renameItem(new ItemStack(Material.EYE_OF_ENDER), "&fClass: " + getClassColor(classType) + "Assassin");
 		case DUALIST:
 			return CakeLibrary.renameItem(new ItemStack(Material.NETHER_STAR), "&fClass: " + getClassColor(classType) + "Dualist");
-			 */
 		}
 		return null;
 	}
@@ -365,35 +351,6 @@ public class SkillInventory
 		default:
 			return "";
 		}
-		/**
-		switch (classType))
-{
-case WARRIOR:
-	return "§c";
-case KNIGHT:
-	return "§2";
-case ODIN:
-	return "§6";
-case MAGE:
-	return "§b";
-case SHAMAN:
-	return "§5";
-case SORCERER:
-	return "§4";
-case PRIEST:
-	return "§e";
-case BISHOP:
-	return "§6";
-case FRIAR:
-	return "§f";
-case THIEF:
-	return "§8";
-case ASSASSIN:
-	return "§8";
-case DUALIST:
-	return "§7";
-}
-		 */
 	}
 
 	public static void updatePlayerInventorySkills(RPlayer player)
@@ -423,7 +380,6 @@ case DUALIST:
 		}
 	}
 
-	/*
 	public static void setWarriorSkills(Inventory inv, RPlayer player, int row)
 	{
 		inv.setItem(0 + (row * 9), PowerPierce.getSkillItem(player));
@@ -495,5 +451,6 @@ case DUALIST:
 		inv.setItem(0 + (row * 9), ArcaneBarrage.getSkillItem(player));
 		inv.setItem(4 + (row * 9), Armageddon.getSkillItem(player));
 	}
-	 */
+	*/
 }
+

@@ -17,18 +17,19 @@ import rpgcore.player.RPlayer;
 public class Kunai extends RPGSkill
 {
 	public final static String skillName = "Kunai";
+	public final static boolean passiveSkill = false;
 	public final static int skillTier = 2;
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.ASSASSIN;
 	public final static float damage = 2.4F;
 	public Kunai(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, damage, classType, skillTier);
+		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 	
 	public Kunai()
 	{
-		super(skillName, null, castDelay, 0, classType, skillTier);
+		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -47,7 +48,7 @@ public class Kunai extends RPGSkill
 				"&f",
 				"&8&oThrows a kunai knife forward.",
 				"&f",
-				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
+				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
 	}
 

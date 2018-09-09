@@ -18,18 +18,19 @@ import rpgcore.player.RPlayer;
 public class PowerPierce extends RPGSkill
 {
 	public final static String skillName = "Power Pierce";
+	public final static boolean passiveSkill = false;
 	public final static int skillTier = 1;
 	public final static int castDelay = 20;
 	public final static ClassType classType = ClassType.WARRIOR;
 	public final static float damage = 1.4F;
 	public PowerPierce(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, damage, classType, skillTier);
+		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 	
 	public PowerPierce()
 	{
-		super(skillName, null, castDelay, 0, classType, skillTier);
+		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -48,7 +49,7 @@ public class PowerPierce extends RPGSkill
 				"&f",
 				"&8&oSends a short pierce forward.",
 				"&f",
-				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
+				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
 	}
 

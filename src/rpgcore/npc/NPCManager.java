@@ -120,7 +120,7 @@ public class NPCManager
 			if (skin == null)
 				createNPC(location, name);
 			else
-				createNPC(location, name, skin);
+				createNPCUsernameSkin(location, name, skin);
 		}
 	}
 
@@ -226,19 +226,22 @@ public class NPCManager
 		return npc;
 	}
 
-	public CustomNPC createNPC(Location location, String name, String skin)
+	public CustomNPC createNPCUsernameSkin(Location location, String name, String skinUsername)
 	{
 		WorldServer s = ((CraftWorld) location.getWorld()).getHandle();
 		World w = ((CraftWorld) location.getWorld()).getHandle(); //Warning: use NMS world
-		TruenoNPCSkin npcSkin = new TruenoNPCSkin(RPGCore.instance, SkinType.IDENTIFIER, skin);
+		TruenoNPCSkin npcSkin = new TruenoNPCSkin(RPGCore.instance, SkinType.IDENTIFIER, skinUsername);
 		GameProfile profile = new GameProfile(UUID.randomUUID(), name);
 		CustomNPC npc = new CustomNPC(MinecraftServer.getServer(), s, profile, new PlayerInteractManager(w), location);
 		npcs.add(npc);
-		SkinData cached = getSkinData(skin);
+		SkinData cached = getSkinData(skinUsername);
 		if (cached != null)
 		{
 			npc.skinData = cached;
 			profile.getProperties().put("textures", new Property("textures", cached.getValue(), cached.getSignature()));
+			npc.reloadForVisiblePlayers();
+			npc.saveNPC();
+			return npc;
 		}
 		npcSkin.getSkinDataAsync(new SkinDataReply() 
 		{
@@ -248,15 +251,11 @@ public class NPCManager
 				if (skinData == null)
 					return;
 
-				if (cached != null)
-					if (skinData.getSignature().equals(cached.getSignature()) && skinData.getValue().equals(cached.getValue()))
-						return;
-
-				skinData.skinName = skin;
+				skinData.skinName = skinUsername;
 
 				ArrayList<SkinData> remove = new ArrayList<SkinData>();
 				for (SkinData sd: skinDatas)
-					if (sd.skinName.equals(skin))
+					if (sd.skinName.equals(skinUsername))
 						remove.add(sd);
 				skinDatas.removeAll(remove);
 				skinDatas.add(skinData);

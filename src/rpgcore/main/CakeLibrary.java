@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -14,8 +15,10 @@ import java.util.Calendar;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 
+import org.apache.commons.codec.binary.Base64;
 import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.FireworkEffect;
@@ -39,23 +42,99 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionDefault;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
+
+import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.Property;
 
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.HoverEvent.Action;
 import net.md_5.bungee.api.chat.TextComponent;
+import net.minecraft.server.v1_12_R1.BlockPosition;
 import net.minecraft.server.v1_12_R1.EntityLightning;
 import net.minecraft.server.v1_12_R1.EnumParticle;
 import net.minecraft.server.v1_12_R1.PacketPlayOutSpawnEntityWeather;
 import net.minecraft.server.v1_12_R1.PacketPlayOutWorldParticles;
+import net.minecraft.server.v1_12_R1.TileEntitySkull;
 
 public class CakeLibrary
 {
+	private static final Random random = new Random();
+	private static final String chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 	// <ITEM-RELATED>
+	public static ItemStack getSkullWithURL(String url) 
+	{
+		ItemStack head = new ItemStack(Material.SKULL_ITEM, 1, (short)3);
+		if(url.isEmpty())return head;
+
+
+		SkullMeta headMeta = (SkullMeta) head.getItemMeta();
+		GameProfile profile = new GameProfile(UUID.randomUUID(), null);
+		byte[] encodedData = Base64.encodeBase64(String.format("{textures:{SKIN:{url:\"%s\"}}}", url).getBytes());
+		profile.getProperties().put("textures", new Property("textures", new String(encodedData)));
+		Field profileField = null;
+		try {
+			profileField = headMeta.getClass().getDeclaredField("profile");
+			profileField.setAccessible(true);
+			profileField.set(headMeta, profile);
+		} catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException e1) {
+			e1.printStackTrace();
+		}
+		head.setItemMeta(headMeta);
+		return head;
+	}
+	
+	public static ItemStack getSkullWithTexture(String texture) 
+	{
+		ItemStack head = new ItemStack(Material.SKULL_ITEM, 1, (short)3);
+		SkullMeta headMeta = (SkullMeta) head.getItemMeta();
+		GameProfile profile = new GameProfile(UUID.randomUUID(), null);
+		profile.getProperties().put("textures", new Property("textures", texture));
+		Field profileField = null;
+		try {
+			profileField = headMeta.getClass().getDeclaredField("profile");
+			profileField.setAccessible(true);
+			profileField.set(headMeta, profile);
+		} catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException e1) {
+			e1.printStackTrace();
+		}
+		head.setItemMeta(headMeta);
+		return head;
+	}
+
+	// Real Method
+	public static GameProfile getNonPlayerProfile(String skinURL, boolean randomName) 
+	{
+		GameProfile newSkinProfile = new GameProfile(UUID.randomUUID(), randomName ? getRandomString(16) : null);
+		newSkinProfile.getProperties().put("textures", new Property("textures", Base64Coder.encodeString("{textures:{SKIN:{url:\"" + skinURL + "\"}}}")));
+		return newSkinProfile;
+	}
+
+	// Example Usage
+	public static void setSkullWithNonPlayerProfile(String skinURL, boolean randomName, Block skull) 
+	{
+		if(skull.getType() != Material.SKULL)
+			throw new IllegalArgumentException("Block must be a skull.");
+		TileEntitySkull skullTile = (TileEntitySkull)((CraftWorld)skull.getWorld()).getHandle().getTileEntity(new BlockPosition(skull.getX(), skull.getY(), skull.getZ()));
+		skullTile.setGameProfile(getNonPlayerProfile(skinURL, randomName));
+		skull.getWorld().refreshChunk(skull.getChunk().getX(), skull.getChunk().getZ());
+	}
+
+	// Util
+	public static String getRandomString(int length) 
+	{
+		StringBuilder b = new StringBuilder(length);
+		for(int j = 0; j < length; j++)
+			b.append(chars.charAt(random.nextInt(chars.length())));
+		return b.toString();
+	}
+
 	/**
 	 * Takes an item and returns the name of the item
 	 * @param is - The item's name to check
@@ -94,7 +173,7 @@ public class CakeLibrary
 			return new ArrayList<String>();
 		return new ArrayList<String>(is.getItemMeta().getLore());
 	}
-	
+
 	public static ItemStack setItemLore(ItemStack is, ArrayList<String> lore)
 	{
 		ItemMeta im = is.getItemMeta();
@@ -224,7 +303,7 @@ public class CakeLibrary
 				vacant--;
 		return vacant;
 	}
-	
+
 	public static boolean playerHasVacantSlots(Player p)
 	{
 		int slots = 36;
@@ -237,7 +316,7 @@ public class CakeLibrary
 		}
 		return slots > 0;
 	}
-	
+
 	public static TextComponent getItemAsTextComponent(ItemStack is)
 	{
 		if (CakeLibrary.isItemStackNull(is))
@@ -262,19 +341,19 @@ public class CakeLibrary
 		return item;
 	}
 	// </ITEM-RELATED>
-	
+
 	public static void spawnParticle(EnumParticle particle, Location location, float range, Player player, int particles, float speed)
 	{
 		PacketPlayOutWorldParticles packet = new PacketPlayOutWorldParticles(particle, true, (float) location.getX(), (float) location.getY(), (float) location.getZ(), range, range, range, speed, particles, null );
 		((CraftPlayer) player).getHandle().playerConnection.sendPacket(packet);
- //		CakeLibrary.spawnParticle(EnumParticle.FLAME, player.getLocation(), 128, player, 99999, 0);
+		//		CakeLibrary.spawnParticle(EnumParticle.FLAME, player.getLocation(), 128, player, 99999, 0);
 	}
-	
+
 	public static void spawnParticle(EnumParticle particle, Location location, float range, Player player, int particles, float speed, int... data)
 	{
 		PacketPlayOutWorldParticles packet = new PacketPlayOutWorldParticles(particle, true, (float) location.getX(), (float) location.getY(), (float) location.getZ(), range, range, range, speed, particles, data );
 		((CraftPlayer) player).getHandle().playerConnection.sendPacket(packet);
- //		CakeLibrary.spawnParticle(EnumParticle.FLAME, player.getLocation(), 128, player, 99999, 0);
+		//		CakeLibrary.spawnParticle(EnumParticle.FLAME, player.getLocation(), 128, player, 99999, 0);
 	}
 
 	public static class FireworkEffectPlayer {
@@ -398,13 +477,13 @@ public class CakeLibrary
 		bypass.add(Material.REDSTONE_TORCH_OFF);
 		return bypass;
 	}
-	
+
 	public static boolean hasPermissionIgnoreOp(Player p, String node)
 	{
 		Permission perm = new Permission(node, PermissionDefault.FALSE);
 		return p.hasPermission(perm);
 	}
-	
+
 	public static int getPotionEffectAmplifier(LivingEntity p, PotionEffectType type)
 	{
 		PotionEffect effect = p.getPotionEffect(type);
@@ -412,7 +491,7 @@ public class CakeLibrary
 			return -1;
 		return effect.getAmplifier();
 	}
-	
+
 	public static void addPotionEffectIfBetterOrEquivalent(LivingEntity e, PotionEffect pe)
 	{
 		int initialLevel = getPotionEffectAmplifier(e, pe.getType());
@@ -459,7 +538,7 @@ public class CakeLibrary
 			time = (calendar.get(Calendar.HOUR_OF_DAY) - 12) + ":" + minutes + "PM";
 		return month + " " + calendar.get(Calendar.DAY_OF_MONTH) + ", " + time;
 	}
-	
+
 	public static boolean hasColor(String s)
 	{
 		return s.contains("§");
@@ -471,7 +550,48 @@ public class CakeLibrary
 		String build = "";
 		for (int i = 0; i < c.length; i++)
 		{
-			if (c[i] == '§' && i < c.length - 1)
+			if ((c[i] == '§' || c[i] == '&') && i < c.length - 1)
+				if (c[i + 1] == '1'
+				|| c[i + 1] == '2'
+				|| c[i + 1] == '3'
+				|| c[i + 1] == '4'
+				|| c[i + 1] == '5'
+				|| c[i + 1] == '6'
+				|| c[i + 1] == '7'
+				|| c[i + 1] == '8'
+				|| c[i + 1] == '9'
+				|| c[i + 1] == '0'
+				|| c[i + 1] == 'a'
+				|| c[i + 1] == 'b'
+				|| c[i + 1] == 'c'
+				|| c[i + 1] == 'd'
+				|| c[i + 1] == 'e'
+				|| c[i + 1] == 'f'
+				|| c[i + 1] == 'k'
+				|| c[i + 1] == 'l'
+				|| c[i + 1] == 'm'
+				|| c[i + 1] == 'n'
+				|| c[i + 1] == 'o')
+				{
+					i++;
+					continue;
+				}
+
+			build += c[i];
+		}
+		return build;
+	}
+
+	public static String insertColorFormatCode(String s, String code)
+	{
+		if (code == null || code.length() == 0)
+			return s;
+		code = CakeLibrary.recodeColorCodes(code);
+		char[] c = s.toCharArray();
+		String build = "";
+		for (int i = 0; i < c.length; i++)
+		{
+			if ((c[i] == '§' || c[i] == '&') && i < c.length - 1)
 				if (c[i + 1] == '1'
 				|| c[i + 1] == '2'
 				|| c[i + 1] == '3'
@@ -494,85 +614,55 @@ public class CakeLibrary
 				|| c[i + 1] == 'k'
 				|| c[i + 1] == 'o')
 				{
-					i++;
+					build += c[i];
+					build += c[i + 1];
+					build += code;
+					i ++;
 					continue;
 				}
-			
+
 			build += c[i];
 		}
 		return build;
 	}
 
-	public static String removeColorColorCodes(String s)
-	{
-		char[] c = s.toCharArray();
-		String build = "";
-		for (int i = 0; i < c.length; i++)
-		{
-			if (c[i] == '§' && i < c.length - 1)
-				if (c[i + 1] == '1'
-				|| c[i + 1] == '2'
-				|| c[i + 1] == '3'
-				|| c[i + 1] == '4'
-				|| c[i + 1] == '5'
-				|| c[i + 1] == '6'
-				|| c[i + 1] == '7'
-				|| c[i + 1] == '8'
-				|| c[i + 1] == '9'
-				|| c[i + 1] == '0'
-				|| c[i + 1] == 'a'
-				|| c[i + 1] == 'b'
-				|| c[i + 1] == 'c'
-				|| c[i + 1] == 'd'
-				|| c[i + 1] == 'e'
-				|| c[i + 1] == 'f')
-				{
-					i++;
-					continue;
-				}
-			
-			build += c[i];
-		}
-		return build;
-	}
-	
 	public static String getFinalColorCombination(String s)
 	{
 		String comb = "";
 		char[] c = s.toCharArray();
 		for (int i = 0; i < c.length; i++)
 		{
-			if (c[i] == '§' && i < c.length - 1)
+			if ((c[i] == '§' || c[i] == '&') && i < c.length - 1)
 			{
 				if (c[i + 1] == '1'
-				|| c[i + 1] == '2'
-				|| c[i + 1] == '3'
-				|| c[i + 1] == '4'
-				|| c[i + 1] == '5'
-				|| c[i + 1] == '6'
-				|| c[i + 1] == '7'
-				|| c[i + 1] == '8'
-				|| c[i + 1] == '9'
-				|| c[i + 1] == '0'
-				|| c[i + 1] == 'a'
-				|| c[i + 1] == 'b'
-				|| c[i + 1] == 'c'
-				|| c[i + 1] == 'd'
-				|| c[i + 1] == 'e'
-				|| c[i + 1] == 'f')
+						|| c[i + 1] == '2'
+						|| c[i + 1] == '3'
+						|| c[i + 1] == '4'
+						|| c[i + 1] == '5'
+						|| c[i + 1] == '6'
+						|| c[i + 1] == '7'
+						|| c[i + 1] == '8'
+						|| c[i + 1] == '9'
+						|| c[i + 1] == '0'
+						|| c[i + 1] == 'a'
+						|| c[i + 1] == 'b'
+						|| c[i + 1] == 'c'
+						|| c[i + 1] == 'd'
+						|| c[i + 1] == 'e'
+						|| c[i + 1] == 'f')
 					comb = "§" + c[i + 1];
-				
+
 				if (c[i + 1] == 'k'
-				|| c[i + 1] == 'l'
-				|| c[i + 1] == 'm'
-				|| c[i + 1] == 'n'
-				|| c[i + 1] == 'o')
+						|| c[i + 1] == 'l'
+						|| c[i + 1] == 'm'
+						|| c[i + 1] == 'n'
+						|| c[i + 1] == 'o')
 					comb += "§" + c[i + 1];
 			}
 		}
 		return comb;
 	}
-	
+
 	public static String recodeColorCodes(String s)
 	{
 		char[] c = s.toCharArray();
@@ -605,7 +695,7 @@ public class CakeLibrary
 					build += "§";
 					continue;
 				}
-			
+
 			build += c[i];
 		}
 		return build;
@@ -720,7 +810,7 @@ public class CakeLibrary
 				return 0.445449F;
 			if (note1.equalsIgnoreCase("F"))
 				return 0.471937F;
-				*/
+			 */
 			if (note1.equalsIgnoreCase("F#"))
 				return 0.5F;
 			if (note1.equalsIgnoreCase("G"))
@@ -788,7 +878,7 @@ public class CakeLibrary
 				return 2.519842F;
 			if (note1.equalsIgnoreCase("B"))
 				return 2.669679F;
-				*/
+			 */
 		}
 		return 0F;
 	}
@@ -904,7 +994,7 @@ public class CakeLibrary
 			return PotionEffectType.WATER_BREATHING;
 		return null;
 	}
-	
+
 	public static String convertToRoman(int i)
 	{
 		String build = "";
@@ -975,10 +1065,10 @@ public class CakeLibrary
 			build += "I";
 			i -= 1;
 		}
-		
+
 		return build;
 	}
-	
+
 	public static String getEnchantmentName(Enchantment ench)
 	{
 		if (ench.getId() == 0)
@@ -1043,7 +1133,7 @@ public class CakeLibrary
 			return "Curse of Vanishing";
 		return null;
 	}
-	
+
 	public static ItemStack setUnbreakable(ItemStack is)
 	{
 		ItemMeta im = is.getItemMeta();
@@ -1386,7 +1476,7 @@ public class CakeLibrary
 			File folder = new File(directory);
 			if (!folder.exists())
 				folder.mkdirs();
-				*/
+			 */
 			File parent = file.getParentFile();
 			if (parent != null)
 				parent.mkdirs();
@@ -1435,6 +1525,7 @@ public class CakeLibrary
 	 */
 	public static ArrayList<LivingEntity> getNearbyLivingEntities(Location loc, double radius)
 	{
+		radius = Math.pow(radius + 1, 2);
 		ArrayList<LivingEntity> nearbyEntities = new ArrayList<LivingEntity>();
 		for (Entity entity: loc.getWorld().getEntities())
 		{
@@ -1449,11 +1540,11 @@ public class CakeLibrary
 				continue;
 			Location eLoc = lEntity.getLocation().add(0, lEntity.getEyeHeight() / 2.0D, 0);
 
-			double distX = Math.sqrt(Math.pow(eLoc.getX() - loc.getX(), 2));
-			double distZ = Math.sqrt(Math.pow(eLoc.getZ() - loc.getZ(), 2));
-			double distY = Math.sqrt(Math.pow(eLoc.getY() - loc.getY(), 2));
-			if (distX <= radius && distZ <= radius && distY <= (radius + lEntity.getEyeHeight() / 2.0D))
-				nearbyEntities.add(lEntity);
+			double distanceSq = Math.pow(eLoc.getX() - loc.getX(), 2) 
+					+ Math.pow(eLoc.getY() - loc.getY(), 2) 
+					+ Math.pow(eLoc.getZ() - loc.getZ(), 2);
+			if (distanceSq < radius)
+				nearbyEntities.add((LivingEntity) entity);
 		}
 		return nearbyEntities;
 	}
@@ -1466,6 +1557,7 @@ public class CakeLibrary
 	 */
 	public static ArrayList<Player> getNearbyPlayers(Location loc, double radius)
 	{
+		radius = Math.pow(radius + 1, 2);
 		ArrayList<Player> nearbyEntities = new ArrayList<Player>();
 		for (Player entity: Bukkit.getOnlinePlayers())
 		{
@@ -1475,10 +1567,10 @@ public class CakeLibrary
 				continue;
 			Location eLoc = entity.getLocation().add(0, entity.getEyeHeight() / 2.0D, 0);
 
-			double distX = Math.sqrt(Math.pow(eLoc.getX() - loc.getX(), 2));
-			double distZ = Math.sqrt(Math.pow(eLoc.getZ() - loc.getZ(), 2));
-			double distY = Math.sqrt(Math.pow(eLoc.getY() - loc.getY(), 2));
-			if (distX <= radius && distZ <= radius && distY <= (radius + entity.getEyeHeight() / 2.0D))
+			double distanceSq = Math.pow(eLoc.getX() - loc.getX(), 2) 
+					+ Math.pow(eLoc.getY() - loc.getY(), 2) 
+					+ Math.pow(eLoc.getZ() - loc.getZ(), 2);
+			if (distanceSq < radius)
 				nearbyEntities.add(entity);
 		}
 		return nearbyEntities;
@@ -1493,6 +1585,7 @@ public class CakeLibrary
 	 */
 	public static ArrayList<Entity> getNearbyEntities(Location loc, double radius)
 	{
+		radius = Math.pow(radius + 1, 2);
 		ArrayList<Entity> nearbyEntities = new ArrayList<Entity>();
 		for (Entity entity: loc.getWorld().getEntities())
 		{
@@ -1500,12 +1593,15 @@ public class CakeLibrary
 				continue;
 			if (entity instanceof LivingEntity)
 				if (((LivingEntity) entity).hasMetadata("NPC"))
-						continue;
+					continue;
 			if (entity.isDead())
 				continue;
 			Location eLoc = entity.getLocation();
-			double distance = eLoc.distance(loc);
-			if (distance <= radius)
+
+			double distanceSq = Math.pow(eLoc.getX() - loc.getX(), 2) 
+					+ Math.pow(eLoc.getY() - loc.getY(), 2) 
+					+ Math.pow(eLoc.getZ() - loc.getZ(), 2);
+			if (distanceSq < radius)
 				nearbyEntities.add(entity);
 		}
 		return nearbyEntities;
@@ -1570,17 +1666,17 @@ public class CakeLibrary
 		}
 		return rawName;
 	}
-	
+
 	public static Player findPlayer(String nameToComplete)
 	{
 		return Bukkit.getPlayer(completeName(nameToComplete));
 	}
-	
+
 	public static Player findPlayer(UUID uuid)
 	{
 		return Bukkit.getPlayer(uuid);
 	}
-	
+
 	public static String seperateNumberWithCommas(double number, boolean onedp)
 	{
 		String numberString = new BigDecimal(number).toPlainString();

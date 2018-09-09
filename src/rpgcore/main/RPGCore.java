@@ -1,7 +1,9 @@
 package rpgcore.main;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
 import java.util.Timer;
 
@@ -9,6 +11,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.WorldCreator;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.block.DoubleChest;
@@ -16,23 +19,25 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Skeleton;
-import org.bukkit.entity.Zombie;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.sk89q.worldedit.CuboidClipboard;
+import com.sk89q.worldedit.EditSession;
+import com.sk89q.worldedit.MaxChangedBlocksException;
+import com.sk89q.worldedit.Vector;
+import com.sk89q.worldedit.WorldEdit;
+import com.sk89q.worldedit.schematic.SchematicFormat;
+import com.sk89q.worldedit.world.DataException;
+
 import rpgcore.areas.Area;
+import rpgcore.areas.Arena;
+import rpgcore.areas.ArenaInstance;
 import rpgcore.classes.ClassInventory;
 import rpgcore.classes.RPGClass;
-import rpgcore.entities.bosses.Astrea;
-import rpgcore.entities.bosses.UndeadEmperor;
-import rpgcore.entities.mobs.MageZombie;
 import rpgcore.entities.mobs.RPGMonster;
-import rpgcore.entities.mobs.ReinforcedSkeleton;
-import rpgcore.entities.mobs.ReinforcedZombie;
-import rpgcore.entities.mobs.WarriorZombie;
 import rpgcore.item.BonusStat.BonusStatCrystal;
 import rpgcore.item.RItem;
 import rpgcore.npc.ConversationData;
@@ -69,7 +74,12 @@ public class RPGCore extends JavaPlugin
 	public static Timer timer = new Timer();
 	public static NPCManager npcManager;
 	public static long serverAliveTicks;
-	
+
+	public File configFile = new File("plugins/RPGCore/config.yml");
+	public static String areaInstanceWorld;
+
+	public File headsFile = new File("plugins/RPGCore/Heads.yml");
+	public static HashMap<String, String> heads;
 
 	static final String[] helpGold = new String[] { 
 			"&6===[&e /gold Help &6]===", 
@@ -112,12 +122,25 @@ public class RPGCore extends JavaPlugin
 			"&4/area editable <areaName>: &cToggles the editability of an area",
 	"&4/area bgm <areaName> <bgmName>: &cSets the BGM of an area"};
 
+	static final String[] helpArena = new String[] { 
+			"&6===[&e /arena Help &6]===",  
+			"&6/arena list: &eLists all the arenas",
+			"&6/arena create <schematicName>: &eCreates an arena based on an existing WorldEdit schematic",
+			"&6/arena del <arenaName>: &eDelets an arena",
+			"&6/arena setspawnrotation <arenaName>: &eSets the spawn rotation of an arena to where you're facing",
+			"&6/arena tpspawntest <arenaName>: &eTeleports you to the test location for adding mob spawns",
+			"&6/arena addmobspawn <arenaName> <mobName>: &eAdds a mob spawn based on your current location",
+			"&6/arena enter <arenaName>: &eEnters an instance of an arena if it's been created",
+	"&6/arena leave: &eLeaves your current arena"};
+
 	public static void main(String[] args) {}
 
 	@Override
 	public void onEnable()
 	{
 		RPGCore.instance = this;
+		readConfig();
+		readHeads();
 		events = new RPGEvents(this);
 		pluginFolder.mkdirs();
 		readItemDatabase();
@@ -129,11 +152,17 @@ public class RPGCore extends JavaPlugin
 		previewChestManager = new PreviewChestManager(this);
 		listener = new RPGListener(this);
 		getServer().getPluginManager().registerEvents(listener, this);
-		npcManager = new NPCManager(this);
 		RPGEvents.stopped = false;
 		ShopManager.readShopDatabase();
 		ConversationData.readConversationData();
 		RPGRecipe.readRecipeData();
+		Arena.readArenaData();
+		ArenaInstance.readArenaInstanceData();
+
+		if (areaInstanceWorld != null && areaInstanceWorld.length() > 0)
+			Bukkit.getServer().createWorld(new WorldCreator(areaInstanceWorld));
+
+		npcManager = new NPCManager(this);
 
 		RPGEvents.scheduleRunnable(new RPGEvents.ConsoleCommand("gamerule sendCommandFeedback false"), 1);
 		RPGEvents.scheduleRunnable(new RPGEvents.ConsoleCommand("gamerule mobGriefing false"), 1);
@@ -146,6 +175,7 @@ public class RPGCore extends JavaPlugin
 	public void onDisable()
 	{
 		RPGEvents.stopped = true;
+		writeConfig();
 		npcManager.onDisable();
 		playerManager.writeData();
 		previewChestManager.writeData();
@@ -157,6 +187,55 @@ public class RPGCore extends JavaPlugin
 	{
 		ItemStack gold = new ItemStack(Material.GOLD_NUGGET);
 		return CakeLibrary.renameItem(gold, "&6Gold &e(" + CakeLibrary.seperateNumberWithCommas(amount, false) + ")");
+	}
+
+	public void readHeads()
+	{
+		heads = new HashMap<String, String>();
+		if (!headsFile.exists())
+		{
+			writeHeads();
+			return;
+		}
+		ArrayList<String> lines = CakeLibrary.readFile(headsFile);
+		for (String line: lines)
+		{
+			String[] split = line.split(": ");
+			if (split.length < 2)
+				continue;
+			heads.put(split[0].toLowerCase(), split[1]);
+		}
+	}
+
+	public void writeHeads()
+	{
+		try {
+			headsFile.createNewFile();
+		} catch (IOException e) {}
+	}
+
+	public void readConfig()
+	{
+		if (!configFile.exists())
+		{
+			writeConfig();
+			return;
+		}
+		ArrayList<String> lines = CakeLibrary.readFile(configFile);
+		for (String line: lines)
+		{
+			String[] split = line.split(": ");
+			if (split[0].equalsIgnoreCase("areaInstanceWorld"))
+				areaInstanceWorld = split[1];
+		}
+	}
+
+	public void writeConfig()
+	{
+		ArrayList<String> lines = new ArrayList<String>();
+		lines.add("areaInstanceWorld: world_flat");
+		CakeLibrary.writeFile(lines, configFile);
+		readConfig();
 	}
 
 	public void readItemFolder(File folder)
@@ -179,6 +258,7 @@ public class RPGCore extends JavaPlugin
 				short durability = 0;
 				boolean unbreakable = false;
 				int tier = 0;
+				String headTexture = null;
 
 				String name = null;
 				ArrayList<String> lore = new ArrayList<String>();
@@ -215,13 +295,23 @@ public class RPGCore extends JavaPlugin
 							unbreakable = Boolean.valueOf(split[1]);
 						if (line.startsWith("tier: "))
 							tier = Integer.valueOf(split[1]);
+						if (line.startsWith("headTexture: "))
+							headTexture = split[1];
 
 						if (line.startsWith("name: "))
 							name = split[1];
 					}
 				}
 
-				ItemStack item = new ItemStack(id, amount, durability);
+				ItemStack item;
+
+				if (headTexture != null && headTexture.length() > 0)
+					item = CakeLibrary.getSkullWithTexture(headTexture);
+				else
+					item = new ItemStack(id);
+
+				item.setAmount(amount);
+				item.setDurability(durability);
 
 				ItemMeta im = item.getItemMeta();
 				if (name != null)
@@ -237,6 +327,7 @@ public class RPGCore extends JavaPlugin
 
 				RItem ri = new RItem(item, file.getName().substring(0, file.getName().length() - 4));
 				ri.setTier(tier);
+				ri.headTexture = headTexture;
 				itemDatabase.add(ri);
 
 			} catch (Exception e) {
@@ -274,6 +365,23 @@ public class RPGCore extends JavaPlugin
 			RPlayer rp = playerManager.getRPlayer(p.getUniqueId());
 			if (rp == null)
 				return false;
+			if (command.getName().equalsIgnoreCase("skull"))
+			{
+				if (args.length < 1)
+				{
+					msg(p, "Usage: /skull <headName>");
+					return true;
+				}
+				if (!heads.containsKey(args[0]))
+				{
+					msg(p, "That head is not a part of the database.");
+					return true;
+				}
+				String value = heads.get(args[0]);
+				p.getInventory().addItem(CakeLibrary.getSkullWithTexture(value));
+				msg(p, "Skull obtained.");
+				return true;
+			}
 			if (command.getName().equalsIgnoreCase("rr"))
 			{
 				if (!p.hasPermission("rpgcore.rr"))
@@ -281,7 +389,10 @@ public class RPGCore extends JavaPlugin
 					msg(p, "You do not have permissions to do this.");
 					return true;
 				}
+				readConfig();
+				readHeads();
 				readItemDatabase();
+				npcManager.readSkinDatas();
 				ShopManager.readShopDatabase();
 				songManager.readSongs();
 				for (CustomNPC npc: npcManager.npcs)
@@ -675,18 +786,18 @@ public class RPGCore extends JavaPlugin
 				}
 				if (args.length == 0)
 				{
-					msg(p, "Usage: /npc <create/rename/delete/skin>");
+					msg(p, "Usage: /npc <create/rename/delete/skin> <npcName/skinName>");
 					return true;
 				}
 				if (args[0].equalsIgnoreCase("create"))
 				{
 					String name = args[1];
-					for (int i = 2; i < args.length - 1; i++)
+					for (int i = 2; i < args.length; i++)
 						name += " " + args[i];
 					String npcName = CakeLibrary.recodeColorCodes(name);
 					if (npcName.length() > 16)
 						npcName = npcName.substring(0, 16);
-					rp.selectedNPC = npcManager.createNPC(p.getLocation(), npcName, args[args.length - 1]);
+					rp.selectedNPC = npcManager.createNPC(p.getLocation(), npcName);
 					rp.selectedNPC.saveNPC();
 					msg(p, "NPC Created and selected.");
 					return true;
@@ -719,7 +830,7 @@ public class RPGCore extends JavaPlugin
 					for (int i = 2; i < args.length; i++)
 						name += " " + args[i];
 					CustomNPC prev = rp.selectedNPC;
-					rp.selectedNPC = prev.skinData != null ? npcManager.createNPC(prev.getBukkitLocation(), CakeLibrary.recodeColorCodes(name), prev.skinData.skinName)
+					rp.selectedNPC = prev.skinData != null ? npcManager.createNPCUsernameSkin(prev.getBukkitLocation(), CakeLibrary.recodeColorCodes(name), prev.skinData.skinName)
 							: npcManager.createNPC(prev.getBukkitLocation(), CakeLibrary.recodeColorCodes(name));
 					prev.deleteNPC();
 					rp.selectedNPC.saveNPC();
@@ -739,7 +850,7 @@ public class RPGCore extends JavaPlugin
 						return true;
 					}
 					CustomNPC prev = rp.selectedNPC;
-					rp.selectedNPC = npcManager.createNPC(prev.getBukkitLocation(), prev.getName(), args[1]);
+					rp.selectedNPC = npcManager.createNPCUsernameSkin(prev.getBukkitLocation(), prev.getName(), args[1]);
 					prev.deleteNPC();
 					rp.selectedNPC.saveNPC();
 					msg(p, "NPC Skin changed.");
@@ -1055,8 +1166,8 @@ public class RPGCore extends JavaPlugin
 				msgNoTag(p, "&4 * Magic Damage: &c" + target.calculateMagicDamage());
 				msgNoTag(p, "&4 * Brute Damage: &c" + target.calculateBruteDamage());
 				msgNoTag(p, "&4 * Crit Chance: &c" + target.calculateCritChance() + "%");
-				msgNoTag(p, "&4 * Crit Damage: &c" + (int) (target.calculateCritDamageMultiplier() * 100.0D) + "%");
-				msgNoTag(p, "&2 * Attack Speed: &ax" + Float.parseFloat(String.format("%.1f", (1.0D / target.calculateCastDelayMultiplier()))));
+				msgNoTag(p, "&4 * Crit Damage: &c" + (int) (target.calculateCritDamageMultiplier() * 100.0F) + "%");
+				msgNoTag(p, "&2 * Attack Speed: &ax" + Float.parseFloat(String.format("%.1f", (1.0F / target.calculateCastDelayMultiplier()))));
 				msgNoTag(p, "&2 * Cooldowns: &a-" + target.calculateCooldownReduction() + "%");
 				return true;
 			}
@@ -1300,89 +1411,194 @@ public class RPGCore extends JavaPlugin
 			}
 			if (command.getName().equalsIgnoreCase("mob"))
 			{
-				if (!p.hasPermission("rpgcore.spawnmob"))
+				if (!p.hasPermission("rpgcore.mob"))
 				{
 					msg(p, "No access to this command lul");
 					return true;
 				}
 				if (args.length < 1)
 				{
-					msg(p, "Usage: /mob <mobname>");
+					msg(p, "Usage: /mob <mobname> [count]");
 					return true;
 				}
 				int count = 1;
 				if (args.length > 1)
 					count = Math.min(10, Integer.parseInt(args[1]));
-				if (args[0].equalsIgnoreCase("reinforcedzombie"))
-				{
-					for (int i = 0; i < count; i++)
-					{
-						Zombie z = p.getWorld().spawn(p.getLocation(), Zombie.class);
-						new ReinforcedZombie(z);
-					}
+				boolean mob = false;
+				for (int i = 0; i < count; i++)
+					mob = RPGMonster.spawnMob(args[0], p.getLocation()) != null;
+				if (!mob)
+					msg(p, "No such mob available for spawning.");
+				else
 					msg(p, "Spawned.");
-					return true;
-				}
-				if (args[0].equalsIgnoreCase("reinforcedskeleton"))
-				{
-					for (int i = 0; i < count; i++)
-					{
-						Skeleton z = p.getWorld().spawn(p.getLocation(), Skeleton.class);
-						new ReinforcedSkeleton(z);
-					}
-					msg(p, "Spawned.");
-					return true;
-				}
-				if (args[0].equalsIgnoreCase("magezombie"))
-				{
-					for (int i = 0; i < count; i++)
-					{
-						Zombie z = p.getWorld().spawn(p.getLocation(), Zombie.class);
-						new MageZombie(z);
-					}
-					msg(p, "Spawned.");
-					return true;
-				}
-				if (args[0].equalsIgnoreCase("warriorzombie"))
-				{
-					for (int i = 0; i < count; i++)
-					{
-						Zombie z = p.getWorld().spawn(p.getLocation(), Zombie.class);
-						new WarriorZombie(z);
-					}
-					msg(p, "Spawned.");
-					return true;
-				}
-				msg(p, "No such mob available for spawning.");
 				return true;
 			}
-			if (command.getName().equalsIgnoreCase("boss"))
+			if (command.getName().equalsIgnoreCase("arena"))
 			{
-				if (!p.hasPermission("rpgcore.spawnmob"))
+				if (!p.hasPermission("rpgcore.arena"))
 				{
-					msg(p, "No access to this command lul");
+					msg(p, "You do not have permissions to use this command.");
 					return true;
 				}
 				if (args.length < 1)
 				{
-					msg(p, "Usage: /boss <bossname>");
+					msgNoTag(p, helpArena);
 					return true;
 				}
-				if (args[0].equalsIgnoreCase("undeademperor"))
+				if (args[0].equalsIgnoreCase("list"))
 				{
-					Zombie z = p.getWorld().spawn(p.getLocation(), Zombie.class);
-					new UndeadEmperor(z);
-					msg(p, "Spawned.");
+					msgNoTag(p, "&4Arena List:");
+					for (Arena a: Arena.arenaList)
+						msgNoTag(p, "&4 - &c" + a.schematicName);
 					return true;
 				}
-				if (args[0].equalsIgnoreCase("astrea"))
+				if (args[0].equalsIgnoreCase("create"))
 				{
-					Zombie z = p.getWorld().spawn(p.getLocation(), Zombie.class);
-					new Astrea(z);
-					msg(p, "Spawned.");
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /arena create <schematicName>");
+						return true;
+					}
+					File file = new File("plugins/WorldEdit/schematics/" + args[1] + ".schematic");
+					if (!file.exists())
+					{
+						msg(p, "That schematic does not exist.");
+						return true;
+					}
+					new Arena(args[1]);
+					msg(p, "Arena \"" + args[1] + "\" created.");
 					return true;
 				}
-				msg(p, "No such mob available for spawning.");
+				if (args[0].equalsIgnoreCase("del"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /arena del <arenaName>");
+						return true;
+					}
+					Arena a = Arena.getArena(args[1]);
+					if (a == null)
+					{
+						msg(p, "That arena does not exist.");
+						return true;
+					}
+					Arena.arenaList.remove(a);
+					msg(p, "Arena removed.");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("setspawnrotation"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /arena setspawnrotation <arenaName>");
+						return true;
+					}
+					Arena a = Arena.getArena(args[1]);
+					if (a == null)
+					{
+						msg(p, "That arena does not exist.");
+						return true;
+					}
+					Location l = p.getLocation();
+					a.yaw = l.getYaw();
+					a.pitch = l.getPitch();
+					msg(p, "Arena spawn rotation set.");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("tpspawntest"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /arena tpspawntest <arenaName>");
+						return true;
+					}
+					Arena a = Arena.getArena(args[1]);
+					if (a == null)
+					{
+						msg(p, "That arena does not exist.");
+						return true;
+					}
+					try {
+						File file = new File("plugins/WorldEdit/schematics/" + a.schematicName + ".schematic");
+						EditSession es = WorldEdit.getInstance().getEditSessionFactory().getEditSession(ArenaInstance.getArenaInstanceWorld()
+								, WorldEdit.getInstance().getConfiguration().maxChangeLimit);
+						CuboidClipboard clip = SchematicFormat.MCEDIT.load(file);
+						try {
+							clip.paste(es, new Vector(0, 64, 0), true);
+						} catch (MaxChangedBlocksException e) {
+							e.printStackTrace();
+						}
+					} catch (IOException e) {
+						e.printStackTrace();
+					} catch (DataException e) {
+						e.printStackTrace();
+					}
+					p.teleport(new Location(Bukkit.getWorld(areaInstanceWorld), 0.5F, 64.5F, 0.5F));
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("addmobspawn"))
+				{
+					if (args.length < 3)
+					{
+						msg(p, "Usage: /arena addmobspawn <arenaName> <mobName>");
+						return true;
+					}
+					Arena a = Arena.getArena(args[1]);
+					if (a == null)
+					{
+						msg(p, "That arena does not exist.");
+						return true;
+					}
+					a.mobSpawns.put(args[2], p.getLocation().add(0, -64, 0).toVector());
+					msg(p, "Mob spawn for \"" + args[2] + "\" added to \"" + a.schematicName + "\".");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("clearmobspawns"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /arena clearmobspawns <arenaName>");
+						return true;
+					}
+					Arena a = Arena.getArena(args[1]);
+					if (a == null)
+					{
+						msg(p, "That arena does not exist.");
+						return true;
+					}
+					a.mobSpawns.clear();
+					msg(p, "Mob spawns for \"" + a.schematicName + "\" cleared.");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("enter"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /arena enter <arenaName>");
+						return true;
+					}
+					Arena a = Arena.getArena(args[1]);
+					if (a == null)
+					{
+						msg(p, "That arena does not exist.");
+						return true;
+					}
+					rp.enterArena(a);
+					msg(p, "Entering arena...");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("leave"))
+				{
+					if (rp.arenaInstanceID == -1)
+					{
+						msg(p, "You are currently not in an arena.");
+						return true;
+					}
+					rp.leaveArena();
+					msg(p, "Leaving arena...");
+					return true;
+				}
+				msgNoTag(p, helpArena);
 				return true;
 			}
 			if (command.getName().equalsIgnoreCase("bgm"))
@@ -1495,58 +1711,18 @@ public class RPGCore extends JavaPlugin
 			{
 				if (p.hasPermission("rpgcore.skills") && args.length > 0)
 				{
-					if (args[0].equalsIgnoreCase("setsp"))
+					if (args[0].equalsIgnoreCase("unlockall") || args[0].equalsIgnoreCase("learnall"))
 					{
-						if (args.length < 2)
-						{
-							msg(p, "Usage: /skills setsp <amt> [player]");
-							return true;
-						}
-						int amt = 0;
-						try
-						{
-							amt = Integer.parseInt(args[1]);
-						} catch (Exception e) {
-							msg(p, "Enter a number.");
-							return true;
-						}
-						RPlayer target = rp;
-						if (args.length > 2)
-							target = playerManager.getRPlayer(args[2]);
-						if (target == null)
-						{
-							msg(p, "Unable to find player.");
-							return true;
-						}
-						target.getCurrentClass().skillPoints = amt;
-						msg(p, "Skill points set.");
+						for (RPGSkill skill: RPGSkill.skillList)
+							if (!rp.skills.contains(skill.skillName))
+								rp.skills.add(skill.skillName);
+						msg(p, "Learnt all skills.");
 						return true;
 					}
-					if (args[0].equalsIgnoreCase("addsp"))
+					if (args[0].equalsIgnoreCase("lockall") || args[0].equalsIgnoreCase("unlearnall"))
 					{
-						if (args.length < 2)
-						{
-							msg(p, "Usage: /skills addsp <amt> [player]");
-							return true;
-						}
-						int amt = 0;
-						try
-						{
-							amt = Integer.parseInt(args[1]);
-						} catch (Exception e) {
-							msg(p, "Enter a number.");
-							return true;
-						}
-						RPlayer target = rp;
-						if (args.length > 2)
-							target = playerManager.getRPlayer(args[2]);
-						if (target == null)
-						{
-							msg(p, "Unable to find player.");
-							return true;
-						}
-						target.getCurrentClass().skillPoints += amt;
-						msg(p, "Skill points added.");
+						rp.skills.clear();
+						msg(p, "Unlearnt all skills.");
 						return true;
 					}
 					return true;
@@ -1559,7 +1735,7 @@ public class RPGCore extends JavaPlugin
 		return false;
 	}
 
-	public static void msgNoTag(CommandSender p, String[] msgs)
+	public static void msgNoTag(CommandSender p, String... msgs)
 	{
 		for (String msg: msgs)
 			p.sendMessage(CakeLibrary.recodeColorCodes(msg));
@@ -1570,7 +1746,7 @@ public class RPGCore extends JavaPlugin
 		p.sendMessage(CakeLibrary.recodeColorCodes(msg));
 	}
 
-	public static void msg(CommandSender p, String[] msgs)
+	public static void msg(CommandSender p, String... msgs)
 	{
 		for (String msg: msgs)
 			p.sendMessage(CakeLibrary.recodeColorCodes("&6[&eRPGCore&6] &e" + msg));

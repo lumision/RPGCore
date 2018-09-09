@@ -6,23 +6,22 @@ import org.bukkit.inventory.ItemStack;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
 import rpgcore.player.RPlayer;
-import rpgcore.skills.effect.ArmageddonE;
 
-public class Armageddon extends RPGSkill
+public class BlackHole extends RPGSkill
 {
-	public final static String skillName = "Armageddon";
+	public final static String skillName = "Black Hole";
 	public final static boolean passiveSkill = false;
-	public final static int skillTier = 8;
+	public final static int skillTier = 13;
 	public final static int castDelay = 100;
 	public final static ClassType classType = ClassType.MAGE;
-	public final static float damage = 24.8F;
+	public final static float damage = 12.86F;
 	public final static int radius = 16;
-	public Armageddon(RPlayer caster)
+	public BlackHole(RPlayer caster)
 	{
 		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 	
-	public Armageddon()
+	public BlackHole()
 	{
 		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
@@ -30,15 +29,15 @@ public class Armageddon extends RPGSkill
 	@Override
 	public void insantiate(RPlayer rp)
 	{
-		new Armageddon(rp);
+		new BlackHole(rp);
 	}
 
 	@Override
 	public ItemStack getSkillItem()
 	{
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.FIREBALL, 1), 
-				"&9A&br&fm&9a&bg&fe&9d&bd&fo&9n"),
-				"&7Damage/Projectile: " + (int) (damage * 100) + "%",
+				"&8B&7l&fa&8c&7k &fH&8o&7l&fe"),
+				"&7Damage: " + (int) (damage * 100) + "%",
 				"&7Radius: " + radius + " blocks",
 				"&7Cooldown: 60s",
 				"&f",
@@ -52,7 +51,6 @@ public class Armageddon extends RPGSkill
 	@Override
 	public void activate()
 	{
-		ArmageddonE.newEffect(this);
 		super.applyCooldown(60);
 	}
 }

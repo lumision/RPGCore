@@ -33,7 +33,7 @@ public class ArmageddonE
 
 	private ArmageddonE(Armageddon skill)
 	{
-		ArrayList<LivingEntity> nearby = CakeLibrary.getNearbyLivingEntities(skill.player.getLocation(), 24);
+		ArrayList<LivingEntity> nearby = CakeLibrary.getNearbyLivingEntities(skill.player.getLocation(), Armageddon.radius);
 		this.skill = skill;
 		this.origin = skill.player.getLocation().clone().add(0, 3, 0);
 		for (LivingEntity e: nearby)

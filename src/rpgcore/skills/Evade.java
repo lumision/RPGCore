@@ -9,13 +9,14 @@ import rpgcore.main.CakeLibrary;
 public class Evade extends RPGSkill
 {
 	public final static String skillName = "Evade";
+	public final static boolean passiveSkill = true;
 	public final static int skillTier = 2;
 	public final static int castDelay = 0;
 	public final static ClassType classType = ClassType.ASSASSIN;
 	
 	public Evade()
 	{
-		super(skillName, null, castDelay, 0, classType, skillTier);
+		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override
@@ -30,7 +31,7 @@ public class Evade extends RPGSkill
 				"&8&oyou sneak within the Evasion Time",
 				"&8&owindow given.",
 				"&f",
-				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
+				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
 	}
 }

@@ -10,6 +10,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
+import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
@@ -19,13 +20,14 @@ import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 
+import rpgcore.areas.Arena;
+import rpgcore.areas.ArenaInstance;
 import rpgcore.classes.RPGClass;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.external.Title;
 import rpgcore.item.RItem;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
-import rpgcore.main.RPGEvents;
 import rpgcore.npc.CustomNPC;
 import rpgcore.sideclasses.RPGSideClass;
 import rpgcore.sideclasses.RPGSideClass.SideClassType;
@@ -35,6 +37,7 @@ import rpgcore.skills.Buff;
 import rpgcore.skills.Enlightenment;
 import rpgcore.skills.IronBody;
 import rpgcore.skills.LightFeet;
+import rpgcore.skills.Protect;
 import rpgcore.skills.Warcry;
 import rpgcore.skills.Wisdom;
 import rpgcore.tutorial.Tutorial;
@@ -71,6 +74,8 @@ public class RPlayer
 	public int lastSkillbookTier = 1;
 	public int skillbookTierSwitchTicks = 0;
 	public Location pos1, pos2;
+	public int arenaInstanceID;
+	public Location leftForArenaLocation;
 
 	public int sneakTicks;
 	public int heartspanTicks;
@@ -81,7 +86,7 @@ public class RPlayer
 		this.classes = new ArrayList<RPGClass>();
 		this.sideClasses = new ArrayList<RPGSideClass>();
 		for (ClassType ct: ClassType.values())
-			classes.add(new RPGClass(ct, 0, 3));
+			classes.add(new RPGClass(ct));
 		for (SideClassType ct: SideClassType.values())
 			sideClasses.add(new RPGSideClass(ct, 0));
 		this.skills = new ArrayList<String>();
@@ -95,6 +100,7 @@ public class RPlayer
 		this.lastSkill = "";
 		this.castDelay = 0;
 		this.partyID = -1;
+		this.arenaInstanceID = -1;
 		this.gold = 10;
 		this.tokens = 0;
 		this.npcFlags = new HashMap<String, String>();
@@ -122,7 +128,6 @@ public class RPlayer
 			if (cont)
 				continue;
 			RPGClass c = new RPGClass(ct);
-			c.skillPoints = 3;
 			classes.add(c);
 		}
 		for (SideClassType ct: SideClassType.values())
@@ -147,20 +152,66 @@ public class RPlayer
 		this.lastSkill = "";
 		this.castDelay = 0;
 		this.partyID = -1;
+		this.arenaInstanceID = -1;
 		this.npcFlags = new HashMap<String, String>();
 		this.tutorial = new Tutorial(this);
 	}
 
-	public int getPowerLevel()
+	public void enterArena(Arena arena)
 	{
-		int lv = 0;
-		for (ClassType c: getCurrentClass().classType.getAdvancementTree())
+		leaveArena();
+		Player p = getPlayer();
+		if (p == null)
+			return;
+		ArenaInstance ai = null;
+		for (Player p1: Bukkit.getOnlinePlayers())
 		{
-			for (RPGClass c1: classes)
-				if (c1.classType.equals(c))
-					lv += c1.getLevel();
+			if (p1.equals(p))
+				continue;
+			RPlayer rp1 = RPGCore.playerManager.getRPlayer(p1.getUniqueId());
+			if (rp1.partyID != partyID)
+				continue;
+			if (rp1.arenaInstanceID >= 0)
+				ai = ArenaInstance.arenaInstanceList.get(rp1.arenaInstanceID);
 		}
-		return lv;
+		if (ai == null)
+			ai = ArenaInstance.getArenaInstance(arena);
+		leftForArenaLocation = p.getLocation();
+		p.teleport(ai.getSpawnLocation());
+		if (!ai.occupied)
+			ai.spawnMobs();
+		ai.occupied = true;
+		arenaInstanceID = ai.arenaInstanceID;
+		
+		RPGCore.playerManager.writeData(this);
+		ArenaInstance.writeArenaInstanceData();
+	}
+	
+	public void leaveArena()
+	{
+		if (arenaInstanceID == -1)
+			return;
+		Player p = getPlayer();
+		if (p == null)
+			return;
+		ArenaInstance ai = ArenaInstance.arenaInstanceList.get(arenaInstanceID);
+		if (ai == null)
+			return;
+		boolean stillOccupied = false;
+		arenaInstanceID = -1;
+		
+		for (RPlayer rp: RPGCore.playerManager.players)
+			if (rp.arenaInstanceID == ai.arenaInstanceID)
+				stillOccupied = true;
+		ai.occupied = stillOccupied;
+		if (!ai.occupied)
+			for (Monster m: ai.mobList)
+				m.remove();
+		p.teleport(leftForArenaLocation);
+		leftForArenaLocation = null;
+		
+		RPGCore.playerManager.writeData(this);
+		ArenaInstance.writeArenaInstanceData();
 	}
 
 	public void initializeScoreboard()
@@ -247,13 +298,10 @@ public class RPlayer
 		Player p = getPlayer();
 		if (p == null)
 			return;
-		if (currentClass.getTier1Class().equals(ClassType.ASSASSIN))
+		if (skills.contains(LightFeet.skillName)) //Light Feet functionality
 		{
-			if (skills.contains(LightFeet.skillName)) //Light Feet functionality
-			{
-				CakeLibrary.addPotionEffectIfBetterOrEquivalent(p, new PotionEffect(PotionEffectType.SPEED, 19, LightFeet.swiftness));
-				CakeLibrary.addPotionEffectIfBetterOrEquivalent(p, new PotionEffect(PotionEffectType.JUMP, 19, LightFeet.jump));
-			}
+			CakeLibrary.addPotionEffectIfBetterOrEquivalent(p, new PotionEffect(PotionEffectType.SPEED, 19, LightFeet.swiftness));
+			CakeLibrary.addPotionEffectIfBetterOrEquivalent(p, new PotionEffect(PotionEffectType.JUMP, 19, LightFeet.jump));
 		}
 		if (!tutorialCompleted)
 			tutorial.check();
@@ -268,14 +316,11 @@ public class RPlayer
 			skillbookTierSwitchTicks--;
 		if (castDelay > 0)
 			castDelay--;
-		if (currentClass.getTier1Class().equals(ClassType.ASSASSIN))
+		if (heartspanTicks > 0) //Heartspan functionality
 		{
-			if (heartspanTicks > 0) //Heartspan functionality
-			{
-				heartspanTicks--;
-				if (heartspanTicks <= 0)
-					p.sendMessage(CakeLibrary.recodeColorCodes("&c**HEARTSPAN DEACTIVATED**"));
-			}
+			heartspanTicks--;
+			if (heartspanTicks <= 0)
+				p.sendMessage(CakeLibrary.recodeColorCodes("&c**HEARTSPAN DEACTIVATED**"));
 		}
 		ArrayList<Integer> cooldownRemove = new ArrayList<Integer>();
 		for (int i = 0; i < cooldowns.size(); i++)
@@ -403,18 +448,18 @@ public class RPlayer
 	{
 		RPGSideClass sc = getSideClass(sideClassType);
 		sc.xp += xp;
-		Player p = getPlayer();
-		if (p != null)
-			titleQueue.add(new Title("", CakeLibrary.recodeColorCodes(sc.sideClassType.getColorCode() + "+" + xp + " " + sc.sideClassType.getClassName() + " XP"), 4, 0, 16));
+		//Player p = getPlayer();
+		//if (p != null)
+			//titleQueue.add(new Title("", CakeLibrary.recodeColorCodes(sc.sideClassType.getColorCode() + "+" + xp + " " + sc.sideClassType.getClassName() + " XP"), 4, 0, 16));
 		checkSideClassLevel = sc;
 	}
 
 	public int getPercentageToNextLevel()
 	{
 		RPGClass c = getCurrentClass();
-		double xpRaw = c.xp - RPGClass.getXPRequiredForLevel(c.lastCheckedLevel);
-		double nextXpRaw = RPGClass.getXPRequiredForLevel(c.lastCheckedLevel + 1) - RPGClass.getXPRequiredForLevel(c.lastCheckedLevel);
-		int percentage = (int) ((xpRaw / nextXpRaw) * 100.0D);
+		float xpRaw = c.xp - RPGClass.getXPRequiredForLevel(c.lastCheckedLevel);
+		float nextXpRaw = RPGClass.getXPRequiredForLevel(c.lastCheckedLevel + 1) - RPGClass.getXPRequiredForLevel(c.lastCheckedLevel);
+		int percentage = (int) ((xpRaw / nextXpRaw) * 100.0F);
 		return percentage < 0 ? 0 : percentage;
 	}
 
@@ -432,15 +477,11 @@ public class RPlayer
 		int lv = c.getLevel();
 		if (c.lastCheckedLevel == lv)
 			return;
-		int difference = lv - c.lastCheckedLevel;
 		c.lastCheckedLevel = lv;
 		Player p = getPlayer();
 		if (p != null)
 		{
-			c.skillPoints += (2 * difference);
 			RPGCore.msg(p, "&bYou've leveled your &3" + c.classType.getClassName() + " &bclass up to " + lv + "!");
-			if (lv <= 3)
-				RPGCore.msg(p, "&bUse &3/skills &bto spend your skill points!");
 			p.getWorld().playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.4F, 1.0F);
 		}
 		RPGCore.playerManager.writeData(this);
@@ -487,7 +528,7 @@ public class RPlayer
 				equipment += eq.critDamage;
 		float additions = 1.5F;
 		float multiplier = 1.0F;
-		return ((equipment / 100.0D) + additions) * multiplier;
+		return ((equipment / 100.0F) + additions) * multiplier;
 	}
 
 	public int calculateMagicDamage()
@@ -567,7 +608,12 @@ public class RPlayer
 		for (String skill: skills)
 		{
 			if (skill.equals(IronBody.skillName))
-				additions += 20;
+				additions += IronBody.damageReductionAdd;
+		}
+		for (Buff b: buffs)
+		{
+			if (b.buffName.equals(Protect.skillName))
+				additions += Protect.damageReductionAdd;
 		}
 
 		return Math.min(100, equipment + additions);
@@ -599,7 +645,7 @@ public class RPlayer
 	public static int varyDamage(int damage) //Makes the number random up to a 10% change
 	{
 		Random rand = new Random();
-		int max = (int) Math.ceil(damage / 10.0D);
+		int max = (int) Math.ceil(damage / 10.0F);
 		return damage + rand.nextInt((max * 2) + 1) - max;
 	}
 }

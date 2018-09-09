@@ -13,18 +13,19 @@ import rpgcore.player.RPlayer;
 public class Leap extends RPGSkill
 {
 	public final static String skillName = "Leap";
+	public final static boolean passiveSkill = false;
 	public final static int skillTier = 1;
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.WARRIOR;
 	public final static int cooldown = 2;
 	public Leap(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, 0, classType, skillTier);
+		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 	
 	public Leap()
 	{
-		super(skillName, null, castDelay, 0, classType, skillTier);
+		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -44,7 +45,7 @@ public class Leap extends RPGSkill
 				"&8&oyou face. Hold down &7&o[SNEAK] &8&oto",
 				"&8&oleap in the opposite direction.",
 				"&f",
-				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
+				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
 	}
 

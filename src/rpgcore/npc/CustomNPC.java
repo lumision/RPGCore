@@ -202,7 +202,7 @@ public class CustomNPC extends EntityPlayer
 	public void setSkin(String name)
 	{
 		deleteNPC();
-		RPGCore.npcManager.createNPC(getBukkitLocation(), this.name, name);
+		RPGCore.npcManager.createNPCUsernameSkin(getBukkitLocation(), this.name, name);
 	}
 
 	public void deleteNPC()

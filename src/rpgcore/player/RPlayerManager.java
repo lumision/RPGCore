@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
 import rpgcore.classes.RPGClass;
@@ -19,7 +20,7 @@ import rpgcore.sideclasses.RPGSideClass.SideClassType;
 public class RPlayerManager 
 {
 	public RPGCore instance;
-	private ArrayList<RPlayer> players = new ArrayList<RPlayer>();
+	public ArrayList<RPlayer> players = new ArrayList<RPlayer>();
 	public File playersFolder = new File("plugins/RPGCore/players");
 	public RPlayerManager(RPGCore instance)
 	{
@@ -114,6 +115,8 @@ public class RPlayerManager
 				int lastSkillbookTier = 1;
 				int gold = 0;
 				int tokens = 0;
+				int arenaInstanceID = -1;
+				Location leftForArenaLocation = null;
 
 				ArrayList<String> lines = CakeLibrary.readFile(file);
 				String header = "";
@@ -161,6 +164,24 @@ public class RPlayerManager
 							} catch (Exception e) {}
 							continue;
 						}
+						if (s.startsWith("arenaInstanceID: "))
+						{
+							try
+							{
+								arenaInstanceID = Integer.parseInt(s.split(": ")[1]);
+							} catch (Exception e) {}
+							continue;
+						}
+						if (s.startsWith("leftForArenaLocation: "))
+						{
+							try
+							{
+								String[] split = s.split(": ");
+								leftForArenaLocation = new Location(Bukkit.getWorld(split[0])
+										, Integer.valueOf(split[1]), Integer.valueOf(split[2]), Integer.valueOf(split[3]));
+							} catch (Exception e) {}
+							continue;
+						}
 						if (s.startsWith("lastRecordedName: "))
 							continue;
 						header = s.substring(0, s.length() - 1);
@@ -174,16 +195,14 @@ public class RPlayerManager
 							continue;
 						ClassType classType = null;
 						int xp = 0;
-						int skillPoints = 0;
 						try
 						{
 							classType = ClassType.valueOf(split[0]);
 							xp = Integer.parseInt(split[1]);
-							skillPoints = Integer.parseInt(split[2]);
 						} catch (Exception e) {
 							continue;
 						}
-						classes.add(new RPGClass(classType, xp, skillPoints));
+						classes.add(new RPGClass(classType, xp));
 						continue;
 					} else if (header.equals("sideclasses"))
 					{
@@ -220,7 +239,7 @@ public class RPlayerManager
 						if (c.classType.equals(classType))
 							contains = true;
 					if (!contains)
-						classes.add(new RPGClass(classType, 0, 3));
+						classes.add(new RPGClass(classType));
 				}
 				
 				for (SideClassType sideClassType: SideClassType.values())
@@ -235,6 +254,8 @@ public class RPlayerManager
 				
 				RPlayer rp = addRPlayer(uuid, classes, sideClasses, currentClass, skills, gold, tokens, npcFlags, tutorialCompleted);
 				rp.lastSkillbookTier = lastSkillbookTier;
+				rp.arenaInstanceID = arenaInstanceID;
+				rp.leftForArenaLocation = leftForArenaLocation;
 			} catch (Exception e) {
 				RPGCore.msgConsole("&4Error reading RPlayer file: " + file.getName());
 				e.printStackTrace();
@@ -255,7 +276,7 @@ public class RPlayerManager
 			lines.add("lastSkillbookTier: " + rp.lastSkillbookTier);
 			lines.add("classes:");
 			for (RPGClass rc: rp.classes)
-				lines.add(" " + rc.classType.toString() + ", " + rc.xp + ", " + rc.skillPoints); 
+				lines.add(" " + rc.classType.toString() + ", " + rc.xp); 
 			lines.add("sideclasses:");
 			for (RPGSideClass rc: rp.sideClasses)
 				lines.add(" " + rc.sideClassType.toString() + ", " + rc.xp); 
@@ -269,6 +290,11 @@ public class RPlayerManager
 			values.addAll(rp.npcFlags.values());
 			for (int i = 0; i < keys.size(); i++)
 				lines.add(" " + keys.get(i) + ", " + values.get(i));
+			if (rp.leftForArenaLocation != null)
+				lines.add("leftForArenaLocation: " + rp.leftForArenaLocation.getWorld().getName()
+						+ ", " + rp.leftForArenaLocation.getBlockX() 
+						+ ", " + rp.leftForArenaLocation.getBlockY() 
+						+ ", " + rp.leftForArenaLocation.getBlockZ());
 			CakeLibrary.writeFile(lines, file);
 		} catch (Exception e) {
 			RPGCore.msgConsole("&4Error reading RPlayer file: " + file.getName());

@@ -38,6 +38,7 @@ public class Area
 	
 	public static void tick()
 	{
+		/*
 		for (Player p: Bukkit.getOnlinePlayers())
 		{
 			Location l = p.getLocation();
@@ -54,5 +55,6 @@ public class Area
 				break;
 			}
 		}
+		*/
 	}
 }

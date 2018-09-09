@@ -22,7 +22,7 @@ public class WeakSlime
 	public void randomizeLevel()
 	{
 		int lv = 2 + RPGCore.rand.nextInt(3);
-		maxHealth = 10D + (lv * 5D);
+		maxHealth = 10.0D + (lv * 5.0F);
 		name = "§aWeak Slime §7Lv. " + lv;
 	}
 }

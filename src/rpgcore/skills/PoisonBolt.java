@@ -18,6 +18,7 @@ import rpgcore.player.RPlayer;
 public class PoisonBolt extends RPGSkill
 {
 	public final static String skillName = "Poison Bolt";
+	public final static boolean passiveSkill = false;
 	public final static int skillTier = 2;
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.MAGE;
@@ -26,12 +27,12 @@ public class PoisonBolt extends RPGSkill
 	public final static int debuffLength = 10 * 20;
 	public PoisonBolt(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, damage, classType, skillTier);
+		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	public PoisonBolt()
 	{
-		super(skillName, null, castDelay, 0, classType, skillTier);
+		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override
@@ -55,7 +56,7 @@ public class PoisonBolt extends RPGSkill
 				"&8&oShoots a beam of poison energy",
 				"&8&owhich applies DoT to any victims.",
 				"&f",
-				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
+				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
 	}
 	

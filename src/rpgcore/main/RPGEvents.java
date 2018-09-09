@@ -96,6 +96,8 @@ public class RPGEvents implements Runnable
 			{
 				if (history.entityID == entityID)
 				{
+					if (!history.damageHistory.containsKey(damager))
+						continue;
 					int get = history.damageHistory.get(damager);
 					history.damageHistory.put(damager, get + damage);
 					return;

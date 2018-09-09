@@ -9,6 +9,7 @@ import rpgcore.main.CakeLibrary;
 public class BladeMastery extends RPGSkill
 {
 	public final static String skillName = "Blade Mastery";
+	public final static boolean passiveSkill = true;
 	public final static int skillTier = 1;
 	public final static int castDelay = 0;
 	public final static ClassType classType = ClassType.ASSASSIN;
@@ -18,7 +19,7 @@ public class BladeMastery extends RPGSkill
 	
 	public BladeMastery()
 	{
-		super(skillName, null, castDelay, 0, classType, skillTier);
+		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override
@@ -35,7 +36,7 @@ public class BladeMastery extends RPGSkill
 				"&8&oboosting your attack speeds and",
 				"&8&oreducing all your cooldowns.",
 				"&f",
-				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
+				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
 	}
 }

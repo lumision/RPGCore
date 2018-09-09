@@ -3,10 +3,17 @@ package rpgcore.entities.mobs;
 import java.util.ArrayList;
 
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Skeleton;
+import org.bukkit.entity.Slime;
+import org.bukkit.entity.Spider;
+import org.bukkit.entity.Zombie;
 import org.bukkit.inventory.ItemStack;
 
+import rpgcore.entities.bosses.QueenSpider;
+import rpgcore.entities.bosses.UndeadEmperor;
 import rpgcore.main.CakeLibrary;
 
 public abstract class RPGMonster 
@@ -31,6 +38,55 @@ public abstract class RPGMonster
 		for (RPGMonster ce: entities)
 			if (ce.entity.getEntityId() == entityID)
 				return ce;
+		return null;
+	}
+	
+	public static Monster spawnMob(String mobName, Location location)
+	{
+		if (mobName.equalsIgnoreCase("reinforcedzombie"))
+		{
+			Zombie m = location.getWorld().spawn(location, Zombie.class);
+			new ReinforcedZombie(m);
+			return m;
+		}
+		if (mobName.equalsIgnoreCase("reinforcedskeleton"))
+		{
+			Skeleton m = location.getWorld().spawn(location, Skeleton.class);
+			new ReinforcedSkeleton(m);
+			return m;
+		}
+		if (mobName.equalsIgnoreCase("magezombie"))
+		{
+			Zombie m = location.getWorld().spawn(location, Zombie.class);
+			new MageZombie(m);
+			return m;
+		}
+		if (mobName.equalsIgnoreCase("sorcererzombie"))
+		{
+			Zombie m = location.getWorld().spawn(location, Zombie.class);
+			new SorcererZombie(m);
+			return m;
+		}
+		if (mobName.equalsIgnoreCase("warriorzombie"))
+		{
+			Zombie m = location.getWorld().spawn(location, Zombie.class);
+			new WarriorZombie(m);
+			return m;
+		}
+
+		
+		if (mobName.equalsIgnoreCase("undeademperor"))
+		{
+			Zombie m = location.getWorld().spawn(location, Zombie.class);
+			new UndeadEmperor(m);
+			return m;
+		}
+		if (mobName.equalsIgnoreCase("queenspider"))
+		{
+			Spider m = location.getWorld().spawn(location, Spider.class);
+			new QueenSpider(m);
+			return m;
+		}
 		return null;
 	}
 
@@ -71,8 +127,7 @@ public abstract class RPGMonster
 				return;
 			}
 			return;
-		} else if (aliveTicks % 5 == 0)
-			entity.setTarget(target);
+		}
 	}
 
 	public void findTarget()
@@ -87,6 +142,7 @@ public abstract class RPGMonster
 			if (player.getGameMode().equals(GameMode.SURVIVAL) && player.getHealth() > 0 && !player.isDead())
 			{
 				target = player;
+				entity.setTarget(player);
 				return;
 			}
 		}

@@ -3,12 +3,17 @@ package rpgcore.entities.bosses;
 import java.util.ArrayList;
 import java.util.Random;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.FireworkEffect;
+import org.bukkit.FireworkEffect.Type;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
-import org.bukkit.FireworkEffect.Type;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarFlag;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
@@ -23,13 +28,13 @@ import rpgcore.entities.mobs.RPGMonster;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
 import rpgcore.main.RPGEvents;
-import rpgcore.main.RPGListener;
 
 public class UndeadEmperor extends RPGMonster
 {
 	public static double maxHealth = 40000.0D;
 	public static String name = CakeLibrary.recodeColorCodes("&e&lUndead Emperor&7 Lv. 31");
 	public Random rand = new Random();
+	public BossBar bar;
 
 	public UndeadEmperor(Monster m)
 	{
@@ -42,24 +47,39 @@ public class UndeadEmperor extends RPGMonster
 
 		entity.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, Integer.MAX_VALUE, 6));
 		entity.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, Integer.MAX_VALUE, 0));
-		
+
 		EntityEquipment eq = entity.getEquipment();
+		if (RPGCore.heads.containsKey("skull"))
+			eq.setHelmet(CakeLibrary.getSkullWithTexture(RPGCore.heads.get("skull")));
+		eq.setHelmetDropChance(0.0F);
 		eq.setChestplate(new ItemStack(Material.DIAMOND_CHESTPLATE));
 		eq.setChestplateDropChance(0.0F);
 		eq.setLeggings(new ItemStack(Material.DIAMOND_LEGGINGS));
 		eq.setLeggingsDropChance(0.0F);
 		eq.setBoots(new ItemStack(Material.DIAMOND_BOOTS));
 		eq.setBootsDropChance(0.0F);
+		bar = Bukkit.createBossBar(name, BarColor.RED, BarStyle.SOLID, BarFlag.DARKEN_SKY);
 	}
 
 	@Override
 	public void tick()
 	{
 		super.tick();
+		
 		if (isDead())
+		{
+			bar.removeAll();
 			return;
+		}
 		if (castDelay > 0 || target == null)
 			return;
+		bar.setProgress(entity.getHealth() / maxHealth);
+		for (Player p: Bukkit.getOnlinePlayers())
+			if (p.getLocation().distanceSquared(entity.getLocation()) < Math.pow(32, 2))
+				bar.addPlayer(p);
+			else
+				bar.removePlayer(p);
+		
 		int r = rand.nextInt(10) + 1;
 		if (r <= 7)
 		{
@@ -111,7 +131,7 @@ public class UndeadEmperor extends RPGMonster
 	public void castArcaneBolt()
 	{
 		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
-		Vector vector = entity.getLocation().getDirection().normalize().multiply(0.5D);
+		Vector vector = entity.getLocation().getDirection().normalize().multiply(0.5F);
 		int multiplier = 0;
 		entity.getWorld().playSound(entity.getEyeLocation(), Sound.BLOCK_ANVIL_LAND, 0.1F, 1.0F);
 		while (multiplier < 32)
@@ -125,7 +145,7 @@ public class UndeadEmperor extends RPGMonster
 			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, 3, entity, 20), multiplier / 2);
 		}
 	}
-	
+
 	public ItemStack[] getDrops()
 	{
 		return null;

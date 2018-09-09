@@ -6,11 +6,13 @@ depend: [WorldEdit]
 commands:
   area:
     description: Core area management command
+  arena:
+    description: Core arena management command
   sound:
     description: Plays a sound
   skills:
     description: Opens up your skillbook
-    aliases: [s]
+    aliases: [s, m]
   class:
     description: Opens up your class manager
     aliases: [c]
@@ -22,8 +24,6 @@ commands:
     description: Manages your party
   stats:
     description: Checks your stats
-  boss:
-    description: Spawns a boss for testing
   mob:
     description: Spawns a mob for testing
   crystal:
@@ -52,3 +52,5 @@ commands:
   skillbook:
     aliases: sb
     description: Obtains a skillbook for a skill
+  skull:
+    description: Get sum custom skulls

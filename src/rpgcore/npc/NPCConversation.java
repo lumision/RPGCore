@@ -53,7 +53,7 @@ public class NPCConversation
 
 	public Inventory getConversationUI()
 	{
-		Inventory inv = Bukkit.createInventory(null, 9, CakeLibrary.recodeColorCodes("&0Conversation - " + CakeLibrary.removeColorColorCodes(conversationData.npcName)));
+		Inventory inv = Bukkit.createInventory(null, 9, CakeLibrary.recodeColorCodes("&0Conversation - " + CakeLibrary.removeColorCodes(conversationData.npcName)));
 		this.conversationUI = inv;
 		updateUI();
 		return inv;
@@ -74,7 +74,7 @@ public class NPCConversation
 	{
 		if (part == null)
 			return false;
-		
+
 		Player p = player.getPlayer();
 
 		if (part.string.toLowerCase().startsWith("@exit"))
@@ -156,10 +156,10 @@ public class NPCConversation
 			player.getPlayer().spigot().sendMessage(msg);
 			return;
 		}
-		
+
 		if (!checkCommands())
 			return;
-		
+
 		Player p = player.getPlayer();
 		if (part == null)
 		{
@@ -308,7 +308,7 @@ public class NPCConversation
 						}
 					}
 				}
-				
+
 				decision = CakeLibrary.renameItem(decision, name1);
 				if (lines1.size() > 0)
 					decision = CakeLibrary.setItemLore(decision, lines1);

@@ -14,6 +14,7 @@ import rpgcore.player.RPlayer;
 public class Enlightenment extends RPGSkill
 {
 	public final static String skillName = "Enlightenment";
+	public final static boolean passiveSkill = false;
 	public final static int skillTier = 1;
 	public final static int castDelay = 0;
 	public final static ClassType classType = ClassType.PRIEST;
@@ -22,12 +23,12 @@ public class Enlightenment extends RPGSkill
 	public final static int cooldown = 60;
 	public Enlightenment(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, 0, classType, skillTier);
+		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 	
 	public Enlightenment()
 	{
-		super(skillName, null, castDelay, 0, classType, skillTier);
+		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -51,7 +52,7 @@ public class Enlightenment extends RPGSkill
 				"&8&oeffects to the user and all",
 				"&8&oparty members within 16 blocks.",
 				"&f",
-				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
+				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
 	}
 
@@ -77,7 +78,7 @@ public class Enlightenment extends RPGSkill
 		RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, player, 41), 0);
 		player.sendMessage(CakeLibrary.recodeColorCodes("&e--- Buff &6[ &eEnlightenment&6 ] &eapplied ---"));
 		rp.removeBuff(skillName);
-		rp.buffs.add(new Buff(caster, classType.getTier1Class(), skillName, buffLength, "&e--- Buff &6[ &eEnlightenment&6 ] &eran out ---"));
+		rp.buffs.add(new Buff(caster, classType, skillName, buffLength, "&e--- Buff &6[ &eEnlightenment&6 ] &eran out ---"));
 		rp.updateScoreboard();
 	}
 }

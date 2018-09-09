@@ -17,18 +17,19 @@ import rpgcore.player.RPlayer;
 public class ArcaneBolt extends RPGSkill
 {
 	public final static String skillName = "Arcane Bolt";
+	public final static boolean passiveSkill = false;
 	public final static int skillTier = 1;
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.MAGE;
 	public final static float damage = 1.4F;
 	public ArcaneBolt(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, damage, classType, skillTier);
+		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	public ArcaneBolt()
 	{
-		super(skillName, null, castDelay, 0, classType, skillTier);
+		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override
@@ -43,11 +44,11 @@ public class ArcaneBolt extends RPGSkill
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.GHAST_TEAR, 1), 
 				"&dArcane Bolt"),
 				"&7Damage: " + (int) (damage * 100.0F) + "%",
-				"&7Interval: 0.5s",
+				"&7Interval: " + (castDelay / 20.0F) + "s",
 				"&f",
 				"&8&oShoots a beam of magical energy.",
 				"&f",
-				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
+				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
 	}
 	

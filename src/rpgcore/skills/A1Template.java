@@ -10,17 +10,18 @@ import rpgcore.player.RPlayer;
 public class A1Template extends RPGSkill
 {
 	public final static String skillName = ""; //Change
+	public final static boolean passiveSkill = false;
 	public final static int skillTier = 1; //Change
 	public final static int castDelay = 0; //Change
 	public final static ClassType classType = ClassType.WARRIOR; //Change
 	public A1Template(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, calculateDamage(10), classType, skillTier);
+		super(skillName, caster, passiveSkill, castDelay, calculateDamage(10), classType, skillTier);
 	}
 	
 	public A1Template()
 	{
-		super(skillName, null, castDelay, 0, classType, skillTier);
+		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override

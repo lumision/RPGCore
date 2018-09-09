@@ -17,66 +17,21 @@ public class RPGClass
 	public ClassType classType;
 	public int xp;
 	public int lastCheckedLevel;
-	public int skillPoints;
 	private boolean unlocked;
 	public static enum ClassType
 	{
-		WARRIOR(null, 1),
-		MAGE(null, 1),
-		PRIEST(null, 1),
-		ASSASSIN(null, 1);
-
-		private ClassType baseClass;
-		private int tier;
-		private ClassType(ClassType baseClass, int tier)
-		{
-			this.tier = tier;
-			this.baseClass = baseClass;
-		}
+		WARRIOR,
+		MAGE,
+		PRIEST,
+		ASSASSIN,
+		ALL;
 
 		/**
 		 * @return 0 == brute, 1 == magic
 		 */
 		public int getDamageType()
 		{
-			return (getTier1Class().equals(ClassType.WARRIOR) || getTier1Class().equals(ClassType.ASSASSIN)) ? 0 : 1;
-		}
-
-		public int getTier()
-		{
-			return tier;
-		}
-
-		public ClassType getBaseClass()
-		{
-			return baseClass;
-		}
-
-		public ClassType getTier1Class()
-		{
-			ClassType c = baseClass;
-			if (c == null)
-				return this;
-			while (c.getBaseClass() != null)
-				c = c.getBaseClass();
-			return c;
-		}
-
-		public ArrayList<ClassType> getAdvancementTree()
-		{
-			ArrayList<ClassType> tree = new ArrayList<ClassType>();
-			tree.add(this);
-			ClassType c = baseClass;
-			if (c != null)
-			{
-				tree.add(c);
-				while (c.getBaseClass() != null)
-				{
-					c = c.getBaseClass();
-					tree.add(c);
-				}
-			}
-			return tree;
+			return (this.equals(ClassType.WARRIOR) || this.equals(ClassType.ASSASSIN)) ? 0 : 1;
 		}
 
 		public String getClassName()
@@ -111,18 +66,8 @@ public class RPGClass
 		this.lastCheckedLevel = getLevel();
 	}
 
-	public RPGClass(ClassType classType, int xp, int skillPoints)
-	{
-		this.classType = classType;
-		this.xp = xp;
-		this.skillPoints = skillPoints;
-		this.lastCheckedLevel = getLevel();
-	}
-
 	public boolean isUnlocked()
 	{
-		if (classType.getTier() == 0)
-			return true;
 		return unlocked;
 	}
 

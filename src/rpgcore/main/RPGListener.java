@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.util.UUID;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -52,6 +53,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
+import rpgcore.areas.Arena;
 import rpgcore.classes.RPGClass;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.entities.mobs.MageZombie;
@@ -468,10 +470,7 @@ public class RPGListener implements Listener
 			RPGCore.playerManager.writeData(rp);
 			p.getWorld().playSound(p.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.1F, 1.0F);
 			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 169), 0);
-			if (inv.getSize() == 27)
-				p.openInventory(SkillInventory.getSkillInventory(rp, 0));
-			else
-				RPGEvents.scheduleRunnable(new RPGEvents.InventoryClose(p), 1);
+			RPGEvents.scheduleRunnable(new RPGEvents.InventoryClose(p), 1);
 			rp.updateScoreboard();
 			return;
 		}
@@ -489,15 +488,15 @@ public class RPGListener implements Listener
 				return;
 			else if (itemName.startsWith("<-- "))
 			{
-				if (rp.skillbookTierSwitchTicks > 0 || rp.lastSkillbookTier <= 1)
+				if (!itemName.startsWith("<-- (") || rp.skillbookTierSwitchTicks > 0)
 					return;
 				rp.lastSkillbookTier--;
 				inv.setContents(SkillInventory2.getSkillInventory(rp, rp.lastSkillbookTier).getContents());
 				p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.1F, 0.9F);
 				rp.skillbookTierSwitchTicks = 3;
-			} else if (itemName.startsWith("Next Tier"))
+			} else if (itemName.startsWith("Next Tier "))
 			{
-				if (rp.skillbookTierSwitchTicks > 0 || rp.lastSkillbookTier >= 10)
+				if (!itemName.startsWith("Next Tier (") || rp.skillbookTierSwitchTicks > 0)
 					return;
 				rp.lastSkillbookTier++;
 				inv.setContents(SkillInventory2.getSkillInventory(rp, rp.lastSkillbookTier).getContents());
@@ -512,7 +511,6 @@ public class RPGListener implements Listener
 						return;
 					}
 				ItemStack add = is.clone();
-				add = SkillInventory.changeForInventory(add, p.getName());
 				boolean r = false;
 				for (int i = 0; i < p.getInventory().getSize(); i++)
 				{
@@ -813,8 +811,9 @@ public class RPGListener implements Listener
 					for (RPGSkill check: RPGSkill.skillList)
 						if (check.skillName.equals(skillName))
 							skill = check;
-					
-					if (skill != null && !rp.skills.contains(skillName) && skill.classType.equals(rp.currentClass))
+
+					if (skill != null && !rp.skills.contains(skillName) 
+							&& (skill.classType.equals(ClassType.ALL) || skill.classType.equals(rp.currentClass)))
 					{
 						rp.skills.add(skillName);
 						rp.titleQueue.add(new Title("&6 < " + CakeLibrary.getItemName(skill.getSkillItem()) + "&6 >", "&eSkill Learnt", 20, 60, 20));
@@ -870,7 +869,12 @@ public class RPGListener implements Listener
 		if (msg.startsWith(s + "gi ") || msg.startsWith(s + "getitem "))
 		{
 			String[] split = msg.split(" ");
-			if (split.length >= 2 && split[1].length() > 0)
+			if (split.length < 2)
+			{
+				for (RItem ri: RPGCore.itemDatabase)
+						completions.add(ri.databaseName);
+			}
+			else if (split.length >= 2 && split[1].length() > 0)
 			{
 				for (RItem ri: RPGCore.itemDatabase)
 					if (ri.databaseName.toLowerCase().startsWith(split[1].toLowerCase()))
@@ -881,7 +885,12 @@ public class RPGListener implements Listener
 		if (msg.startsWith(s + "skillbook ") || msg.startsWith(s + "sb "))
 		{
 			String[] split = msg.split(" ");
-			if (split.length >= 2 && split[1].length() > 0)
+			if (split.length < 2)
+			{
+				for (RPGSkill skill: RPGSkill.skillList)
+						completions.add(skill.skillName);
+			}
+			else if (split.length >= 2 && split[1].length() > 0)
 			{
 				for (RPGSkill skill: RPGSkill.skillList)
 				{
@@ -902,6 +911,56 @@ public class RPGListener implements Listener
 					if (sound.name().toLowerCase().startsWith(split[1].toLowerCase()))
 						completions.add(sound.name());
 				}
+			}
+		}
+
+		if (msg.startsWith(s + "skull "))
+		{
+			String[] split = msg.split(" ");
+			if (split.length < 2)
+			{
+				completions.addAll(RPGCore.heads.keySet());
+			}
+			else if (split.length >= 2 && split[1].length() > 0)
+			{
+				for (String key: RPGCore.heads.keySet())
+				{
+					if (key.toLowerCase().startsWith(split[1].toLowerCase()))
+						completions.add(key);
+				}
+			}
+		}
+
+		if (msg.startsWith(s + "arena "))
+		{
+			String[] split = msg.split(" ");
+			String[] arg1 = { "list", "create", "del", "setspawnrotation", "tpspawntest", "addmobspawn", "enter", "leave" };
+			String[] arg2Arena = { "create", "del", "setspawnrotation", "tpspawntest", "addmobspawn", "enter" };
+			boolean complete = false;
+			if (split.length >= 2)
+				for (String check: arg2Arena)
+					if (split[1].equalsIgnoreCase(check))
+						complete = true;
+			if (split.length == 1)
+			{
+				for (String a: arg1)
+					completions.add(a);
+			}
+			else if (split.length == 2)
+			{
+				if (msg.endsWith(" ") && complete)
+				{
+					for (Arena a: Arena.arenaList)
+						completions.add(a.schematicName);
+				} else
+					for (String a: arg1)
+						if (a.toLowerCase().startsWith(split[1].toLowerCase()))
+							completions.add(a);
+			} else if (split.length == 3 && complete)
+			{
+				for (Arena a: Arena.arenaList)
+					if (a.schematicName.toLowerCase().startsWith(split[2].toLowerCase()))
+						completions.add(a.schematicName);
 			}
 		}
 

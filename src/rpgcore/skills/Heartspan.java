@@ -21,6 +21,7 @@ import rpgcore.player.RPlayer;
 public class Heartspan extends RPGSkill
 {
 	public final static String skillName = "Heartspan";
+	public final static boolean passiveSkill = false;
 	public final static int skillTier = 6;
 	public final static int castDelay = 50;
 	public final static ClassType classType = ClassType.ASSASSIN;
@@ -28,12 +29,12 @@ public class Heartspan extends RPGSkill
 	public final static float damage = 4.8F;
 	public Heartspan(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, 0, classType, skillTier);
+		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 	
 	public Heartspan()
 	{
-		super(skillName, null, castDelay, 0, classType, skillTier);
+		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -57,7 +58,7 @@ public class Heartspan extends RPGSkill
 				"&c",
 				"&8&oNote: Click to dash",
 				"&f",
-				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
+				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
 	}
 	

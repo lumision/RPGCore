@@ -13,6 +13,7 @@ import rpgcore.player.RPlayer;
 public class Warcry extends RPGSkill
 {
 	public final static String skillName = "Warcry";
+	public final static boolean passiveSkill = false;
 	public final static int skillTier = 2;
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.WARRIOR;
@@ -21,12 +22,12 @@ public class Warcry extends RPGSkill
 	public final static int buffLength = 15 * 20;
 	public Warcry(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, 0, classType, skillTier);
+		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	public Warcry()
 	{
-		super(skillName, null, castDelay, 0, classType, skillTier);
+		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override
@@ -50,7 +51,7 @@ public class Warcry extends RPGSkill
 				"&8&orestoring some health and increasing",
 				"&8&odamage dealt for a short time.",
 				"&f",
-				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
+				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
 	}
 
@@ -72,7 +73,7 @@ public class Warcry extends RPGSkill
 		RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, player, 152), 0);
 		player.sendMessage(CakeLibrary.recodeColorCodes("&e--- Buff &6[ &4Warcry&6 ] &eapplied ---"));
 		rp.removeBuff(skillName);
-		rp.buffs.add(new Buff(caster, classType.getTier1Class(), skillName, buffLength, "&e--- Buff &6[ &4Warcry&6 ] &eran out ---"));
+		rp.buffs.add(new Buff(caster, classType, skillName, buffLength, "&e--- Buff &6[ &4Warcry&6 ] &eran out ---"));
 		rp.updateScoreboard();
 		
 		double health = player.getHealth();

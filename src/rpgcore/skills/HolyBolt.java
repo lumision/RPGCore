@@ -16,18 +16,19 @@ import rpgcore.player.RPlayer;
 public class HolyBolt extends RPGSkill
 {
 	public final static String skillName = "Holy Bolt";
+	public final static boolean passiveSkill = false;
 	public final static int skillTier = 1;
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.PRIEST;
 	public final static float damage = 1.2F;
 	public HolyBolt(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, damage, classType, skillTier);
+		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 	
 	public HolyBolt()
 	{
-		super(skillName, null, castDelay, 0, classType, skillTier);
+		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -46,7 +47,7 @@ public class HolyBolt extends RPGSkill
 				"&f",
 				"&8&oShoots a beam of holy energy.",
 				"&f",
-				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
+				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
 	}
 	

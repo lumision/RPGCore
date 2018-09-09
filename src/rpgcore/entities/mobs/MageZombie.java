@@ -55,7 +55,7 @@ public class MageZombie extends RPGMonster
 		if (target.getLocation().distance(entity.getLocation()) > 15)
 			return;
 		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
-		Vector vector = entity.getLocation().getDirection().normalize().multiply(0.5D);
+		Vector vector = entity.getLocation().getDirection().normalize().multiply(0.5F);
 		int multiplier = 0;
 		entity.getWorld().playSound(entity.getEyeLocation(), Sound.BLOCK_ANVIL_LAND, 0.1F, 1.0F);
 		while (multiplier < 30)

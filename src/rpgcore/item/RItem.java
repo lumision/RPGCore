@@ -1,18 +1,23 @@
 package rpgcore.item;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+
+import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.Property;
 
 import rpgcore.item.BonusStat.BonusStatCrystal;
 import rpgcore.item.BonusStat.BonusStatType;
@@ -47,6 +52,7 @@ public class RItem
 	//MISC
 	public String owner;
 	public boolean isWeapon; //Used for equip-checking
+	public String headTexture;
 
 	//MISC1
 	static Random rand = new Random();
@@ -302,6 +308,21 @@ public class RItem
 
 		itemLore = lore;
 		itemVanilla = nameChange ? CakeLibrary.renameItem(is.clone(), name) : is.clone(); 
+		
+		if ((headTexture == null || headTexture.length() == 0) 
+				&& itemVanilla.getType().equals(Material.SKULL_ITEM) 
+				&& itemVanilla.getDurability() == (short) 3)
+		{
+			SkullMeta headMeta = (SkullMeta) itemVanilla.getItemMeta();
+			Field profileField = null;
+			try {
+				profileField = headMeta.getClass().getDeclaredField("profile");
+				profileField.setAccessible(true);
+				GameProfile profile = (GameProfile) profileField.get(headMeta);
+				Property property = profile.getProperties().get("textures").iterator().next();
+				headTexture = property.getValue();
+			} catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException e1) {}
+		}
 	}
 
 	public ItemStack createItem()
@@ -389,6 +410,8 @@ public class RItem
 		lines.add("amount: " + itemVanilla.getAmount());
 		if (tier > 0)
 			lines.add("tier: " + tier);
+		if (headTexture != null && headTexture.length() > 0)
+			lines.add("headTexture: " + headTexture);
 
 		ItemMeta im = itemVanilla.getItemMeta();
 		if (im != null)

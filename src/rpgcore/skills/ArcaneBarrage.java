@@ -1,7 +1,6 @@
 package rpgcore.skills;
 
 import java.util.ArrayList;
-import java.util.Random;
 
 import org.bukkit.Color;
 import org.bukkit.FireworkEffect;
@@ -21,18 +20,20 @@ import rpgcore.player.RPlayer;
 public class ArcaneBarrage extends RPGSkill
 {
 	public final static String skillName = "Arcane Barrage";
+	public final static boolean passiveSkill = false;
 	public final static int skillTier = 7;
 	public final static int castDelay = 20;
 	public final static ClassType classType = ClassType.MAGE;
 	public final static float damage = 4.8F;
+	public final static int hits = 4;
 	public ArcaneBarrage(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, damage, classType, skillTier);
+		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 	
 	public ArcaneBarrage()
 	{
-		super(skillName, null, castDelay, 0, classType, skillTier);
+		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -46,24 +47,23 @@ public class ArcaneBarrage extends RPGSkill
 	{
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.FEATHER, 1), 
 				"&fA&7r&fc&7a&fn&7e &fB&7a&fr&7r&fa&7g&fe"),
-				"&7Damage/Projectile: " + (int) (damage * 100.0F) + "%",
-				"&7Interval: 1s",
+				"&7Damage: " + (int) (damage * 100.0F) + "% x " + hits + " Hits",
+				"&7Interval: " + (castDelay / 20.0F) + "s",
 				"&f",
 				"&8&oUnleashes a barrage of arcane",
 				"&8&oprojectiles unto the target.",
 				"&f",
-				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
+				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
 	}
 
 	@Override
 	public void activate()
 	{
-		Random rand = new Random();
 		player.getWorld().playSound(player.getEyeLocation(), Sound.BLOCK_ANVIL_LAND, 0.1F, 1.0F);
 		FireworkEffect fe = FireworkEffect.builder().with(Type.BURST).withColor(Color.WHITE).withColor(Color.GRAY).build();
 		Location a = player.getTargetBlock(CakeLibrary.getPassableBlocks(), 16).getLocation();
-		for (int i = 0; i < 4; i++)
+		for (int i = 0; i < hits; i++)
 		{
 			ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
 			int multiplier = 0;

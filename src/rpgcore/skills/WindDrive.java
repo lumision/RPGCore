@@ -16,18 +16,20 @@ import rpgcore.player.RPlayer;
 public class WindDrive extends RPGSkill
 {
 	public final static String skillName = "Wind Drive";
+	public final static boolean passiveSkill = false;
 	public final static int skillTier = 1;
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.MAGE;
-	public final static int radius = 4;
+	public final static int radius = 5;
+	public final static int cooldown = 8;
 	public WindDrive(RPlayer caster)
 	{
-		super(skillName, caster, castDelay, 0, classType, skillTier);
+		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 	
 	public WindDrive()
 	{
-		super(skillName, null, castDelay, 0, classType, skillTier);
+		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -42,30 +44,22 @@ public class WindDrive extends RPGSkill
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.FEATHER, 1), 
 				"&fWind Drive"),
 				"&7Radius: " + radius + " blocks",
-				"&7Cooldown: 8s",
+				"&7Cooldown: " + cooldown + "s",
 				"&f",
 				"&8&oKnocks back all monsters",
 				"&8&owithin a set radius.",
 				"&f",
-				"&7Skill Tier: " + CakeLibrary.convertToRoman(skillTier),
+				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
 	}
 
 	@Override
 	public void activate()
 	{
-		super.applyCooldown(8.0D);
+		super.applyCooldown(cooldown);
 		Location origin = player.getLocation();
 
-		new RPGEvents.PlayEffect(Effect.STEP_SOUND, origin, 20).run();
-		for (int x = 1; x < radius; x++)
-			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, origin.clone().add(x, 0, 0), 20), x);
-		for (int z = 1; z < radius; z++)
-			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, origin.clone().add(0, 0, z), 20), z);
-		for (int x = -1; x > -radius; x--)
-			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, origin.clone().add(x, 0, 0), 20), x);
-		for (int z = -1; z > -radius; z--)
-			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, origin.clone().add(0, 0, z), 20), z);
+		new RPGEvents.PlayExplosionEffect(player.getLocation()).run();
 		
 		for (LivingEntity e: CakeLibrary.getNearbyLivingEntities(player.getLocation(), radius))
 		{
