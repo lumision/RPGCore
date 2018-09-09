@@ -164,15 +164,16 @@ public class NPCManager
 										rp.selectedNPC = npc;
 										RPGCore.msg(p, "NPC Selected: " + npc.getName());
 									} else
-										for (ConversationData cd: ConversationData.dataList)
-											if (cd.npcName.equals(npc.getName()))
-											{
-												NPCConversation c = new NPCConversation(rp, cd);
-												if (!NPCConversation.useChat)
-													p.openInventory(c.getConversationUI());
-												else
-													c.updateUI();
-											}
+									{
+										if (npc.getConversationData() != null)
+										{
+											NPCConversation c = new NPCConversation(rp, npc.getConversationData());
+											if (!NPCConversation.useChat)
+												p.openInventory(c.getConversationUI());
+											else
+												c.updateUI();
+										}
+									}
 									break;
 								}
 							Bukkit.getScheduler().runTaskLaterAsynchronously(instance, new Runnable()

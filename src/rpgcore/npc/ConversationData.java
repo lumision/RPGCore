@@ -11,6 +11,7 @@ public class ConversationData
 	public static ArrayList<ConversationData> dataList = new ArrayList<ConversationData>();
 	public static File dataFolder = new File("plugins/RPGCore/npc-conversations");
 	public String npcName;
+	private CustomNPC npc;
 	public ArrayList<ConversationLine> conversationLines = new ArrayList<ConversationLine>();
 	public ArrayList<ConversationPart> masters;
 	public ConversationData(String npcName, ArrayList<ConversationLine> conversationLines, ArrayList<ConversationPart> masters)
@@ -18,6 +19,16 @@ public class ConversationData
 		this.npcName = npcName;
 		this.conversationLines = conversationLines;
 		this.masters = masters;
+	}
+	
+	public CustomNPC getNPC()
+	{
+		if (npc != null)
+			return npc;
+		for (CustomNPC check: NPCManager.npcs)
+			if (check.databaseName.equalsIgnoreCase(npcName))
+				npc = check;
+		return npc;
 	}
 
 	public static class ConversationLine

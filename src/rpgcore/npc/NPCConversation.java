@@ -53,7 +53,7 @@ public class NPCConversation
 
 	public Inventory getConversationUI()
 	{
-		Inventory inv = Bukkit.createInventory(null, 9, CakeLibrary.recodeColorCodes("&0Conversation - " + CakeLibrary.removeColorCodes(conversationData.npcName)));
+		Inventory inv = Bukkit.createInventory(null, 9, CakeLibrary.recodeColorCodes("&0Conversation - " + CakeLibrary.removeColorCodes(conversationData.getNPC().name)));
 		this.conversationUI = inv;
 		updateUI();
 		return inv;
