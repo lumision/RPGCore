@@ -3,6 +3,7 @@ package es.eltrueno.npc.skin;
 public class SkinData {
 
 	public String skinName;
+	public boolean fetched;
     private String value;
     private String signature;
 
