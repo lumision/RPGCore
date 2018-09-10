@@ -1,5 +1,5 @@
 main: rpgcore.main.RPGCore
-version: 4.0
+version: 4.1
 name: RPGCore
 depend: [WorldEdit]
 
@@ -54,3 +54,9 @@ commands:
     description: Obtains a skillbook for a skill
   skull:
     description: Get sum custom skulls
+  itemfood:
+    aliases: if
+    description: Edits attributes/stats of a food item
+  buffs:
+    aliases: b
+    description: Checks your buffs
