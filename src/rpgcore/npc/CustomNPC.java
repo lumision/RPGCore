@@ -84,6 +84,13 @@ public class CustomNPC extends EntityPlayer
 		checkForVisibility();
 	}
 	
+	public void applyNonConstructorVariables(CustomNPC other)
+	{
+		this.lockRotation = other.lockRotation;
+		this.chatRangeDistance = other.chatRangeDistance;
+		this.databaseName = other.databaseName;
+	}
+	
 	public void changeDatabaseName(String change)
 	{
 		if (databaseName == null)

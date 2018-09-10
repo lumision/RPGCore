@@ -64,6 +64,7 @@ import rpgcore.npc.ConversationData.ConversationPart;
 import rpgcore.npc.ConversationData.ConversationPartType;
 import rpgcore.npc.CustomNPC;
 import rpgcore.npc.NPCConversation;
+import rpgcore.npc.NPCManager;
 import rpgcore.player.RPlayer;
 import rpgcore.player.RPlayerManager;
 import rpgcore.recipes.RPGRecipe;
@@ -198,7 +199,7 @@ public class RPGListener implements Listener
 	public void handlePlayerQuit(PlayerQuitEvent event)
 	{
 		Player p = event.getPlayer();
-		for (CustomNPC npc: RPGCore.npcManager.npcs)
+		for (CustomNPC npc: NPCManager.npcs)
 			npc.visiblePlayers.remove(p.getUniqueId());
 	}
 
@@ -231,7 +232,7 @@ public class RPGListener implements Listener
 				crystal = true;
 				break;
 			}
-		if (name.equals("Party Info") || name.equals("Class Selection") || name.startsWith("Skillbook: ") || name.startsWith("Learnt Skills") || crystal)
+		if (name.equals("Party Info") || name.equals("Buffs") || name.equals("Class Selection") || name.startsWith("Skillbook: ") || name.startsWith("Learnt Skills") || crystal)
 		{
 			for (int i: event.getRawSlots())
 				if (i < event.getView().getTopInventory().getSize())
@@ -447,7 +448,7 @@ public class RPGListener implements Listener
 					c.updateUI();
 				}
 		}
-		if (name.equals("Class Selection"))
+		else if (name.equals("Class Selection"))
 		{
 			event.setCancelled(true);
 			ItemStack is = event.getCurrentItem();
@@ -469,9 +470,11 @@ public class RPGListener implements Listener
 			rp.updateScoreboard();
 			return;
 		}
-		if (name.equals("Party Info"))
+		else if (name.equals("Party Info"))
 			event.setCancelled(true);
-		if (name.startsWith("Learnt Skills"))
+		else if (name.equals("Buffs"))
+			event.setCancelled(true);
+		else if (name.startsWith("Learnt Skills"))
 		{
 			event.setCancelled(true);
 			ItemStack is = event.getCurrentItem();
@@ -796,6 +799,27 @@ public class RPGListener implements Listener
 			String name = CakeLibrary.getItemName(is);
 			if (CakeLibrary.hasColor(name))
 			{
+				RItem ri = new RItem(is);
+				if (ri.consumable)
+				{
+					event.setCancelled(true);
+					if (rp.lastInteractTicks == 0)
+					{
+						rp.lastInteractTicks = 2;
+						if (is.getAmount() == 1)
+							p.setItemInHand(null);
+						else
+						{
+							is.setAmount(is.getAmount() - 1);
+							p.setItemInHand(is);
+						}
+						ri.getBuff().applyBuff(rp);
+						for (int i = 0; i < 5; i++)
+							RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(p, Sound.ENTITY_GENERIC_EAT, 0.1F, 1.0F), i * 5);
+						RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(p, Sound.ENTITY_PLAYER_BURP, 0.1F, 1.0F), 25);
+					}
+					return;
+				}
 				name = CakeLibrary.removeColorCodes(name);
 				if (name.startsWith("Skillbook < "))
 				{
@@ -848,7 +872,11 @@ public class RPGListener implements Listener
 			Heartspan.strike(rp);
 			return;
 		}
-		handleSkillCast(event.getPlayer());
+		if (rp.lastInteractTicks == 0)
+		{
+			rp.lastInteractTicks = 2;
+			handleSkillCast(event.getPlayer());
+		}
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -877,7 +905,7 @@ public class RPGListener implements Listener
 			}
 		}
 
-		if (msg.startsWith(s + "skillbook ") || msg.startsWith(s + "sb "))
+		else if (msg.startsWith(s + "skillbook ") || msg.startsWith(s + "sb "))
 		{
 			String[] split = msg.split(" ");
 			if (split.length < 2)
@@ -896,7 +924,7 @@ public class RPGListener implements Listener
 			}
 		}
 
-		if (msg.startsWith(s + "sound "))
+		else if (msg.startsWith(s + "sound "))
 		{
 			String[] split = msg.split(" ");
 			if (split.length >= 2 && split[1].length() > 0 && split.length < 3)
@@ -909,7 +937,7 @@ public class RPGListener implements Listener
 			}
 		}
 
-		if (msg.startsWith(s + "skull "))
+		else if (msg.startsWith(s + "skull "))
 		{
 			String[] split = msg.split(" ");
 			if (split.length < 2)
@@ -926,7 +954,7 @@ public class RPGListener implements Listener
 			}
 		}
 
-		if (msg.startsWith(s + "npc skin "))
+		else if (msg.startsWith(s + "npc skin "))
 		{
 			String[] split = msg.split(" ");
 			if (split.length < 3)
@@ -942,7 +970,7 @@ public class RPGListener implements Listener
 			}
 		}
 
-		if (msg.startsWith(s + "npcflag "))
+		else if (msg.startsWith(s + "npcflag "))
 		{
 			RPlayer rp = RPGCore.playerManager.getRPlayer(event.getSender().getName());
 			if (rp == null)
@@ -962,7 +990,7 @@ public class RPGListener implements Listener
 			}
 		}
 
-		if (msg.startsWith(s + "npc "))
+		else if (msg.startsWith(s + "npc "))
 		{
 			String[] split = msg.split(" ");
 			String[] arg1 = { "create", "skin", "rename", "del", "lockRotation", "chatRange", "databaseName" };
@@ -979,7 +1007,66 @@ public class RPGListener implements Listener
 			}
 		}
 
-		if (msg.startsWith(s + "arena "))
+		else if (msg.startsWith(s + "item "))
+		{
+			String[] split = msg.split(" ");
+			String[] arg1 = { 
+					"tier", 
+					"lvrequirement", 
+					"magicdamage", 
+					"brutedamage", 
+					"attackspeed", 
+					"critchancce", 
+					"critdamage",
+					"cooldowns",
+					"dmgreduction",
+
+			};
+			if (split.length == 1 && msg.endsWith(" "))
+			{
+				for (String a: arg1)
+					completions.add(a);
+			}
+			else if (split.length == 2 && !msg.endsWith(" "))
+			{
+				for (String a: arg1)
+					if (a.toLowerCase().startsWith(split[1].toLowerCase()))
+						completions.add(a);
+			}
+		}
+
+		else if (msg.startsWith(s + "itemfood "))
+		{
+			String[] split = msg.split(" ");
+			String[] arg1 = { 
+					"satiate",
+					"buffDuration",
+					"consumableCooldown",
+					"magicDamageAdd", 
+					"bruteDamageAdd", 
+					"damageReductionAdd", 
+					"cooldownReductionAdd", 
+					"magicDamageMultiplier", 
+					"bruteDamageMultiplier", 
+					"attackSpeedMultiplier",
+					"critChanceAdd",
+					"critDamageAdd",
+					"xpMultiplier"
+			};
+			if (split.length == 1 && msg.endsWith(" "))
+			{
+				for (String a: arg1)
+					completions.add(a);
+			}
+			else if (split.length == 2 && !msg.endsWith(" "))
+			{
+				for (String a: arg1)
+					if (a.toLowerCase().startsWith(split[1].toLowerCase()))
+						completions.add(a);
+			}
+		}
+
+		else if (msg.startsWith(s + "arena "))
 		{
 			String[] split = msg.split(" ");
 			String[] arg1 = { "list", "create", "del", "setSpawnRotation", "tpSpawnTest", "addMobSpawn", "enter", "leave" };

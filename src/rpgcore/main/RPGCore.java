@@ -10,6 +10,7 @@ import java.util.Timer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.WorldCreator;
 import org.bukkit.block.Block;
@@ -32,6 +33,9 @@ import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.schematic.SchematicFormat;
 import com.sk89q.worldedit.world.DataException;
 
+import rpgcore.advancement.AdvancementAPI;
+import rpgcore.advancement.Trigger;
+import rpgcore.advancement.Trigger.TriggerType;
 import rpgcore.areas.Area;
 import rpgcore.areas.Arena;
 import rpgcore.areas.ArenaInstance;
@@ -149,6 +153,8 @@ public class RPGCore extends JavaPlugin
 			"&6/npc chatrange <blocks>: &eSets the chat range for an NPC",
 			"&6/npc databasename <databaseName>: &eSets the databaseName for an NPC"
 			};
+	
+	public static NamespacedKey key;
 
 	public static void main(String[] args) {}
 
@@ -156,6 +162,7 @@ public class RPGCore extends JavaPlugin
 	public void onEnable()
 	{
 		RPGCore.instance = this;
+		key = new NamespacedKey(this, "RPGCore");
 		readConfig();
 		readHeads();
 		events = new RPGEvents(this);
@@ -402,6 +409,25 @@ public class RPGCore extends JavaPlugin
 			RPlayer rp = playerManager.getRPlayer(p.getUniqueId());
 			if (rp == null)
 				return false;
+			if (command.getName().equalsIgnoreCase("buffs"))
+			{
+				rp.buffInventory.updateInventory();
+				p.openInventory(rp.buffInventory.getInventory());
+				return true;
+			}
+			if (command.getName().equalsIgnoreCase("testadv"))
+			{
+				if (!p.isOp())
+				{
+					msg(p, "No permissions.");
+					return true;
+				}
+				AdvancementAPI api = AdvancementAPI.builder(key).announce(true).description(args[0]).title(args[0]).trigger(Trigger.builder(TriggerType.TICK, args[0])).build();
+				for (String s: p.getAdvancementProgress(api.getAdvancement()).getRemainingCriteria())
+					msgNoTag(p, s);
+				msg(p, "Attempted");
+				return true;
+			}
 			if (command.getName().equalsIgnoreCase("skull"))
 			{
 				if (args.length < 1)
@@ -859,10 +885,9 @@ public class RPGCore extends JavaPlugin
 					for (int i = 2; i < args.length; i++)
 						name += " " + args[i];
 					CustomNPC prev = rp.selectedNPC;
-					boolean lockRotation = prev.lockRotation;
 					rp.selectedNPC = prev.skinData != null ? npcManager.createNPCUsernameSkin(prev.getBukkitLocation(), CakeLibrary.recodeColorCodes(name), prev.skinData.skinName)
 							: npcManager.createNPC(prev.getBukkitLocation(), CakeLibrary.recodeColorCodes(name));
-					rp.selectedNPC.lockRotation = lockRotation;
+					rp.selectedNPC.applyNonConstructorVariables(prev);
 					prev.deleteNPC();
 					rp.selectedNPC.saveNPC();
 					msg(p, "NPC Renamed.");
@@ -949,6 +974,7 @@ public class RPGCore extends JavaPlugin
 					}
 					CustomNPC prev = rp.selectedNPC;
 					rp.selectedNPC = npcManager.createNPCUsernameSkin(prev.getBukkitLocation(), prev.getName(), args[1]);
+					rp.selectedNPC.applyNonConstructorVariables(prev);
 					prev.deleteNPC();
 					rp.selectedNPC.saveNPC();
 					msg(p, "NPC Skin changed.");
@@ -1261,12 +1287,259 @@ public class RPGCore extends JavaPlugin
 				msgNoTag(p, "&6 * Class: &e" + target.currentClass.getClassName());
 				msgNoTag(p, "&6 * Level: &e" + target.getCurrentClass().getLevel() + 
 						" &6(&e" + target.getCurrentClass().xp + "&6/&e" + RPGClass.getXPRequiredForLevel(target.getCurrentClass().lastCheckedLevel + 1) + "XP&6)");
-				msgNoTag(p, "&4 * Magic Damage: &c" + target.calculateMagicDamage());
-				msgNoTag(p, "&4 * Brute Damage: &c" + target.calculateBruteDamage());
+				msgNoTag(p, "&3 * Magic Damage: &b" + target.calculateMagicDamage());
+				msgNoTag(p, "&3 * Brute Damage: &b" + target.calculateBruteDamage());
 				msgNoTag(p, "&4 * Crit Chance: &c" + target.calculateCritChance() + "%");
 				msgNoTag(p, "&4 * Crit Damage: &c" + (int) (target.calculateCritDamageMultiplier() * 100.0F) + "%");
 				msgNoTag(p, "&2 * Attack Speed: &ax" + Float.parseFloat(String.format("%.1f", (1.0F / target.calculateCastDelayMultiplier()))));
 				msgNoTag(p, "&2 * Cooldowns: &a-" + target.calculateCooldownReduction() + "%");
+				return true;
+			}
+			if (command.getName().equalsIgnoreCase("itemfood"))
+			{
+				if (!p.hasPermission("rpgcore.item"))
+				{
+					msg(p, "You do not have permissions to use this command.");
+					return true;
+				}
+				if (args.length < 1)
+					return true;
+
+				ItemStack is = p.getItemInHand();
+				if (CakeLibrary.isItemStackNull(is))
+				{
+					msg(p, "Hold the item you want to edit.");
+					return true;
+				}
+				RItem ri = new RItem(is);
+
+				if (args[0].equalsIgnoreCase("satiate"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /itemfood " + args[0] + " <amount>");
+						return true;
+					}
+					ri.satiate = (int) (Float.valueOf(args[1]) * 2.0F);
+					ri.consumable = true;
+					p.setItemInHand(is = ri.createItem());
+					msgNoTag(p, CakeLibrary.getItemName(is));
+					for (String lore: CakeLibrary.getItemLore(is))
+						msgNoTag(p, lore);
+					return true;
+				}
+				
+				if (args[0].equalsIgnoreCase("magicDamageAdd"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /itemfood " + args[0] + " <amount>");
+						return true;
+					}
+					ri.magicDamageAdd = Integer.parseInt(args[1]);
+					ri.consumable = true;
+					p.setItemInHand(is = ri.createItem());
+					msgNoTag(p, CakeLibrary.getItemName(is));
+					for (String lore: CakeLibrary.getItemLore(is))
+						msgNoTag(p, lore);
+					return true;
+				}
+				
+				if (args[0].equalsIgnoreCase("bruteDamageAdd"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /itemfood " + args[0] + " <amount>");
+						return true;
+					}
+					ri.bruteDamageAdd = Integer.parseInt(args[1]);
+					ri.consumable = true;
+					p.setItemInHand(is = ri.createItem());
+					msgNoTag(p, CakeLibrary.getItemName(is));
+					for (String lore: CakeLibrary.getItemLore(is))
+						msgNoTag(p, lore);
+					return true;
+				}
+				
+				if (args[0].equalsIgnoreCase("magicDamageMultiplier"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /itemfood " + args[0] + " <amount>");
+						return true;
+					}
+					ri.magicDamageMultiplier = Float.parseFloat(args[1]);
+					ri.consumable = true;
+					p.setItemInHand(is = ri.createItem());
+					msgNoTag(p, CakeLibrary.getItemName(is));
+					for (String lore: CakeLibrary.getItemLore(is))
+						msgNoTag(p, lore);
+					return true;
+				}
+				
+				if (args[0].equalsIgnoreCase("bruteDamageMultiplier"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /itemfood " + args[0] + " <amount>");
+						return true;
+					}
+					ri.bruteDamageMultiplier = Float.parseFloat(args[1]);
+					ri.consumable = true;
+					p.setItemInHand(is = ri.createItem());
+					msgNoTag(p, CakeLibrary.getItemName(is));
+					for (String lore: CakeLibrary.getItemLore(is))
+						msgNoTag(p, lore);
+					return true;
+				}
+				
+				if (args[0].equalsIgnoreCase("attackSpeedMultiplier"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /itemfood " + args[0] + " <amount>");
+						return true;
+					}
+					ri.attackSpeedMultiplier = Float.parseFloat(args[1]);
+					ri.consumable = true;
+					p.setItemInHand(is = ri.createItem());
+					msgNoTag(p, CakeLibrary.getItemName(is));
+					for (String lore: CakeLibrary.getItemLore(is))
+						msgNoTag(p, lore);
+					return true;
+				}
+				
+				if (args[0].equalsIgnoreCase("critChanceAdd"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /itemfood " + args[0] + " <amount>");
+						return true;
+					}
+					ri.critChanceAdd = Integer.parseInt(args[1]);
+					ri.consumable = true;
+					p.setItemInHand(is = ri.createItem());
+					msgNoTag(p, CakeLibrary.getItemName(is));
+					for (String lore: CakeLibrary.getItemLore(is))
+						msgNoTag(p, lore);
+					return true;
+				}
+				
+				if (args[0].equalsIgnoreCase("critDamageAdd"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /itemfood " + args[0] + " <amount>");
+						return true;
+					}
+					ri.critDamageAdd = Integer.parseInt(args[1]);
+					ri.consumable = true;
+					p.setItemInHand(is = ri.createItem());
+					msgNoTag(p, CakeLibrary.getItemName(is));
+					for (String lore: CakeLibrary.getItemLore(is))
+						msgNoTag(p, lore);
+					return true;
+				}
+				
+				if (args[0].equalsIgnoreCase("damageReductionAdd"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /itemfood " + args[0] + " <amount>");
+						return true;
+					}
+					ri.damageReductionAdd = Integer.parseInt(args[1]);
+					ri.consumable = true;
+					p.setItemInHand(is = ri.createItem());
+					msgNoTag(p, CakeLibrary.getItemName(is));
+					for (String lore: CakeLibrary.getItemLore(is))
+						msgNoTag(p, lore);
+					return true;
+				}
+				
+				if (args[0].equalsIgnoreCase("cooldownReductionAdd"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /itemfood " + args[0] + " <amount>");
+						return true;
+					}
+					ri.cooldownReductionAdd = Integer.parseInt(args[1]);
+					ri.consumable = true;
+					p.setItemInHand(is = ri.createItem());
+					msgNoTag(p, CakeLibrary.getItemName(is));
+					for (String lore: CakeLibrary.getItemLore(is))
+						msgNoTag(p, lore);
+					return true;
+				}
+				
+				if (args[0].equalsIgnoreCase("xpMultiplier"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /itemfood " + args[0] + " <amount>");
+						return true;
+					}
+					ri.xpMultiplier = Float.parseFloat(args[1]);
+					ri.consumable = true;
+					p.setItemInHand(is = ri.createItem());
+					msgNoTag(p, CakeLibrary.getItemName(is));
+					for (String lore: CakeLibrary.getItemLore(is))
+						msgNoTag(p, lore);
+					return true;
+				}
+				
+				if (args[0].equalsIgnoreCase("buffDuration"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /itemfood " + args[0] + " <amount>");
+						return true;
+					}
+					ri.buffDuration = 0;
+					for (int i = 1; i < args.length; i++)
+					{
+						if (args[i].endsWith("m"))
+							ri.buffDuration += Integer.parseInt(args[i].substring(0, args[i].length() - 1)) * 60 * 20;
+						else if (args[i].endsWith("s"))
+							ri.buffDuration += Integer.parseInt(args[i].substring(0, args[i].length() - 1)) * 20;
+						else 
+							ri.buffDuration += Integer.parseInt(args[i]) * 20;
+					}
+					ri.consumable = true;
+					p.setItemInHand(is = ri.createItem());
+					msgNoTag(p, CakeLibrary.getItemName(is));
+					for (String lore: CakeLibrary.getItemLore(is))
+						msgNoTag(p, lore);
+					return true;
+				}
+				
+				if (args[0].equalsIgnoreCase("consumableCooldown"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /itemfood " + args[0] + " <amount>");
+						return true;
+					}
+					ri.consumableCooldown = 0;
+					for (int i = 1; i < args.length; i++)
+					{
+						if (args[i].endsWith("m"))
+							ri.consumableCooldown += Integer.parseInt(args[i].substring(0, args[i].length() - 1)) * 60 * 20;
+						else if (args[i].endsWith("s"))
+							ri.consumableCooldown += Integer.parseInt(args[i].substring(0, args[i].length() - 1)) * 20;
+						else 
+							ri.consumableCooldown += Integer.parseInt(args[i]) * 20;
+					}
+					ri.consumable = true;
+					p.setItemInHand(is = ri.createItem());
+					msgNoTag(p, CakeLibrary.getItemName(is));
+					for (String lore: CakeLibrary.getItemLore(is))
+						msgNoTag(p, lore);
+					return true;
+				}
+				
+				msg(p, "Unrecognized argument. Use tab maybe?");
 				return true;
 			}
 			if (command.getName().equalsIgnoreCase("item"))
@@ -1282,12 +1555,12 @@ public class RPGCore extends JavaPlugin
 					return true;
 				}
 				ItemStack is = p.getItemInHand();
-				RItem ri = new RItem(is);
 				if (CakeLibrary.isItemStackNull(is))
 				{
 					msg(p, "Hold the item you want to edit.");
 					return true;
 				}
+				RItem ri = new RItem(is);
 				if (args[0].equalsIgnoreCase("tier"))
 				{
 					if (args.length < 2)

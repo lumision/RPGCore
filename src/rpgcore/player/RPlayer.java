@@ -22,6 +22,8 @@ import org.bukkit.scoreboard.Scoreboard;
 
 import rpgcore.areas.Arena;
 import rpgcore.areas.ArenaInstance;
+import rpgcore.buff.Buff;
+import rpgcore.buff.BuffInventory;
 import rpgcore.classes.RPGClass;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.external.Title;
@@ -31,14 +33,9 @@ import rpgcore.main.RPGCore;
 import rpgcore.npc.CustomNPC;
 import rpgcore.sideclasses.RPGSideClass;
 import rpgcore.sideclasses.RPGSideClass.SideClassType;
-import rpgcore.skills.Accelerate;
 import rpgcore.skills.BladeMastery;
-import rpgcore.skills.Buff;
-import rpgcore.skills.Enlightenment;
 import rpgcore.skills.IronBody;
 import rpgcore.skills.LightFeet;
-import rpgcore.skills.Protect;
-import rpgcore.skills.Warcry;
 import rpgcore.skills.Wisdom;
 import rpgcore.tutorial.Tutorial;
 
@@ -76,6 +73,8 @@ public class RPlayer
 	public Location pos1, pos2;
 	public int arenaInstanceID;
 	public Location leftForArenaLocation;
+	public int lastInteractTicks = 0;
+	public BuffInventory buffInventory;
 
 	public int sneakTicks;
 	public int heartspanTicks;
@@ -105,6 +104,7 @@ public class RPlayer
 		this.tokens = 0;
 		this.npcFlags = new HashMap<String, String>();
 		this.tutorial = new Tutorial(this);
+		this.buffInventory = new BuffInventory(this);
 	}
 
 	public RPlayer(UUID uuid, ArrayList<RPGClass> classes, ArrayList<RPGSideClass> sideClasses, ClassType currentClass, ArrayList<String> skills, int gold, int tokens)
@@ -155,6 +155,7 @@ public class RPlayer
 		this.arenaInstanceID = -1;
 		this.npcFlags = new HashMap<String, String>();
 		this.tutorial = new Tutorial(this);
+		this.buffInventory = new BuffInventory(this);
 	}
 
 	public void enterArena(Arena arena)
@@ -182,11 +183,11 @@ public class RPlayer
 			ai.spawnMobs();
 		ai.occupied = true;
 		arenaInstanceID = ai.arenaInstanceID;
-		
+
 		RPGCore.playerManager.writeData(this);
 		ArenaInstance.writeArenaInstanceData();
 	}
-	
+
 	public void leaveArena()
 	{
 		if (arenaInstanceID == -1)
@@ -199,7 +200,7 @@ public class RPlayer
 			return;
 		boolean stillOccupied = false;
 		arenaInstanceID = -1;
-		
+
 		for (RPlayer rp: RPGCore.playerManager.players)
 			if (rp.arenaInstanceID == ai.arenaInstanceID)
 				stillOccupied = true;
@@ -209,7 +210,7 @@ public class RPlayer
 				m.remove();
 		p.teleport(leftForArenaLocation);
 		leftForArenaLocation = null;
-		
+
 		RPGCore.playerManager.writeData(this);
 		ArenaInstance.writeArenaInstanceData();
 	}
@@ -305,6 +306,8 @@ public class RPlayer
 		}
 		if (!tutorialCompleted)
 			tutorial.check();
+		if (buffInventory.isOpen())
+			buffInventory.updateInventory();
 	}
 
 	public void tick()
@@ -312,6 +315,8 @@ public class RPlayer
 		Player p = getPlayer();
 		if (p == null)
 			return;
+		if (lastInteractTicks > 0)
+			lastInteractTicks--;
 		if (skillbookTierSwitchTicks > 0)
 			skillbookTierSwitchTicks--;
 		if (castDelay > 0)
@@ -353,6 +358,7 @@ public class RPlayer
 		}
 		for (int i: buffRemove)
 			buffs.remove(i);
+
 		if (checkLevel)
 		{
 			updateLevel();
@@ -394,24 +400,6 @@ public class RPlayer
 		} catch (Exception e) {}
 	}
 
-	public void removeBuff(String buffName)
-	{
-		int remove = -1;
-		for (int i = 0; i < buffs.size(); i++)
-			if (buffs.get(i).buffName.equalsIgnoreCase(buffName))
-				remove = i;
-		if (remove != -1)
-			buffs.remove(remove);
-	}
-
-	public boolean isBuffActive(String buffName)
-	{
-		for (Buff b: buffs)
-			if (b.buffName.equalsIgnoreCase(buffName))
-				return true;
-		return false;
-	}
-
 	public String getPlayerName()
 	{
 		Player player = Bukkit.getPlayer(uuid);
@@ -450,7 +438,7 @@ public class RPlayer
 		sc.xp += xp;
 		//Player p = getPlayer();
 		//if (p != null)
-			//titleQueue.add(new Title("", CakeLibrary.recodeColorCodes(sc.sideClassType.getColorCode() + "+" + xp + " " + sc.sideClassType.getClassName() + " XP"), 4, 0, 16));
+		//titleQueue.add(new Title("", CakeLibrary.recodeColorCodes(sc.sideClassType.getColorCode() + "+" + xp + " " + sc.sideClassType.getClassName() + " XP"), 4, 0, 16));
 		checkSideClassLevel = sc;
 	}
 
@@ -517,6 +505,10 @@ public class RPlayer
 				equipment += eq.critChance;
 		int additions = 5;
 		float multiplier = 1.0F;
+
+		for (Buff b: buffs)
+			additions += b.buffStats.critChanceAdd;
+
 		return (int) ((equipment + additions) * multiplier);
 	}
 
@@ -528,6 +520,10 @@ public class RPlayer
 				equipment += eq.critDamage;
 		float additions = 1.5F;
 		float multiplier = 1.0F;
+
+		for (Buff b: buffs)
+			additions += b.buffStats.critDamageAdd / 100.0F;
+
 		return ((equipment / 100.0F) + additions) * multiplier;
 	}
 
@@ -545,10 +541,12 @@ public class RPlayer
 			if(skill.equals(Wisdom.skillName))
 				multiplier += Wisdom.magicDamagePercentageAdd;
 		}
+
 		for (Buff b: buffs)
 		{
-			if (b.buffName.equalsIgnoreCase(Enlightenment.skillName))
-				multiplier += Enlightenment.damageMultiplierAdd;
+			if (b.buffStats.magicDamageMultiplier != 0)
+				multiplier *= b.buffStats.magicDamageMultiplier;
+			additions += b.buffStats.magicDamageAdd;
 		}
 
 		return (int) ((equipment + additions) * multiplier);
@@ -567,34 +565,30 @@ public class RPlayer
 		for (String skill: skills)
 		{
 			if(skill.equals(BladeMastery.skillName))
-				multiplier += BladeMastery.bruteDamageMultiplierAdd;
+				multiplier += BladeMastery.bruteDamageMultiplier;
 		}
 
 		for (Buff b: buffs)
 		{
-			if (b.buffName.equalsIgnoreCase(Enlightenment.skillName))
-				multiplier += Enlightenment.damageMultiplierAdd;
-			if (b.buffName.equalsIgnoreCase(Warcry.skillName))
-				multiplier += Warcry.bruteDamageMultiplierAdd;
+			if (b.buffStats.bruteDamageMultiplier != 0)
+				multiplier *= b.buffStats.bruteDamageMultiplier;
+			additions += b.buffStats.bruteDamageAdd;
 		}
+
 		return (int) ((equipment + additions) * multiplier);
 	}
 
 	public int calculateCooldownReduction()
 	{
-		int equipment = 0;
+		int percentage = 0;
 		for (RItem eq: rEquips)
 			if (eq != null)
-				equipment += eq.cooldownReduction;
-		int additions = 0;
+				percentage += eq.cooldownReduction;
 
-		for (String skill: skills)
-		{
-			if(skill.equals(BladeMastery.skillName))
-				additions += 10;
-		}
+		for (Buff b: buffs)
+			percentage += b.buffStats.cooldownReductionAdd;
 
-		return equipment + additions;
+		return Math.min(100, percentage);
 	}
 
 	public int calculateDamageReduction()
@@ -610,36 +604,34 @@ public class RPlayer
 			if (skill.equals(IronBody.skillName))
 				additions += IronBody.damageReductionAdd;
 		}
+
 		for (Buff b: buffs)
-		{
-			if (b.buffName.equals(Protect.skillName))
-				additions += Protect.damageReductionAdd;
-		}
+			additions += b.buffStats.damageReductionAdd;
 
 		return Math.min(100, equipment + additions);
 	}
 
 	public float calculateCastDelayMultiplier()
 	{
-		float equipment = 0;
+		float sum = 1;
 		for (RItem eq: rEquips)
-			if (eq != null)
-				equipment += eq.attackSpeed;
+			if (eq != null && eq.attackSpeed != 0)
+				sum += (eq.attackSpeed - 1.0F);
 
 		float multiplier = 1.0F;
 
 		for (String skill: skills)
 		{
 			if (skill.equals(BladeMastery.skillName))
-				multiplier -= BladeMastery.attackSpeedMultiplierAdd;
+				multiplier -= BladeMastery.attackSpeedMultiplier * multiplier;
 		}
 		for (Buff b: buffs)
 		{
-			if (b.buffName.equals(Accelerate.skillName))
-				multiplier -= Accelerate.attackSpeedMultiplierAdd;
+			if (b.buffStats.attackSpeedMultiplier != 0)
+				multiplier /= b.buffStats.attackSpeedMultiplier;
 		}
 
-		return (equipment == 0 ? 1 : (1.0F / equipment)) * multiplier;
+		return (sum == 0 ? 1 : (1.0F / sum)) * multiplier;
 	}
 
 	public static int varyDamage(int damage) //Makes the number random up to a 10% change

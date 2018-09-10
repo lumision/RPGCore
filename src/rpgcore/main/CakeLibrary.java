@@ -283,6 +283,16 @@ public class CakeLibrary
 		else
 			player.getInventory().addItem(item.clone());
 	}
+	
+	public static int convertMultiplierToAddedPercentage(float multiplier)
+	{
+		return Math.round(((multiplier - 1.0F) * 100.0F));
+	}
+	
+	public static float convertAddedPercentageToMultiplier(int percentage)
+	{
+		return (percentage / 100.0F) + 1.0F;
+	}
 
 	public static boolean isItemStackNull(ItemStack is)
 	{

@@ -19,6 +19,8 @@ import org.bukkit.potion.PotionEffectType;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 
+import rpgcore.buff.Buff;
+import rpgcore.buff.BuffStats;
 import rpgcore.item.BonusStat.BonusStatCrystal;
 import rpgcore.item.BonusStat.BonusStatType;
 import rpgcore.main.CakeLibrary;
@@ -44,6 +46,12 @@ public class RItem
 	fireDamage, burnChance, burnDPS, burnDuration,
 	lightningDamage, stunChance, stunDuration,
 	poisonChance, poisonDPS, poisonDuration;
+
+	//FOOD BUFF
+	public boolean consumable;
+	public int satiate, buffDuration, consumableCooldown;
+	public int magicDamageAdd, bruteDamageAdd, damageReductionAdd, cooldownReductionAdd, critChanceAdd, critDamageAdd;
+	public float magicDamageMultiplier, bruteDamageMultiplier, attackSpeedMultiplier, xpMultiplier;
 
 	//ITEM
 	public ArrayList<String> itemLore; //All lore lines excluding stat and misc ones
@@ -98,7 +106,18 @@ public class RItem
 		setItemStats(is);
 	}
 
-	//Might be a redundant function but I'll make this for now
+	public Buff getBuff()
+	{
+		String buffName = CakeLibrary.getItemName(itemVanilla);
+		BuffStats bs = BuffStats.getBuffStats(buffName);
+		if (bs == null)
+			bs = BuffStats.createBuffStats(buffName, itemVanilla).setAttackSpeedMultiplier(attackSpeedMultiplier).setBruteDamageAdd(bruteDamageAdd)
+			.setBruteDamageMultiplier(bruteDamageMultiplier).setCooldownReductionAdd(cooldownReductionAdd).setCritChanceAdd(critChanceAdd)
+			.setCritDamageAdd(critDamageAdd).setDamageReductionAdd(damageReductionAdd).setMagicDamageAdd(magicDamageAdd).setMagicDamageMultiplier(magicDamageMultiplier)
+			.setXPMultiplier(xpMultiplier).setBuffDuration(buffDuration);
+		return Buff.createBuff(bs);
+	}
+
 	public boolean compare(RItem other)
 	{
 		if (!itemVanilla.getType().equals(other.itemVanilla.getType()))
@@ -161,6 +180,10 @@ public class RItem
 				lightningDamage = stunChance = stunDuration =
 				poisonChance = poisonDPS = poisonDuration = 0.0D;
 
+		satiate = buffDuration = 0;
+		magicDamageAdd = bruteDamageAdd = damageReductionAdd = cooldownReductionAdd = critChanceAdd = critDamageAdd = 0;
+		magicDamageMultiplier = bruteDamageMultiplier = attackSpeedMultiplier = 0.0F;
+
 		bonusStat = null;
 		itemLore = null;
 		itemVanilla = null;
@@ -189,7 +212,7 @@ public class RItem
 		}
 
 		ArrayList<String> lore = CakeLibrary.getItemLore(is);
-		ArrayList<String> loreRemove = new ArrayList<String>();
+		ArrayList<Integer> loreRemove = new ArrayList<Integer>();
 		boolean bonusStatLines = false;
 		for (int i = 0; i < lore.size(); i++)
 		{
@@ -197,7 +220,7 @@ public class RItem
 			String line1 = line;
 			if (line.equals(""))
 			{
-				loreRemove.add(line1);
+				loreRemove.add(i);
 				continue;
 			}
 			if (!line.contains("§"))
@@ -208,14 +231,14 @@ public class RItem
 					if (line1.equals(tiers[i1]))
 					{
 						tier = i1 + 1;
-						loreRemove.add(line1);
+						loreRemove.add(i);
 					}
 			if (line.startsWith("  Lv. Requirement: "))
 			{
 				try
 				{
 					levelRequirement = Integer.parseInt(line.split(": +")[1]);
-					loreRemove.add(line1);
+					loreRemove.add(i);
 				} catch (Exception e) {}
 			} else if (line.startsWith("  Magic Damage: +"))
 			{
@@ -228,7 +251,7 @@ public class RItem
 						addedMagicDamage = Integer.parseInt(numbers[1].substring(2, numbers[1].length() - 1));
 						magicDamage -= addedMagicDamage;
 					}
-					loreRemove.add(line1);
+					loreRemove.add(i);
 				} catch (Exception e) {}
 			} else if (line.startsWith("  Brute Damage: +"))
 			{
@@ -241,14 +264,14 @@ public class RItem
 						addedBruteDamage = Integer.parseInt(numbers[1].substring(2, numbers[1].length() - 1));
 						bruteDamage -= addedBruteDamage;
 					}
-					loreRemove.add(line1);
+					loreRemove.add(i);
 				} catch (Exception e) {}
 			} else if (line.startsWith("  Attack Speed: x"))
 			{
 				try
 				{
 					attackSpeed = Double.parseDouble(line.split(": x")[1]);
-					loreRemove.add(line1);
+					loreRemove.add(i);
 				} catch (Exception e) {}
 			} else if (line.startsWith("  Crit Chance: +"))
 			{
@@ -257,7 +280,7 @@ public class RItem
 					String percentage = line.split(": +")[1];
 					percentage = percentage.substring(0, percentage.length() - 1);
 					critChance = Integer.parseInt(percentage);
-					loreRemove.add(line1);
+					loreRemove.add(i);
 				} catch (Exception e) {}
 			} else if (line.startsWith("  Crit Damage: +"))
 			{
@@ -266,7 +289,7 @@ public class RItem
 					String percentage = line.split(": +")[1];
 					percentage = percentage.substring(0, percentage.length() - 1);
 					critDamage = Integer.parseInt(percentage);
-					loreRemove.add(line1);
+					loreRemove.add(i);
 				} catch (Exception e) {}
 			} else if (line.startsWith("  Dmg Received: -"))
 			{
@@ -275,7 +298,7 @@ public class RItem
 					String percentage = line.split(": -")[1];
 					percentage = percentage.substring(0, percentage.length() - 1);
 					damageReduction = Integer.parseInt(percentage);
-					loreRemove.add(line1);
+					loreRemove.add(i);
 				} catch (Exception e) {}
 			} else if (line.startsWith("  Cooldown Length: "))
 			{
@@ -284,31 +307,167 @@ public class RItem
 					String percentage = line.split(": -")[1];
 					percentage = percentage.substring(0, percentage.length() - 1);
 					cooldownReduction = Integer.parseInt(percentage);
-					loreRemove.add(line1);
+					loreRemove.add(i);
+				} catch (Exception e) {}
+			} else if (line.startsWith("Buff:"))
+			{
+				try
+				{
+					if (i > 0)
+						loreRemove.add(-i + 1);
+					loreRemove.add(-i);
+				} catch (Exception e) {}
+			} else if (line.equals(" * Consumable"))
+			{
+				consumable = true;
+				loreRemove.add(-i);
+			} else if (line.startsWith(" * Satiate: -"))
+			{
+				try
+				{
+					String num = line.split(": -")[1];
+					num = num.substring(0, num.length() - 7);
+					satiate = (int) (Float.parseFloat(num) * 2);
+					loreRemove.add(-i);
+				} catch (Exception e) {}
+			} else if (line.startsWith(" * Buff Duration: "))
+			{
+				try
+				{
+					String num = line.split(": ")[1];
+					buffDuration = 0;
+					for (String s: num.split(" "))
+					{
+						if (s.endsWith("s"))
+							buffDuration += Integer.valueOf(s.substring(0, s.length() - 1)) * 20;
+						else if (s.endsWith("m"))
+							buffDuration += Integer.valueOf(s.substring(0, s.length() - 1)) * 20 * 60;
+					}
+					loreRemove.add(-i);
+				} catch (Exception e) {}
+			} else if (line.startsWith("Consumable Cooldown: "))
+			{
+				try
+				{
+					String num = line.split(": ")[1];
+					consumableCooldown = 0;
+					for (String s: num.split(" "))
+					{
+						if (s.endsWith("s"))
+							consumableCooldown += Integer.valueOf(s.substring(0, s.length() - 1)) * 20;
+						else if (s.endsWith("m"))
+							consumableCooldown += Integer.valueOf(s.substring(0, s.length() - 1)) * 20 * 60;
+					}
+					loreRemove.add(-i + 1);
+					loreRemove.add(-i);
+				} catch (Exception e) {}
+			} else if (line.startsWith(" * Magic Damage: +"))
+			{
+				try
+				{
+					String num = line.split(": +")[1];
+					if (line.endsWith("%"))
+						magicDamageMultiplier = CakeLibrary.convertAddedPercentageToMultiplier(
+								Integer.parseInt(num.substring(0, num.length() - 1)));
+					else
+						magicDamageAdd = Integer.parseInt(num);
+					loreRemove.add(-i);
+				} catch (Exception e) {}
+			} else if (line.startsWith(" * Brute Damage: +"))
+			{
+				try
+				{
+					String num = line.split(": +")[1];
+					if (line.endsWith("%"))
+						bruteDamageMultiplier = CakeLibrary.convertAddedPercentageToMultiplier(
+								Integer.parseInt(num.substring(0, num.length() - 1)));
+					else
+						bruteDamageAdd = Integer.parseInt(num);
+
+					loreRemove.add(-i);
+				} catch (Exception e) {}
+			} else if (line.startsWith(" * Attack Speed: +"))
+			{
+				try
+				{
+					String num = line.split(": +")[1];
+					attackSpeedMultiplier = CakeLibrary.convertAddedPercentageToMultiplier(
+							Integer.parseInt(num.substring(0, num.length() - 1)));
+					loreRemove.add(-i);
+				} catch (Exception e) {}
+			} else if (line.startsWith(" * Crit Chance: +"))
+			{
+				try
+				{
+					String num = line.split(": +")[1];
+					critChanceAdd = Integer.parseInt(num.substring(0, num.length() - 1));
+					loreRemove.add(-i);
+				} catch (Exception e) {}
+			} else if (line.startsWith(" * Crit Damage: +"))
+			{
+				try
+				{
+					String num = line.split(": +")[1];
+					critDamageAdd = Integer.parseInt(num.substring(0, num.length() - 1));
+					loreRemove.add(-i);
+				} catch (Exception e) {}
+			} else if (line.startsWith(" * Damage Received: -"))
+			{
+				try
+				{
+					String num = line.split(": -")[1];
+					damageReductionAdd = Integer.parseInt(num.substring(0, num.length() - 1));
+					loreRemove.add(-i);
+				} catch (Exception e) {}
+			} else if (line.startsWith(" * Cooldown Length: -"))
+			{
+				try
+				{
+					String num = line.split(": -")[1];
+					cooldownReductionAdd = Integer.parseInt(num.substring(0, num.length() - 1));
+					loreRemove.add(-i);
+				} catch (Exception e) {}
+			} else if (line.startsWith(" * Combat XP: +"))
+			{
+				try
+				{
+					String num = line.split(": +")[1];
+					xpMultiplier = CakeLibrary.convertAddedPercentageToMultiplier(
+							Integer.parseInt(num.substring(0, num.length() - 1)));
+					loreRemove.add(-i);
 				} catch (Exception e) {}
 			} else if (line.startsWith("  --- Tier "))
 			{
 				bonusStatLines = true;
-				loreRemove.add(line1);
+				loreRemove.add(i);
 			} else if (line.equals("  ------------"))
 			{
 				bonusStatLines = false;
-				loreRemove.add(line1);
+				loreRemove.add(i);
 			} else if (bonusStatLines)
 			{
-				loreRemove.add(line1);
+				loreRemove.add(i);
 			} else if (line.startsWith("Owner: "))
 			{
 				owner = line.split(": ")[1];
-				loreRemove.add(line1);
+				loreRemove.add(i);
 			} else if (line.equals(""))
 				continue;
 		}
-		lore.removeAll(loreRemove);
+		for (int i = loreRemove.size() - 1; i >= 0; i--)
+		{
+			int index = loreRemove.get(i);
+			if (index < 0)
+			{
+				if (consumable)
+					lore.remove(-index);
+			} else
+				lore.remove(index);
+		}
 
 		itemLore = lore;
 		itemVanilla = nameChange ? CakeLibrary.renameItem(is.clone(), name) : is.clone(); 
-		
+
 		if ((headTexture == null || headTexture.length() == 0) 
 				&& itemVanilla.getType().equals(Material.SKULL_ITEM) 
 				&& itemVanilla.getDurability() == (short) 3)
@@ -340,24 +499,97 @@ public class RItem
 		}
 
 		//BASE STATS
-		if (levelRequirement != 0)
-			lore.add(CakeLibrary.recodeColorCodes(statColor + "  Lv. Requirement:" + statColorSecondary + " " + levelRequirement));
-		if (magicDamage != 0)
-			lore.add(CakeLibrary.recodeColorCodes(statColor + "  Magic Damage:" + statColorSecondary + " +" + (magicDamage + addedMagicDamage))
-					+ (addedMagicDamage > 0 ? " (+" + addedMagicDamage + ")" : ""));
-		if (bruteDamage != 0)
-			lore.add(CakeLibrary.recodeColorCodes(statColor + "  Brute Damage:" + statColorSecondary + " +" + (bruteDamage + addedBruteDamage))
-					+ (addedBruteDamage > 0 ? " (+" + addedBruteDamage + ")" : ""));
-		if (attackSpeed != 0)
-			lore.add(CakeLibrary.recodeColorCodes(statColor + "  Attack Speed:" + statColorSecondary +" x" + attackSpeed));
-		if (critChance != 0)
-			lore.add(CakeLibrary.recodeColorCodes(statColor + "  Crit Chance:" + statColorSecondary + " +" + critChance + "%"));
-		if (critDamage != 0)
-			lore.add(CakeLibrary.recodeColorCodes(statColor + "  Crit Damage:" + statColorSecondary + " +" + critDamage + "%"));
-		if (cooldownReduction != 0)
-			lore.add(CakeLibrary.recodeColorCodes(statColor + "  Cooldown Length:" + statColorSecondary + " -" + cooldownReduction + "%"));
-		if (damageReduction != 0)
-			lore.add(CakeLibrary.recodeColorCodes(statColor + "  Dmg Received:" + statColorSecondary + " -" + damageReduction + "%"));
+		if (!consumable)
+		{
+			if (levelRequirement != 0)
+				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Lv. Requirement:" + statColorSecondary + " " + levelRequirement));
+			if (magicDamage != 0)
+				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Magic Damage:" + statColorSecondary + " +" + (magicDamage + addedMagicDamage))
+						+ (addedMagicDamage > 0 ? " (+" + addedMagicDamage + ")" : ""));
+			if (bruteDamage != 0)
+				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Brute Damage:" + statColorSecondary + " +" + (bruteDamage + addedBruteDamage))
+						+ (addedBruteDamage > 0 ? " (+" + addedBruteDamage + ")" : ""));
+			if (attackSpeed != 0)
+				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Attack Speed:" + statColorSecondary +" x" + attackSpeed));
+			if (critChance != 0)
+				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Crit Chance:" + statColorSecondary + " +" + critChance + "%"));
+			if (critDamage != 0)
+				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Crit Damage:" + statColorSecondary + " +" + critDamage + "%"));
+			if (cooldownReduction != 0)
+				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Cooldown Length:" + statColorSecondary + " -" + cooldownReduction + "%"));
+			if (damageReduction != 0)
+				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Dmg Received:" + statColorSecondary + " -" + damageReduction + "%"));
+		} else
+		{
+			lore.add(CakeLibrary.recodeColorCodes("&7 * Consumable"));
+			if (satiate != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Satiate: -" + (satiate / 2.0F) + " hunger"));
+			if (buffDuration != 0)
+			{
+				lore.add(CakeLibrary.recodeColorCodes("&f"));
+				lore.add(CakeLibrary.recodeColorCodes("&7Buff:"));
+			}
+			if (magicDamageAdd != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Magic Damage: +" + magicDamageAdd));
+			if (magicDamageMultiplier != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Magic Damage: +" + CakeLibrary.convertMultiplierToAddedPercentage(magicDamageMultiplier) + "%"));
+			if (bruteDamageAdd != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Brute Damage: +" + bruteDamageAdd));
+			if (bruteDamageMultiplier != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Brute Damage: +" + CakeLibrary.convertMultiplierToAddedPercentage(bruteDamageMultiplier) + "%"));
+			if (attackSpeedMultiplier != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Attack Speed: +" + CakeLibrary.convertMultiplierToAddedPercentage(attackSpeedMultiplier) + "%"));
+			if (critChanceAdd != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Crit Chance: +" + critChanceAdd + "%"));
+			if (critDamageAdd != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Crit Damage: +" + critDamageAdd + "%"));
+			if (damageReductionAdd != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Damage Received: -" + damageReductionAdd + "%"));
+			if (cooldownReductionAdd != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Cooldown Length: -" + cooldownReductionAdd + "%"));
+			if (xpMultiplier != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Combat XP: +" + CakeLibrary.convertMultiplierToAddedPercentage(xpMultiplier) + "%"));
+			if (buffDuration != 0)
+			{
+				int run = buffDuration / 20;
+				int minutes = 0;
+				int seconds = 0;
+				while (run >= 60)
+				{
+					run -= 60;
+					minutes++;
+				}
+				while (run > 0)
+				{
+					run--;
+					seconds++;
+				}
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Buff Duration: " + 
+						(minutes > 0 ? minutes + "m " : "") + 
+						(seconds > 0 ? seconds + "s" : "")));
+			}
+			if (consumableCooldown != 0)
+			{
+				lore.add(CakeLibrary.recodeColorCodes("&f"));
+
+				int run = consumableCooldown / 20;
+				int minutes = 0;
+				int seconds = 0;
+				while (run >= 60)
+				{
+					run -= 60;
+					minutes++;
+				}
+				while (run > 0)
+				{
+					run--;
+					seconds++;
+				}
+				lore.add(CakeLibrary.recodeColorCodes("&7Consumable Cooldown: " + 
+						(minutes > 0 ? minutes + "m " : "") + 
+						(seconds > 0 ? seconds + "s" : "")));
+			}
+		}
 
 		//BONUS STATS
 		if (bonusStat != null)
