@@ -5,6 +5,8 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import rpgcore.buff.Buff;
+import rpgcore.buff.BuffStats;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
@@ -18,9 +20,10 @@ public class Protect extends RPGSkill
 	public final static int skillTier = 1;
 	public final static int castDelay = 0;
 	public final static ClassType classType = ClassType.PRIEST;
-	public final static int damageReductionAdd = 20;
-	public final static int buffLength = 120 * 20;
 	public final static int cooldown = 60;
+	public final static BuffStats buffStats = BuffStats.createBuffStats("&dProtect", new ItemStack(Material.IRON_INGOT, 1))
+			.setDamageReductionAdd(20)
+			.setBuffDuration(120 * 20);
 	public Protect(RPlayer caster)
 	{
 		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
@@ -43,8 +46,8 @@ public class Protect extends RPGSkill
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.IRON_INGOT, 1), 
 				"&dProtect"),
 				"&7Buff:",
-				"&7 * Damage received: -" + damageReductionAdd + "%",
-				"&7 * Buff Duration: " + (buffLength / 20) + "s",
+				"&7 * Damage Received: -" + buffStats.damageReductionAdd + "%",
+				"&7 * Buff Duration: " + (buffStats.buffDuration / 20) + "s",
 				"&7Cooldown: " + cooldown + "s",
 				"&f",
 				"&8&oApplies a buff with the above",
@@ -58,26 +61,33 @@ public class Protect extends RPGSkill
 	@Override
 	public void activate()
 	{
-		super.applyCooldown(60);
-		if (caster.partyID == -1)
-			applyEffect(caster, caster);
-		else 
-			for (RPlayer partyMember: RPGCore.partyManager.getParty(caster.partyID).players)
-				applyEffect(caster, partyMember);
+		super.applyCooldown(cooldown);
+		applyEffect(caster);
 	}
 
-	public static void applyEffect(RPlayer caster, RPlayer rp)
+	public static void applyEffect(RPlayer rp)
 	{
-		Player castPlayer = caster.getPlayer();
-		Player player = rp.getPlayer();
-		if (player == null || castPlayer == null)
-			return;
-		if (player.getLocation().distance(castPlayer.getLocation()) > 16.0D)
-			return;
-		RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, player, 42), 0);
-		player.sendMessage(CakeLibrary.recodeColorCodes("&e--- Buff &6[ &dProtect&6 ] &eapplied ---"));
-		rp.removeBuff(skillName);
-		rp.buffs.add(new Buff(caster, classType, skillName, buffLength, "&e--- Buff &6[ &dProtect&6 ] &eran out ---"));
-		rp.updateScoreboard();
+		Buff b = Buff.createBuff(buffStats);
+		if (rp.partyID == -1)
+		{
+			Player p = rp.getPlayer();
+			if (p == null)
+				return;
+			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 41), 0);
+			b.applyBuff(rp);
+			rp.updateScoreboard();
+		}
+		else
+		{
+			for (RPlayer partyMember: RPGCore.partyManager.getParty(rp.partyID).players)
+			{
+				Player p = partyMember.getPlayer();
+				if (p == null)
+					continue;
+				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 41), 0);
+				b.applyBuff(partyMember);
+				partyMember.updateScoreboard();
+			}
+		}
 	}
 }

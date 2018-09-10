@@ -5,8 +5,11 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import rpgcore.buff.Buff;
+import rpgcore.buff.BuffStats;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
+import rpgcore.main.RPGCore;
 import rpgcore.main.RPGEvents;
 import rpgcore.player.RPlayer;
 
@@ -18,8 +21,12 @@ public class Warcry extends RPGSkill
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.WARRIOR;
 	public final static int heal = 10;
-	public final static float bruteDamageMultiplierAdd = 0.3F;
 	public final static int buffLength = 15 * 20;
+	public final static int cooldown = 30;
+	public final static BuffStats buffStats = BuffStats.createBuffStats("&4Warcry", new ItemStack(Material.REDSTONE, 1))
+			.setBruteDamageMultiplier(1.3F)
+			.setAttackSpeedMultiplier(1.3F)
+			.setBuffDuration(15 * 20);
 	public Warcry(RPlayer caster)
 	{
 		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
@@ -42,10 +49,11 @@ public class Warcry extends RPGSkill
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.REDSTONE, 1), 
 				"&4Warcry"),
 				"&7Buff:",
-				"&7 * Brute Damage: +" + bruteDamageMultiplierAdd + "%",
-				"&7 * Buff Duration: " + (buffLength / 20) + "s",
+				"&7 * Brute Damage: +" + CakeLibrary.convertMultiplierToAddedPercentage(buffStats.bruteDamageMultiplier) + "%",
+				"&7 * Attack Speed: +" + CakeLibrary.convertMultiplierToAddedPercentage(buffStats.attackSpeedMultiplier) + "%",
+				"&7 * Buff Duration: " + (buffStats.buffDuration / 20) + "s",
 				"&7Heal: " + (heal / 2.0F) + " hearts",
-				"&7Cooldown: 30s",
+				"&7Cooldown: " + cooldown + "s",
 				"&f",
 				"&8&oLet out a warrior's battlecry;",
 				"&8&orestoring some health and increasing",
@@ -58,26 +66,33 @@ public class Warcry extends RPGSkill
 	@Override
 	public void activate()
 	{
-		super.applyCooldown(30);
-		applyEffect(caster, caster);
+		super.applyCooldown(cooldown);
+		applyEffect(caster);
 	}
 
-	public static void applyEffect(RPlayer caster, RPlayer rp)
+	public static void applyEffect(RPlayer rp)
 	{
-		Player castPlayer = caster.getPlayer();
-		Player player = rp.getPlayer();
-		if (player == null || castPlayer == null)
-			return;
-		if (player.getLocation().distance(castPlayer.getLocation()) > 16.0D)
-			return;
-		RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, player, 152), 0);
-		player.sendMessage(CakeLibrary.recodeColorCodes("&e--- Buff &6[ &4Warcry&6 ] &eapplied ---"));
-		rp.removeBuff(skillName);
-		rp.buffs.add(new Buff(caster, classType, skillName, buffLength, "&e--- Buff &6[ &4Warcry&6 ] &eran out ---"));
-		rp.updateScoreboard();
-		
-		double health = player.getHealth();
-		health += heal;
-		player.setHealth(health > player.getMaxHealth() ? player.getMaxHealth() : health);
+		Buff b = Buff.createBuff(buffStats);
+		if (rp.partyID == -1)
+		{
+			Player p = rp.getPlayer();
+			if (p == null)
+				return;
+			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 41), 0);
+			b.applyBuff(rp);
+			rp.updateScoreboard();
+		}
+		else
+		{
+			for (RPlayer partyMember: RPGCore.partyManager.getParty(rp.partyID).players)
+			{
+				Player p = partyMember.getPlayer();
+				if (p == null)
+					continue;
+				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 41), 0);
+				b.applyBuff(partyMember);
+				partyMember.updateScoreboard();
+			}
+		}
 	}
 }

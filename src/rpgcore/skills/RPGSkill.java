@@ -153,9 +153,9 @@ public class RPGSkill
 	
 	public void applyCooldown(float seconds)
 	{
-		double reductionPercentage = caster.calculateCooldownReduction();
+		int reduction = caster.calculateCooldownReduction();
 		double total = seconds * 20.0F;
-		total -= (total * reductionPercentage / 100.0F);
+		total -= total / 100.0F * reduction;
 		if (total <= 0)
 			return;
 		caster.cooldowns.add(skillName);
