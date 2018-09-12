@@ -60,3 +60,5 @@ commands:
   buffs:
     aliases: b
     description: Checks your buffs
+  enhance:
+    description: Opens up the item enhancement UI
