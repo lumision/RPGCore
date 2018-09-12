@@ -9,7 +9,6 @@ import rpgcore.buff.Buff;
 import rpgcore.buff.BuffStats;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
-import rpgcore.main.RPGCore;
 import rpgcore.main.RPGEvents;
 import rpgcore.player.RPlayer;
 
@@ -48,15 +47,17 @@ public class Warcry extends RPGSkill
 	{
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.REDSTONE, 1), 
 				"&4Warcry"),
+				"&7Heal: " + (heal / 2.0F) + " hearts",
+				"&f",
 				"&7Buff:",
 				"&7 * Brute Damage: +" + CakeLibrary.convertMultiplierToAddedPercentage(buffStats.bruteDamageMultiplier) + "%",
 				"&7 * Attack Speed: +" + CakeLibrary.convertMultiplierToAddedPercentage(buffStats.attackSpeedMultiplier) + "%",
 				"&7 * Buff Duration: " + (buffStats.buffDuration / 20) + "s",
-				"&7Heal: " + (heal / 2.0F) + " hearts",
-				"&7Cooldown: " + cooldown + "s",
+				"&f",
+				"&7Cooldown: " + CakeLibrary.convertTimeToString(buffStats.buffDuration / 20),
 				"&f",
 				"&8&oLet out a warrior's battlecry;",
-				"&8&orestoring some health and increasing",
+				"&8&orestoring health and increasing",
 				"&8&odamage dealt for a short time.",
 				"&f",
 				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
@@ -67,32 +68,17 @@ public class Warcry extends RPGSkill
 	public void activate()
 	{
 		super.applyCooldown(cooldown);
-		applyEffect(caster);
+		Buff b = Buff.createBuff(buffStats);
+		applyEffect(caster, b);
 	}
 
-	public static void applyEffect(RPlayer rp)
+	public static void applyEffect(RPlayer rp, Buff b)
 	{
-		Buff b = Buff.createBuff(buffStats);
-		if (rp.partyID == -1)
-		{
-			Player p = rp.getPlayer();
-			if (p == null)
-				return;
-			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 41), 0);
-			b.applyBuff(rp);
-			rp.updateScoreboard();
-		}
-		else
-		{
-			for (RPlayer partyMember: RPGCore.partyManager.getParty(rp.partyID).players)
-			{
-				Player p = partyMember.getPlayer();
-				if (p == null)
-					continue;
-				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 41), 0);
-				b.applyBuff(partyMember);
-				partyMember.updateScoreboard();
-			}
-		}
+		Player p = rp.getPlayer();
+		if (p == null)
+			return;
+		RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 152), 0);
+		b.applyBuff(rp);
+		rp.updateScoreboard = true;
 	}
 }

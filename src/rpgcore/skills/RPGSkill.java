@@ -48,7 +48,7 @@ public class RPGSkill
 			new HolyBolt(),
 			new Heal(),
 			new Protect(),
-			new Enlightenment(),
+			new Bless(),
 			
 			//ASSASSIN TIER 1
 			new ShadowStab(),
@@ -71,6 +71,9 @@ public class RPGSkill
 			new Kunai(),
 			new LightFeet(),
 			
+			//PRIEST TIER 4
+			new Enlightenment(),
+			
 			//MISC
 			new Vitality1(),
 			new Vitality2(),
@@ -82,6 +85,8 @@ public class RPGSkill
 			new Vitality8(),
 			new Vitality9(),
 			new Vitality10(),
+			
+			new CelestialBlessing(),
 			
 	};
 	

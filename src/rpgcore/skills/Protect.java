@@ -48,11 +48,13 @@ public class Protect extends RPGSkill
 				"&7Buff:",
 				"&7 * Damage Received: -" + buffStats.damageReductionAdd + "%",
 				"&7 * Buff Duration: " + (buffStats.buffDuration / 20) + "s",
-				"&7Cooldown: " + cooldown + "s",
+				"&7 * Party Buff",
 				"&f",
-				"&8&oApplies a buff with the above",
-				"&8&oeffects to the user and all",
-				"&8&oparty members within 16 blocks.",
+				"&7Cooldown: " + CakeLibrary.convertTimeToString(buffStats.buffDuration / 20),
+				"&f",
+				"&8&oApplies a holy protection to",
+				"&8&othe affected; decreasing",
+				"&8&ooverall damage received.",
 				"&f",
 				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
@@ -62,32 +64,21 @@ public class Protect extends RPGSkill
 	public void activate()
 	{
 		super.applyCooldown(cooldown);
-		applyEffect(caster);
+		Buff b = Buff.createBuff(buffStats);
+		if (caster.partyID == -1)
+			applyEffect(caster, b);
+		else
+			for (RPlayer partyMember: RPGCore.partyManager.getParty(caster.partyID).players)
+				applyEffect(partyMember, b);
 	}
 
-	public static void applyEffect(RPlayer rp)
+	public static void applyEffect(RPlayer rp, Buff b)
 	{
-		Buff b = Buff.createBuff(buffStats);
-		if (rp.partyID == -1)
-		{
-			Player p = rp.getPlayer();
-			if (p == null)
-				return;
-			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 41), 0);
-			b.applyBuff(rp);
-			rp.updateScoreboard();
-		}
-		else
-		{
-			for (RPlayer partyMember: RPGCore.partyManager.getParty(rp.partyID).players)
-			{
-				Player p = partyMember.getPlayer();
-				if (p == null)
-					continue;
-				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 41), 0);
-				b.applyBuff(partyMember);
-				partyMember.updateScoreboard();
-			}
-		}
+		Player p = rp.getPlayer();
+		if (p == null)
+			return;
+		RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 41), 0);
+		b.applyBuff(rp);
+		rp.updateScoreboard = true;
 	}
 }

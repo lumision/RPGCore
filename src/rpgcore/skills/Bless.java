@@ -12,24 +12,24 @@ import rpgcore.main.RPGCore;
 import rpgcore.main.RPGEvents;
 import rpgcore.player.RPlayer;
 
-public class Enlightenment extends RPGSkill
+public class Bless extends RPGSkill
 {
-	public final static String skillName = "Enlightenment";
+	public final static String skillName = "Bless";
 	public final static boolean passiveSkill = false;
 	public final static int skillTier = 4;
 	public final static int castDelay = 0;
 	public final static ClassType classType = ClassType.PRIEST;
 	public final static int cooldown = 60;
-	public final static BuffStats buffStats = BuffStats.createBuffStats("&eEnlightenment", new ItemStack(38, 1, (short) 6))
-			.setMagicDamageMultiplier(1.4F)
-			.setBruteDamageMultiplier(1.4F)
+	public final static BuffStats buffStats = BuffStats.createBuffStats("&eBless", new ItemStack(38, 1, (short) 7))
+			.setMagicDamageMultiplier(1.2F)
+			.setBruteDamageMultiplier(1.2F)
 			.setBuffDuration(120 * 20);
-	public Enlightenment(RPlayer caster)
+	public Bless(RPlayer caster)
 	{
 		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
-	public Enlightenment()
+	public Bless()
 	{
 		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
@@ -37,14 +37,14 @@ public class Enlightenment extends RPGSkill
 	@Override
 	public void insantiate(RPlayer rp)
 	{
-		new Enlightenment(rp);
+		new Bless(rp);
 	}
 
 	@Override
 	public ItemStack getSkillItem()
 	{
-		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(38, 1, (short) 6), 
-				"&eEnlightenment"),
+		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(38, 1, (short) 7), 
+				"&eBless"),
 				"&7Buff:",
 				"&7 * Magic Damage: +" + CakeLibrary.convertMultiplierToAddedPercentage(buffStats.magicDamageMultiplier) + "%",
 				"&7 * Brute Damage: +" + CakeLibrary.convertMultiplierToAddedPercentage(buffStats.bruteDamageMultiplier) + "%",
@@ -53,8 +53,8 @@ public class Enlightenment extends RPGSkill
 				"&f",
 				"&7Cooldown: " + CakeLibrary.convertTimeToString(buffStats.buffDuration / 20),
 				"&f",
-				"&8&oGrants intellectual light to",
-				"&8&othe affected; increasing",
+				"&8&oBestows holy power to the",
+				"&8&oaffected; increasing",
 				"&8&ooverall attack efficiency.",
 				"&f",
 				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],

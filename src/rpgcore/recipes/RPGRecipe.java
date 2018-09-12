@@ -66,14 +66,14 @@ public class RPGRecipe
 				|| shape[0].length() >= 3 
 				|| (shape.length > 1 && shape[1].length() >= 3) 
 				|| (shape.length > 2 && shape[2].length() >= 3);
-				
-		items = 0;
-		for (int i = 0; i < shape.length; i++)
-			for (char c: shape[i].toCharArray())
-				if (c != 'X')
-					items++;
-		
-		recipes.add(this);
+
+				items = 0;
+				for (int i = 0; i < shape.length; i++)
+					for (char c: shape[i].toCharArray())
+						if (c != 'X')
+							items++;
+
+				recipes.add(this);
 	}
 
 	public static void readRecipeData()
@@ -100,7 +100,13 @@ public class RPGRecipe
 						String[] split = line.substring(1).split(": ");
 						if (split.length < 2)
 							continue;
-						ingredients.put(RPGCore.getItemFromDatabase(split[1]), split[0].charAt(0));
+						RItem ingredient = RPGCore.getItemFromDatabase(split[1]);
+						if (ingredient == null)
+						{
+							RPGCore.msgConsole("&4Error reading recipe data: " + file.getName() + "; ingredient &c" + split[1] + " &4not in item database.");
+							continue;
+						}
+						ingredients.put(ingredient, split[0].charAt(0));
 						continue;
 					}
 
@@ -122,6 +128,8 @@ public class RPGRecipe
 
 				if (result != null && shape != null && ingredients.size() > 0)
 					new RPGRecipe(result, shape, ingredients, sound, volume, pitch);
+				else
+					RPGCore.msgConsole("&4Error reading recipe data: " + file.getName() + "; result, shape, or ingredients is null.");
 			} catch (Exception e) {}
 		}
 	}
@@ -131,12 +139,12 @@ public class RPGRecipe
 		boolean craftingTable = craftingMatrix.length == 9;
 		if (requiresCraftingTable && !craftingTable)
 			return false;
-		
+
 		int inputItems = 0;
 		for (int i = 0; i < craftingMatrix.length; i++)
 			if (!CakeLibrary.isItemStackNull(craftingMatrix[i]))
 				inputItems++;
-		
+
 		if (inputItems != items)
 			return false;
 

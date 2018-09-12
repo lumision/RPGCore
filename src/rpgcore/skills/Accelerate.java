@@ -23,7 +23,7 @@ public class Accelerate extends RPGSkill
 	public final static int cooldown = 60;
 	public final static BuffStats buffStats = BuffStats.createBuffStats("&bAccelerate", new ItemStack(Material.FEATHER, 1))
 			.setAttackSpeedMultiplier(1.2F)
-			.setBuffDuration(120 * 20);
+			.setBuffDuration(2 * 60 * 20);
 	public Accelerate(RPlayer caster)
 	{
 		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
@@ -48,11 +48,12 @@ public class Accelerate extends RPGSkill
 				"&7Buff:",
 				"&7 * Attack Speed: +" + CakeLibrary.convertMultiplierToAddedPercentage(buffStats.attackSpeedMultiplier) + "%",
 				"&7 * Buff Duration: " + (buffStats.buffDuration / 20) + "s",
-				"&7Cooldown: 60s",
+				"&7 * Party Buff",
+				"&7Cooldown: " + cooldown + "s",
 				"&f",
-				"&8&oApplies a buff with the above",
-				"&8&oeffects to the user and all",
-				"&8&oparty members within 16 blocks.",
+				"&8&oApplies an arcane buff that",
+				"&8&oassists mobility; increasing",
+				"&8&ooverall attack speed.",
 				"&f",
 				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
@@ -62,32 +63,21 @@ public class Accelerate extends RPGSkill
 	public void activate()
 	{
 		super.applyCooldown(cooldown);
-		applyEffect(caster);
+		Buff b = Buff.createBuff(buffStats);
+		if (caster.partyID == -1)
+			applyEffect(caster, b);
+		else
+			for (RPlayer partyMember: RPGCore.partyManager.getParty(caster.partyID).players)
+				applyEffect(partyMember, b);
 	}
 
-	public static void applyEffect(RPlayer rp)
+	public static void applyEffect(RPlayer rp, Buff b)
 	{
-		Buff b = Buff.createBuff(buffStats);
-		if (rp.partyID == -1)
-		{
-			Player p = rp.getPlayer();
-			if (p == null)
-				return;
-			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 41), 0);
-			b.applyBuff(rp);
-			rp.updateScoreboard();
-		}
-		else
-		{
-			for (RPlayer partyMember: RPGCore.partyManager.getParty(rp.partyID).players)
-			{
-				Player p = partyMember.getPlayer();
-				if (p == null)
-					continue;
-				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 41), 0);
-				b.applyBuff(partyMember);
-				partyMember.updateScoreboard();
-			}
-		}
+		Player p = rp.getPlayer();
+		if (p == null)
+			return;
+		RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 41), 0);
+		b.applyBuff(rp);
+		rp.updateScoreboard = true;
 	}
 }
