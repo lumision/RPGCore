@@ -550,44 +550,11 @@ public class RItem
 			if (xpMultiplier != 0)
 				lore.add(CakeLibrary.recodeColorCodes("&7 * Combat XP: +" + CakeLibrary.convertMultiplierToAddedPercentage(xpMultiplier) + "%"));
 			if (buffDuration != 0)
-			{
-				int run = buffDuration / 20;
-				int minutes = 0;
-				int seconds = 0;
-				while (run >= 60)
-				{
-					run -= 60;
-					minutes++;
-				}
-				while (run > 0)
-				{
-					run--;
-					seconds++;
-				}
-				lore.add(CakeLibrary.recodeColorCodes("&7 * Buff Duration: " + 
-						(minutes > 0 ? minutes + "m " : "") + 
-						(seconds > 0 ? seconds + "s" : "")));
-			}
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Buff Duration: " + CakeLibrary.convertTimeToString(buffDuration / 20)));
 			if (consumableCooldown != 0)
 			{
 				lore.add(CakeLibrary.recodeColorCodes("&f"));
-
-				int run = consumableCooldown / 20;
-				int minutes = 0;
-				int seconds = 0;
-				while (run >= 60)
-				{
-					run -= 60;
-					minutes++;
-				}
-				while (run > 0)
-				{
-					run--;
-					seconds++;
-				}
-				lore.add(CakeLibrary.recodeColorCodes("&7Consumable Cooldown: " + 
-						(minutes > 0 ? minutes + "m " : "") + 
-						(seconds > 0 ? seconds + "s" : "")));
+				lore.add(CakeLibrary.recodeColorCodes("&7Consumable Cooldown: " + CakeLibrary.convertTimeToString(consumableCooldown / 20)));
 			}
 		}
 

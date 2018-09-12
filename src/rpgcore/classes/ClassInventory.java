@@ -6,7 +6,6 @@ import org.bukkit.inventory.Inventory;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
 import rpgcore.player.RPlayer;
-import rpgcore.skillinventory.SkillInventory;
 import rpgcore.skillinventory2.SkillInventory2;
 
 public class ClassInventory 

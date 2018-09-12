@@ -17,6 +17,7 @@ import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
@@ -26,10 +27,13 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.util.Vector;
 
 import net.minecraft.server.v1_12_R1.EnumParticle;
+import net.minecraft.server.v1_12_R1.PacketPlayOutPlayerInfo;
+import net.minecraft.server.v1_12_R1.PlayerConnection;
 import rpgcore.areas.Area;
 import rpgcore.entities.mobs.RPGMonster;
 import rpgcore.external.InstantFirework;
 import rpgcore.item.BonusStat.BonusStatCrystal;
+import rpgcore.item.EnhancementInventory;
 import rpgcore.item.RItem;
 import rpgcore.npc.CustomNPC;
 import rpgcore.player.RPlayer;
@@ -111,12 +115,12 @@ public class RPGEvents implements Runnable
 
 	public static class DamageOverTime
 	{
-		public int length;
-		public int interval;
-		public int damage;
-		public int tick;
-		public LivingEntity victim;
-		public Entity damager;
+		int length;
+		int interval;
+		int damage;
+		int tick;
+		LivingEntity victim;
+		Entity damager;
 
 		public static ArrayList<DamageOverTime> list = new ArrayList<DamageOverTime>();
 		public static ArrayList<DamageOverTime> remove = new ArrayList<DamageOverTime>();
@@ -218,11 +222,71 @@ public class RPGEvents implements Runnable
 		Bukkit.getScheduler().scheduleSyncDelayedTask(instance, runnable, delay);
 	}
 
+	public static class CheckEnhancementInventory implements Runnable
+	{
+		Inventory inv;
+		int state;
+		Player p;
+		public CheckEnhancementInventory(Inventory inv, Player p, int state)
+		{
+			this.inv = inv;
+			this.p = p;
+			this.state = state;
+		}
+		
+		@Override
+		public void run()
+		{
+			EnhancementInventory.updateInventory(inv, state);
+			p.updateInventory();
+		}
+	}
+
+	public static class SetInventoryItem implements Runnable
+	{
+		Inventory inv;
+		int slot;
+		ItemStack item;
+		public SetInventoryItem(Inventory inv, int slot, ItemStack item)
+		{
+			this.inv = inv;
+			this.slot = slot;
+			this.item = item;;
+		}
+		
+		@Override
+		public void run()
+		{
+			inv.setItem(slot, item);
+			if (inv.getViewers().size() > 0)
+				for (HumanEntity he: inv.getViewers())
+					if (he instanceof Player)
+						((Player) he).updateInventory();
+		}
+	}
+
+	public static class SendDespawnPacket implements Runnable
+	{
+		PacketPlayOutPlayerInfo packet;
+		PlayerConnection connection;
+		public SendDespawnPacket(PacketPlayOutPlayerInfo packet, PlayerConnection connection)
+		{
+			this.packet = packet;
+			this.connection = connection;
+		}
+
+		@Override
+		public void run()
+		{
+			connection.sendPacket(packet);
+		}
+	}
+
 	public static class ApplyDamage implements Runnable
 	{
-		public Entity damager;
-		public LivingEntity damagee;
-		public int damage;
+		Entity damager;
+		LivingEntity damagee;
+		int damage;
 		public ApplyDamage(Entity damager, LivingEntity damagee, int damage)
 		{
 			this.damager = damager;
@@ -251,8 +315,8 @@ public class RPGEvents implements Runnable
 
 	public static class ApplyPotionEffect implements Runnable
 	{
-		public LivingEntity entity;
-		public PotionEffect pe;
+		LivingEntity entity;
+		PotionEffect pe;
 		public ApplyPotionEffect(LivingEntity damager, PotionEffect pe)
 		{
 			this.entity = damager;
@@ -285,7 +349,7 @@ public class RPGEvents implements Runnable
 
 	public static class ConsoleCommand implements Runnable
 	{
-		public String command;
+		String command;
 		public ConsoleCommand(String command)
 		{
 			this.command = command;
@@ -300,8 +364,8 @@ public class RPGEvents implements Runnable
 
 	public static class Message implements Runnable
 	{
-		public CommandSender cs;
-		public String[] msgs;
+		CommandSender cs;
+		String[] msgs;
 		public Message(CommandSender cs, String... msgs)
 		{
 			this.cs = cs;
@@ -369,14 +433,14 @@ public class RPGEvents implements Runnable
 
 	public static class ColoredParticle implements Runnable
 	{
-		public Location l;
-		public Entity e;
-		public Particle particleType;
-		public float range;
-		public int particles = 1;
-		public int r;
-		public int g;
-		public int b;
+		Location l;
+		Entity e;
+		Particle particleType;
+		float range;
+		int particles = 1;
+		int r;
+		int g;
+		int b;
 
 		public ColoredParticle(Location l, float range, Particle particleType, int r, int g, int b, int particles)
 		{
@@ -419,9 +483,9 @@ public class RPGEvents implements Runnable
 
 	public static class CrystalInvCheck implements Runnable
 	{
-		public Player player;
-		public Inventory inv;
-		public BonusStatCrystal type;
+		Player player;
+		Inventory inv;
+		BonusStatCrystal type;
 		public CrystalInvCheck(Player player, Inventory inv, BonusStatCrystal type)
 		{
 			this.player = player;
@@ -474,10 +538,10 @@ public class RPGEvents implements Runnable
 
 	public static class PlaySoundEffect implements Runnable
 	{
-		public Location l;
-		public Sound sound;
-		public float volume;
-		public float pitch;
+		Location l;
+		Sound sound;
+		float volume;
+		float pitch;
 
 		public PlaySoundEffect(Location location, Sound sound, float volume, float pitch)
 		{
@@ -521,7 +585,7 @@ public class RPGEvents implements Runnable
 
 	public static class UpdatePlayerScoreboard implements Runnable
 	{
-		public RPlayer player;
+		RPlayer player;
 
 		public UpdatePlayerScoreboard(RPlayer player)
 		{
@@ -532,13 +596,13 @@ public class RPGEvents implements Runnable
 		public void run()
 		{
 			if (player.getPlayer() != null)
-				player.updateScoreboard();
+				player.updateScoreboard = true;
 		}
 	}
 
 	public static class PlayLightningEffect implements Runnable
 	{
-		public Location l;
+		Location l;
 
 		public PlayLightningEffect(Location location)
 		{
@@ -580,10 +644,10 @@ public class RPGEvents implements Runnable
 
 	public static class PlaySoundEffectForPlayer implements Runnable
 	{
-		public Player player;
-		public Sound sound;
-		public float volume;
-		public float pitch;
+		Player player;
+		Sound sound;
+		float volume;
+		float pitch;
 
 		public PlaySoundEffectForPlayer(Player player, Sound sound, float volume, float pitch)
 		{
@@ -602,11 +666,11 @@ public class RPGEvents implements Runnable
 
 	public static class AOEDetectionCustom implements Runnable
 	{
-		public ArrayList<LivingEntity> hit;
-		public double radius;
-		public Location l;
-		public LivingEntity damager;
-		public Callable<Void> func;
+		ArrayList<LivingEntity> hit;
+		double radius;
+		Location l;
+		LivingEntity damager;
+		Callable<Void> func;
 
 		public AOEDetectionCustom(ArrayList<LivingEntity> hit, Location l, double radius, LivingEntity damager, Callable<Void> func)
 		{
@@ -647,12 +711,12 @@ public class RPGEvents implements Runnable
 
 	public static class AOEDetectionAttack implements Runnable
 	{
-		public ArrayList<LivingEntity> hit;
-		public double radius;
-		public Location l;
-		public int damage;
-		public LivingEntity damager;
-		public double knockback;
+		ArrayList<LivingEntity> hit;
+		double radius;
+		Location l;
+		int damage;
+		LivingEntity damager;
+		double knockback;
 
 		public AOEDetectionAttack(ArrayList<LivingEntity> hit, Location l, double radius, int damage, LivingEntity damager)
 		{
@@ -706,12 +770,12 @@ public class RPGEvents implements Runnable
 
 	public static class AOEDetectionAttackWithBlockBreakEffect implements Runnable
 	{
-		public ArrayList<LivingEntity> hit;
-		public double radius;
-		public Location l;
-		public int damage;
-		public LivingEntity damager;
-		public int blockID;
+		ArrayList<LivingEntity> hit;
+		double radius;
+		Location l;
+		int damage;
+		LivingEntity damager;
+		int blockID;
 
 		public AOEDetectionAttackWithBlockBreakEffect(ArrayList<LivingEntity> hit, Location l, double radius, int damage, LivingEntity damager, int blockID)
 		{
@@ -748,12 +812,12 @@ public class RPGEvents implements Runnable
 
 	public static class AOEDetectionAttackWithFireworkEffect implements Runnable
 	{
-		public ArrayList<LivingEntity> hit;
-		public double radius;
-		public Location l;
-		public int damage;
-		public LivingEntity damager;
-		public FireworkEffect fe;
+		ArrayList<LivingEntity> hit;
+		double radius;
+		Location l;
+		int damage;
+		LivingEntity damager;
+		FireworkEffect fe;
 
 		public AOEDetectionAttackWithFireworkEffect(ArrayList<LivingEntity> hit, Location l, double radius, int damage, LivingEntity damager, FireworkEffect fe)
 		{
@@ -790,10 +854,10 @@ public class RPGEvents implements Runnable
 
 	public static class PlayEffect implements Runnable
 	{
-		public Location l;
-		public Entity e;
-		public Effect effect;
-		public int id;
+		Location l;
+		Entity e;
+		Effect effect;
+		int id;
 
 		public PlayEffect(Effect effect, Location location, int id)
 		{
@@ -826,10 +890,10 @@ public class RPGEvents implements Runnable
 
 	public static class FireworkTrail implements Runnable
 	{
-		public Location l;
-		public int particles;
-		public float speed = 0.0F;
-		public float range = 0.0F;
+		Location l;
+		int particles;
+		float speed = 0.0F;
+		float range = 0.0F;
 
 		public FireworkTrail(Location l, float range, int particles)
 		{
@@ -863,12 +927,12 @@ public class RPGEvents implements Runnable
 
 	public static class ParticleEffect implements Runnable
 	{
-		public Location l;
-		public int particles;
-		public float speed = 0.0F;
-		public float range = 0.0F;
-		public EnumParticle type;
-		public int[] data;
+		Location l;
+		int particles;
+		float speed = 0.0F;
+		float range = 0.0F;
+		EnumParticle type;
+		int[] data;
 		public ParticleEffect(EnumParticle type, Location l, float range, int particles)
 		{
 			this.type = type;
@@ -914,8 +978,8 @@ public class RPGEvents implements Runnable
 
 	public static class InventoryOpen implements Runnable
 	{
-		public Player player;
-		public Inventory inv;
+		Player player;
+		Inventory inv;
 		public InventoryOpen(Player player, Inventory inv)
 		{
 			this.player = player;
@@ -931,7 +995,7 @@ public class RPGEvents implements Runnable
 
 	public static class InventoryClose implements Runnable
 	{
-		public Player player;
+		Player player;
 		public InventoryClose(Player player)
 		{
 			this.player = player;

@@ -134,6 +134,30 @@ public class CakeLibrary
 			b.append(chars.charAt(random.nextInt(chars.length())));
 		return b.toString();
 	}
+	
+	public static String convertTimeToString(int seconds)
+	{
+		int h = 0;
+		int m = 0;
+		int s = 0;
+		while (seconds >= 3600)
+		{
+			seconds -= 3600;
+			h++;
+		}
+		while (seconds >= 60)
+		{
+			seconds -= 60;
+			m++;
+		}
+		while (seconds > 0)
+		{
+			seconds--;
+			s++;
+		}
+		
+		return (h > 0 ? h + "h " : "") + (m > 0 ? m + "m " : "") + (s > 0 ? s + "s" : "");
+	}
 
 	/**
 	 * Takes an item and returns the name of the item

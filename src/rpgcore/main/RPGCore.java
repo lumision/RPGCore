@@ -43,6 +43,7 @@ import rpgcore.classes.ClassInventory;
 import rpgcore.classes.RPGClass;
 import rpgcore.entities.mobs.RPGMonster;
 import rpgcore.item.BonusStat.BonusStatCrystal;
+import rpgcore.item.EnhancementInventory;
 import rpgcore.item.RItem;
 import rpgcore.npc.ConversationData;
 import rpgcore.npc.CustomNPC;
@@ -409,6 +410,11 @@ public class RPGCore extends JavaPlugin
 			RPlayer rp = playerManager.getRPlayer(p.getUniqueId());
 			if (rp == null)
 				return false;
+			if (command.getName().equalsIgnoreCase("enhance"))
+			{
+				p.openInventory(new EnhancementInventory().getInventory());
+				return true;
+			}
 			if (command.getName().equalsIgnoreCase("buffs"))
 			{
 				rp.buffInventory.updateInventory();

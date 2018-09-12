@@ -69,12 +69,17 @@ public class RPlayer
 	private int gold;
 	private int tokens;
 	public int lastSkillbookTier = 1;
-	public int skillbookTierSwitchTicks = 0;
+	public int skillbookTierSwitchTicks;
 	public Location pos1, pos2;
 	public int arenaInstanceID;
 	public Location leftForArenaLocation;
-	public int lastInteractTicks = 0;
+	public int lastInteractTicks;
 	public BuffInventory buffInventory;
+	private Player player;
+	public int lastUpdateScoreboardTicks, lastUpdateEquipTicks;
+	public boolean updateScoreboard;
+	public String[] lastEquipmentCheck = { "", "", "", "", "" };
+	public int consumableCooldownTicks;
 
 	public int sneakTicks;
 	public int heartspanTicks;
@@ -222,7 +227,7 @@ public class RPlayer
 		objective.setDisplaySlot(DisplaySlot.SIDEBAR);
 		objective.setDisplayName(CakeLibrary.recodeColorCodes("&6Class: " + getCurrentClass().classType.getClassName()));
 		this.objective = objective;
-		updateScoreboard();
+		this.updateScoreboard = true;
 		Player p = getPlayer();
 		if (p != null)
 			getPlayer().setScoreboard(scoreboard);
@@ -241,12 +246,15 @@ public class RPlayer
 		objective.getScore(CakeLibrary.recodeColorCodes("&e% EXP: ")).setScore(getPercentageToNextLevel());
 		objective.getScore(CakeLibrary.recodeColorCodes("&aGold: ")).setScore(gold);
 		objective.getScore(CakeLibrary.recodeColorCodes("&cDamage: ")).setScore(getDamageOfClass());
+
+		updateScoreboard = false;
+		lastUpdateScoreboardTicks = 20;
 	}
 
 	public void addGold(int amount)
 	{
 		gold += amount;
-		updateScoreboard();
+		updateScoreboard = true;
 	}
 
 	public int getGold()
@@ -293,16 +301,22 @@ public class RPlayer
 			}
 	}
 
+	public void tick20()
+	{
+		if (getPlayer() == null)
+			return;
+		updatePlayerREquips();
+		updateScoreboard = true;
+	}
+
 	public void tick10()
 	{
-
-		Player p = getPlayer();
-		if (p == null)
+		if (getPlayer() == null)
 			return;
 		if (skills.contains(LightFeet.skillName)) //Light Feet functionality
 		{
-			CakeLibrary.addPotionEffectIfBetterOrEquivalent(p, new PotionEffect(PotionEffectType.SPEED, 19, LightFeet.swiftness));
-			CakeLibrary.addPotionEffectIfBetterOrEquivalent(p, new PotionEffect(PotionEffectType.JUMP, 19, LightFeet.jump));
+			CakeLibrary.addPotionEffectIfBetterOrEquivalent(getPlayer(), new PotionEffect(PotionEffectType.SPEED, 19, LightFeet.swiftness));
+			CakeLibrary.addPotionEffectIfBetterOrEquivalent(getPlayer(), new PotionEffect(PotionEffectType.JUMP, 19, LightFeet.jump));
 		}
 		if (!tutorialCompleted)
 			tutorial.check();
@@ -312,9 +326,14 @@ public class RPlayer
 
 	public void tick()
 	{
-		Player p = getPlayer();
-		if (p == null)
+		if (getPlayer() == null)
 			return;
+		if (lastUpdateScoreboardTicks > 0)
+			lastUpdateScoreboardTicks--;
+		if (consumableCooldownTicks > 0)
+			consumableCooldownTicks--;
+		if (updateScoreboard && lastUpdateScoreboardTicks <= 0)
+			updateScoreboard();
 		if (lastInteractTicks > 0)
 			lastInteractTicks--;
 		if (skillbookTierSwitchTicks > 0)
@@ -325,7 +344,7 @@ public class RPlayer
 		{
 			heartspanTicks--;
 			if (heartspanTicks <= 0)
-				p.sendMessage(CakeLibrary.recodeColorCodes("&c**HEARTSPAN DEACTIVATED**"));
+				getPlayer().sendMessage(CakeLibrary.recodeColorCodes("&c**HEARTSPAN DEACTIVATED**"));
 		}
 		ArrayList<Integer> cooldownRemove = new ArrayList<Integer>();
 		for (int i = 0; i < cooldowns.size(); i++)
@@ -353,7 +372,7 @@ public class RPlayer
 			if (b.duration < 1)
 			{
 				buffRemove.add(i);
-				b.removeBuff(p);
+				b.removeBuff(getPlayer());
 			}
 		}
 		for (int i: buffRemove)
@@ -363,7 +382,7 @@ public class RPlayer
 		{
 			updateLevel();
 			checkLevel = false;
-			updateScoreboard();
+			updateScoreboard = true;
 		}
 		if (checkSideClassLevel != null)
 		{
@@ -371,21 +390,21 @@ public class RPlayer
 			if (checkSideClassLevel.lastCheckedLevel != lv)
 			{
 				checkSideClassLevel.lastCheckedLevel = lv;
-				RPGCore.msg(p, "&bYou've leveled your &3" + checkSideClassLevel.sideClassType.getClassName() + " &bclass up to " + lv + "!");
-				p.getWorld().playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.4F, 1.0F);
+				RPGCore.msg(getPlayer(), "&bYou've leveled your &3" + checkSideClassLevel.sideClassType.getClassName() + " &bclass up to " + lv + "!");
+				getPlayer().getWorld().playSound(getPlayer().getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.4F, 1.0F);
 				RPGCore.playerManager.writeData(this);
 				checkSideClassLevel = null;
 			}
 		}
-		int health = (int) p.getHealth();
-		int maxHealth = (int) p.getMaxHealth();
-		if (health < maxHealth && !p.isDead())
+		int health = (int) getPlayer().getHealth();
+		int maxHealth = (int) getPlayer().getMaxHealth();
+		if (health < maxHealth && !getPlayer().isDead())
 		{
 			recoverTicks++;
 			if (recoverTicks >= 20)
 			{
 				recoverTicks = 0;
-				p.setHealth(health + 1);
+				getPlayer().setHealth(health + 1);
 			}
 		} else
 			recoverTicks = 0;
@@ -395,7 +414,7 @@ public class RPlayer
 			{
 				Title t = titleQueue.get(0);
 				titleQueue.remove(0);
-				t.sendPlayer(p);
+				t.sendPlayer(getPlayer());
 			}
 		} catch (Exception e) {}
 	}
@@ -418,9 +437,16 @@ public class RPlayer
 		return uuid;
 	}
 
+	public void quit()
+	{
+		player = null;
+	}
+
 	public Player getPlayer()
 	{
-		return Bukkit.getPlayer(uuid);
+		if (player == null)
+			return player = Bukkit.getPlayer(uuid);
+		return player;
 	}
 
 	public void addXP(int xp)
@@ -478,24 +504,24 @@ public class RPlayer
 	public void updatePlayerREquips()
 	{
 		EntityEquipment ee = getPlayer().getEquipment();
-		for (int i = 0; i <= 4; i++)
+		for (int i = 0; i < 5; i++)
 		{
 			ItemStack is = i == 0 ? ee.getItemInOffHand() : i == 1 ? ee.getHelmet() : i == 2 ? ee.getChestplate() : 
 				i == 3 ? ee.getLeggings() : i == 4 ? ee.getBoots() : null;
+
+				String name = CakeLibrary.getItemName(is);
+
+				if (name.equals(lastEquipmentCheck[i]))
+					continue;
+				
+				lastEquipmentCheck[i] = name;
 				boolean isWeapon = i == 0;
 
-				if (rEquips[i] == null)
-				{
-					rEquips[i] = new RItem(is);
-					rEquips[i].isWeapon = isWeapon;
-				} else 
-				{
-					rEquips[i].cleanItemStats();
-					rEquips[i].setItemStats(is);
-					rEquips[i].isWeapon = isWeapon;
-				}
+				rEquips[i] = new RItem(is);
+				rEquips[i].isWeapon = isWeapon;
 		}
 	}
+
 
 	public int calculateCritChance()
 	{

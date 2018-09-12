@@ -54,24 +54,9 @@ public class Buff
 		if (buffStats.xpMultiplier != 0)
 			lore.add(CakeLibrary.recodeColorCodes("&7 * Combat XP: +" + CakeLibrary.convertMultiplierToAddedPercentage(buffStats.xpMultiplier) + "%"));
 		
-		int run = duration / 20;
-		int minutes = 0;
-		int seconds = 0;
-		while (run >= 60)
-		{
-			run -= 60;
-			minutes++;
-		}
-		while (run > 0)
-		{
-			run--;
-			seconds++;
-		}
 		
 		lore.add(CakeLibrary.recodeColorCodes("&f"));
-		lore.add(CakeLibrary.recodeColorCodes("&7Buff Duration: " + 
-				(minutes > 0 ? minutes + "m " : "") + 
-				(seconds > 0 ? seconds + "s" : "")));
+		lore.add(CakeLibrary.recodeColorCodes("&7Buff Duration: " + CakeLibrary.convertTimeToString(duration / 20)));
 		
 		im.setLore(lore);
 		icon.setItemMeta(im);
@@ -98,6 +83,7 @@ public class Buff
 			}
 		rp.buffs.add(this);
 		RPGCore.msgNoTag(p, "&e--- Buff &6[ " + buffStats.buffStatsName + "&6 ] &eapplied ---");
+		rp.updateScoreboard = true;
 	}
 	
 	public void removeBuff(Player p)

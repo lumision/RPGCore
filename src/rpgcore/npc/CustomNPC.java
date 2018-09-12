@@ -27,6 +27,7 @@ import net.minecraft.server.v1_12_R1.PlayerInteractManager;
 import net.minecraft.server.v1_12_R1.WorldServer;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
+import rpgcore.main.RPGEvents;
 import rpgcore.npc.ConversationData.ConversationLine;
 import rpgcore.npc.ConversationData.ConversationPartType;
 import rpgcore.player.RPlayer;
@@ -364,21 +365,22 @@ public class CustomNPC extends EntityPlayer
 		PacketPlayOutNamedEntitySpawn spawn = new PacketPlayOutNamedEntitySpawn(this);
 		PacketPlayOutEntityHeadRotation rotation = new PacketPlayOutEntityHeadRotation(this, (byte) ((int) (yaw * 256.0F / 360.0F)));
 		PacketPlayOutEntityLook look = new PacketPlayOutEntityLook(getId(), (byte) ((int) (yaw * 256.0F / 360.0F)), (byte) pitch, true);
-
+		
 		PlayerConnection co = ((CraftPlayer) p).getHandle().playerConnection;
 		co.sendPacket(pi);
 		co.sendPacket(spawn);
 		co.sendPacket(look);
 		co.sendPacket(rotation);
+		
+		PacketPlayOutPlayerInfo po = new PacketPlayOutPlayerInfo(EnumPlayerInfoAction.REMOVE_PLAYER, this);
+		RPGEvents.scheduleRunnable(new RPGEvents.SendDespawnPacket(po, co), 5 * 20);
 	}
 
 	public void despawnFor(Player p)
 	{
-		PacketPlayOutPlayerInfo pi = new PacketPlayOutPlayerInfo(EnumPlayerInfoAction.REMOVE_PLAYER, this);
 		PacketPlayOutEntityDestroy pe = new PacketPlayOutEntityDestroy(this.getId());
 
 		PlayerConnection co = ((CraftPlayer) p).getHandle().playerConnection;
-		co.sendPacket(pi);
 		co.sendPacket(pe);
 	}
 

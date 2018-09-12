@@ -165,7 +165,7 @@ public class NPCManager
 										RPGCore.msg(p, "NPC Selected: " + npc.getName());
 									} else
 									{
-										if (npc.getConversationData() != null)
+										if (npc.getConversationData() != null && npc.getConversationData().masters.size() > 0)
 										{
 											NPCConversation c = new NPCConversation(rp, npc.getConversationData());
 											if (!NPCConversation.useChat)
@@ -249,7 +249,7 @@ public class NPCManager
 					value = signature = "";
 				}
 			} catch (Exception e) {
-				RPGCore.msgConsole("&4Error reading a line in skin data");
+				RPGCore.msgConsole("&4Error reading a line in skin data.");
 			}
 		}
 	}

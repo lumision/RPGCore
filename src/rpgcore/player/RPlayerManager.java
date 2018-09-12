@@ -86,11 +86,7 @@ public class RPlayerManager
 	public void playersTick20()
 	{
 		for (RPlayer rp: players)
-			if (rp.getPlayer() != null)
-			{
-				rp.updatePlayerREquips();
-				rp.updateScoreboard();
-			}
+			rp.tick20();
 	}
 
 	public int getRPlayerAmount()
