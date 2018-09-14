@@ -16,13 +16,17 @@ import rpgcore.main.RPGEvents;
 
 public class EnhancementInventory 
 {
-	Inventory inventory;
-
 	public static final ItemStack slotBlack = CakeLibrary.renameItem(new ItemStack(160, 1, (short) 15), "&f");
 	public static final ItemStack slotGray = CakeLibrary.renameItem(new ItemStack(160, 1, (short) 7), "&f");
 	public static final ItemStack slotItem = CakeLibrary.editNameAndLore(new ItemStack(160, 1, (short) 8), 
 			"&7&oPlace a copy of the item", 
 			"&7&oyou want to enhance here.");
+	public static final ItemStack slotInstruct = CakeLibrary.editNameAndLore(new ItemStack(Material.PAPER), 
+			"&7&nAttempt Enhancement", 
+			"&f",
+			"&fPlace two copies of",
+			"&fthe same item on the", 
+			"&fleft and right slots.");
 	public static final ItemStack slotEnhance = CakeLibrary.editNameAndLore(new ItemStack(Material.PAPER), 
 			"&e&nAttempt Enhancement", 
 			"&f",
@@ -41,22 +45,16 @@ public class EnhancementInventory
 	public static final int maxState = 20;
 
 	static final Random rand = new Random();
+	
+	public static final int[] tierEnhanceRate = { 100, 70, 50, 40, 30 };
 
-	public EnhancementInventory()
+	public static Inventory getNewInventory()
 	{
-
+		Inventory inv = Bukkit.createInventory(null, 27, inventoryName);
+		return setEnhancementLayout(inv);
 	}
 
-	public Inventory getInventory()
-	{
-		if (inventory != null)
-			return inventory;
-		inventory = Bukkit.createInventory(null, 27, inventoryName);
-		setEnhancementLayout();
-		return inventory;
-	}
-
-	void setEnhancementLayout()
+	static Inventory setEnhancementLayout(Inventory inv)
 	{
 		for (int i = 0; i < 27; i++)
 		{
@@ -80,26 +78,27 @@ public class EnhancementInventory
 			else
 				getInventory().setItem(i, slotBlack);
 			 */
-			
+
 			if (i == 13)
-				getInventory().setItem(i, slotEnhance.clone());
+				inv.setItem(i, slotInstruct.clone());
 			else if (i == 1)
-				getInventory().setItem(i, slotGray.clone());
+				inv.setItem(i, slotGray.clone());
 			else if (i == 7)
-				getInventory().setItem(i, slotGray.clone());
+				inv.setItem(i, slotGray.clone());
 			else if (i >= 11 && i <= 15)
-				getInventory().setItem(i, slotGray.clone());
+				inv.setItem(i, slotGray.clone());
 			else if (i == 19)
-				getInventory().setItem(i, slotGray.clone());
+				inv.setItem(i, slotGray.clone());
 			else if (i == 25)
-				getInventory().setItem(i, slotGray.clone());
+				inv.setItem(i, slotGray.clone());
 			else if (i == 9 || i == 17)
-				getInventory().setItem(i, slotGray.clone());
+				inv.setItem(i, slotGray.clone());
 			else if (i == 10 || i == 16)
-				getInventory().setItem(i, slotItem.clone());
+				inv.setItem(i, slotItem.clone());
 			else
-				getInventory().setItem(i, slotBlack);
+				inv.setItem(i, slotBlack);
 		}
+		return inv;
 	}
 
 	public static ItemStack getSlotEnhance(int state)
@@ -128,6 +127,43 @@ public class EnhancementInventory
 				bar);
 	}
 
+	public static void updateMiddleItem(Inventory inv)
+	{
+		ItemStack middle = inv.getItem(13);
+		ItemStack left = inv.getItem(10);
+		ItemStack right = inv.getItem(16);
+		if (CakeLibrary.isItemStackNull(middle))
+		{
+			inv.setItem(13, (isItemPartOfLayout(left) || isItemPartOfLayout(right)) ? slotInstruct.clone() : slotEnhance.clone());
+			return;
+		}
+		if (isItemPartOfLayout(middle))
+		{
+			inv.setItem(13, (isItemPartOfLayout(left) && isItemPartOfLayout(right)) ? slotInstruct.clone() : slotEnhance.clone());
+			return;
+		}
+	}
+
+	public static boolean isItemPartOfLayout(ItemStack is)
+	{
+		if (CakeLibrary.isItemStackNull(is))
+			return false;
+		String itemName = CakeLibrary.getItemName(is);
+		if (itemName.equals(CakeLibrary.getItemName(slotInstruct)))
+			return true;
+		if (itemName.equals(CakeLibrary.getItemName(slotEnhance)))
+			return true;
+		if (itemName.equals(CakeLibrary.getItemName(slotFail)))
+			return true;
+		if (itemName.equals(CakeLibrary.getItemName(slotItem)))
+			return true;
+		if (itemName.equals(CakeLibrary.getItemName(slotBlack)))
+			return true;
+		if (itemName.equals(CakeLibrary.getItemName(slotGray)))
+			return true;
+		return false;
+	}
+
 	public static void updateInventory(Inventory inv, int state)
 	{
 		HumanEntity he = null;
@@ -137,9 +173,9 @@ public class EnhancementInventory
 			new RPGEvents.PlaySoundEffect(he, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.2F, (Float.valueOf(state) / Float.valueOf(maxState) / 2.0F) + 0.5F).run();
 		if (state == maxState)
 		{
-			if (rand.nextInt(6) <= 3) //success
+			RItem ri = new RItem(inv.getItem(10));
+			if (rand.nextInt(100) + 1 <= tierEnhanceRate[ri.getTier()]) //success
 			{
-				RItem ri = new RItem(inv.getItem(10));
 				ri.setTier(ri.getTier() + 1);
 				inv.setItem(13, ri.createItem());
 				inv.setItem(10, slotItem.clone());

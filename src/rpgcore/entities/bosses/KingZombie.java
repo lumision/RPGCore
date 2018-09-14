@@ -1,6 +1,6 @@
 package rpgcore.entities.bosses;
 
-import java.util.Random;
+import java.util.ArrayList;
 
 import org.bukkit.Material;
 import org.bukkit.entity.Monster;
@@ -16,12 +16,11 @@ public class KingZombie extends RPGMonster
 {
 	public static double maxHealth = 8000.0D;
 	public static String name = CakeLibrary.recodeColorCodes("&2&lKing Zombie&7 Lv. ??");
-	public Random rand = new Random();
-
 	public KingZombie(Monster m)
 	{
 		super(m);
 		this.reachDistance = 32.0D;
+		entity.setRemoveWhenFarAway(false);
 		entity.setMaxHealth(maxHealth);
 		entity.setHealth(maxHealth);
 		entity.setCustomName(name);
@@ -47,11 +46,12 @@ public class KingZombie extends RPGMonster
 			return;
 		if (castDelay > 0 || target == null)
 			return;
-		int r = rand.nextInt(10) + 1;
+		int r = random.nextInt(10) + 1;
 	}
 	
-	public ItemStack[] getDrops()
+	public ArrayList<ItemStack> getDrops()
 	{
-		return null;
+		ArrayList<ItemStack> drops = new ArrayList<ItemStack>();
+		return drops;
 	}
 }

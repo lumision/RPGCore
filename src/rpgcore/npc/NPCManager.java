@@ -67,6 +67,8 @@ public class NPCManager
 		npcs.clear();
 		for (File file: npcFolder.listFiles())
 		{
+			if (!file.getName().endsWith(".yml"))
+				continue;
 			Location location = new Location(null, 0, 0, 0);
 			String name = null;
 			String skin = null;

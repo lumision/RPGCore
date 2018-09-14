@@ -48,15 +48,17 @@ public class Buff
 		if (buffStats.critDamageAdd != 0)
 			lore.add(CakeLibrary.recodeColorCodes("&7 * Crit Damage: +" + buffStats.critDamageAdd + "%"));
 		if (buffStats.damageReductionAdd != 0)
-			lore.add(CakeLibrary.recodeColorCodes("&7 * Damage Received: -" + buffStats.damageReductionAdd + "%"));
+			lore.add(CakeLibrary.recodeColorCodes("&7 * Damage Reduction: +" + buffStats.damageReductionAdd + "%"));
 		if (buffStats.cooldownReductionAdd != 0)
-			lore.add(CakeLibrary.recodeColorCodes("&7 * Cooldown Length: -" + buffStats.cooldownReductionAdd + "%"));
+			lore.add(CakeLibrary.recodeColorCodes("&7 * Cooldown Reduction: +" + buffStats.cooldownReductionAdd + "%"));
 		if (buffStats.xpMultiplier != 0)
 			lore.add(CakeLibrary.recodeColorCodes("&7 * Combat XP: +" + CakeLibrary.convertMultiplierToAddedPercentage(buffStats.xpMultiplier) + "%"));
 		
-		
-		lore.add(CakeLibrary.recodeColorCodes("&f"));
-		lore.add(CakeLibrary.recodeColorCodes("&7Buff Duration: " + CakeLibrary.convertTimeToString(duration / 20)));
+		if (duration > 0)
+		{
+			lore.add(CakeLibrary.recodeColorCodes("&f"));
+			lore.add(CakeLibrary.recodeColorCodes("&7Buff Duration: " + CakeLibrary.convertTimeToString(duration / 20)));
+		}
 		
 		im.setLore(lore);
 		icon.setItemMeta(im);

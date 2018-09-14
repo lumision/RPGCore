@@ -7,12 +7,12 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
-public class ReinforcedSkeleton extends RPGMonster
+public class ReinforcedSpider extends RPGMonster
 {
-	public static double maxHealth = 50.0D;
-	public static String name = "Reinforced Skeleton §7Lv. 6";
+	public static double maxHealth = 70.0D;
+	public static String name = "Reinforced Spider §7Lv. 6";
 	
-	public ReinforcedSkeleton(Monster entity)
+	public ReinforcedSpider(Monster entity)
 	{
 		super(entity);
 		entity.setMaxHealth(maxHealth);

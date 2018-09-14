@@ -1,7 +1,6 @@
 package rpgcore.entities.bosses;
 
 import java.util.ArrayList;
-import java.util.Random;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Effect;
@@ -29,15 +28,15 @@ import rpgcore.main.RPGEvents;
 
 public class QueenSpider extends RPGMonster
 {
-	public static double maxHealth = 500.0D;
+	public static double maxHealth = 1000.0D;
 	public static String name = CakeLibrary.recodeColorCodes("&d&lQueen Spider&7 Lv. 12");
-	public Random rand = new Random();
 	public BossBar bar;
 
 	public QueenSpider(Monster m)
 	{
 		super(m);
 		this.reachDistance = 32.0D;
+		entity.setRemoveWhenFarAway(false);
 		entity.setMaxHealth(maxHealth);
 		entity.setHealth(maxHealth);
 		entity.setCustomName(name);
@@ -53,7 +52,7 @@ public class QueenSpider extends RPGMonster
 	public void tick()
 	{
 		super.tick();
-		
+
 		if (isDead())
 		{
 			bar.removeAll();
@@ -68,19 +67,19 @@ public class QueenSpider extends RPGMonster
 			else
 				bar.removePlayer(p);
 
-		int r = rand.nextInt(10) + 1;
-		if (r <= 8)
+		int r = random.nextInt(10) + 1;
+		if (r <= 7)
 		{
 			castArcaneBolt();
-			castDelay = 40;
-		} else if (r <= 9)
+			castDelay = 30;
+		} else if (r <= 8)
 		{
 			castSlow();
-			castDelay = 40;
+			castDelay = 30;
 		} else
 		{
 			castMinionSpawn();
-			castDelay = 40;
+			castDelay = 30;
 		}
 	}
 
@@ -89,16 +88,16 @@ public class QueenSpider extends RPGMonster
 		for (Player p: CakeLibrary.getNearbyPlayers(entity.getLocation(), 32))
 		{
 			new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 30).run();
-			p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 10 * 20, 3));
+			p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 10 * 20, 2));
 			RPGCore.msgNoTag(p, "&cYou have been slowed by " + name + "&c.");
 		}
 	}
 
 	public void castMinionSpawn()
 	{
-		for (int i = 0; i < 4 + rand.nextInt(4); i++)
+		for (int i = 0; i < 4 + random.nextInt(4); i++)
 		{
-			Entity e = entity.getWorld().spawnEntity(entity.getLocation().add(rand.nextInt(5) - rand.nextInt(5), 2, rand.nextInt(5) - rand.nextInt(5)), EntityType.CAVE_SPIDER);
+			Entity e = entity.getWorld().spawnEntity(entity.getLocation().add(random.nextInt(5) - random.nextInt(5), 2, random.nextInt(5) - random.nextInt(5)), EntityType.CAVE_SPIDER);
 			new RPGEvents.ParticleEffect(EnumParticle.FLAME, e, 1.0F, 10);
 		}
 	}
@@ -114,17 +113,21 @@ public class QueenSpider extends RPGMonster
 			multiplier++;
 			Location point = entity.getEyeLocation().add(vector.clone().multiply(multiplier));
 			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
+			{
+				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()), multiplier);
 				break;
+			}
 			RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0, 1), multiplier / 2);
 			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.1F, 1.25F), multiplier / 2);
 			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, 3, entity, 20), multiplier / 2);
 		}
 	}
-
-	public ItemStack[] getDrops()
+	
+	public ArrayList<ItemStack> getDrops()
 	{
-		return new ItemStack[] { 
-				RPGCore.getItemFromDatabase("QueenSpiderClaw").createItem() 
-		};
+		ArrayList<ItemStack> drops = new ArrayList<ItemStack>();
+		if (random.nextInt(5) == 0)
+			drops.add(RPGCore.getItemFromDatabase("QueenSpiderClaw").createItem());
+		return drops;
 	}
 }

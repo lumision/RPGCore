@@ -16,7 +16,6 @@ import org.bukkit.util.Vector;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
 import rpgcore.main.RPGEvents;
-import rpgcore.main.RPGListener;
 
 public class WarriorZombie extends RPGMonster
 {
@@ -70,12 +69,11 @@ public class WarriorZombie extends RPGMonster
 		}
 	}
 	
-	public ItemStack[] getDrops()
+	public ArrayList<ItemStack> getDrops()
 	{
-		if (RPGListener.dropsRand.nextInt(10) == 0)
-			return new ItemStack[] { 
-					RPGCore.getItemFromDatabase("ZombieWarriorSword").createItem() 
-					};
-		return null;
+		ArrayList<ItemStack> drops = new ArrayList<ItemStack>();
+		if (random.nextInt(10) == 0)
+			drops.add(RPGCore.getItemFromDatabase("ZombieWarriorSword").createItem());
+		return drops;
 	}
 }

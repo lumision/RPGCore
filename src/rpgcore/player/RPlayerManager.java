@@ -12,20 +12,24 @@ import org.bukkit.entity.Player;
 
 import rpgcore.classes.RPGClass;
 import rpgcore.classes.RPGClass.ClassType;
+import rpgcore.item.RItem;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
 import rpgcore.sideclasses.RPGSideClass;
 import rpgcore.sideclasses.RPGSideClass.SideClassType;
+import rpgcore.skills.RPGSkill;
 
 public class RPlayerManager 
 {
 	public RPGCore instance;
 	public ArrayList<RPlayer> players = new ArrayList<RPlayer>();
 	public File playersFolder = new File("plugins/RPGCore/players");
+	public File accessoriesFolder = new File("plugins/RPGCore/players/accessories");
 	public RPlayerManager(RPGCore instance)
 	{
 		this.instance = instance;
 		playersFolder.mkdirs();
+		accessoriesFolder.mkdirs();
 		readData();
 		for (Player p: Bukkit.getOnlinePlayers())
 		{
@@ -99,9 +103,13 @@ public class RPlayerManager
 		players.clear();
 		for (File file: playersFolder.listFiles())
 		{
+			if (!file.getName().endsWith(".yml"))
+				continue;
+			RPlayer rp = null;
+			String uuidString = file.getName().substring(0, file.getName().length() - 4);
 			try
 			{
-				UUID uuid = UUID.fromString(file.getName().substring(0, file.getName().length() - 4));
+				UUID uuid = UUID.fromString(uuidString);
 				ClassType currentClass = ClassType.MAGE;
 				ArrayList<RPGClass> classes = new ArrayList<RPGClass>();
 				ArrayList<RPGSideClass> sideClasses = new ArrayList<RPGSideClass>();
@@ -187,7 +195,7 @@ public class RPlayerManager
 					if (header.equals("classes"))
 					{
 						String[] split = s.split(", ");
-						if (split.length < 3)
+						if (split.length < 2)
 							continue;
 						ClassType classType = null;
 						int xp = 0;
@@ -218,7 +226,8 @@ public class RPlayerManager
 						continue;
 					} else if (header.equals("skills"))
 					{
-						skills.add(s);
+						if (RPGSkill.getSkill(s) != null)
+							skills.add(s);
 					} else if (header.equals("npcflags"))
 					{
 						String[] split = s.split(", ");
@@ -227,7 +236,7 @@ public class RPlayerManager
 						npcFlags.put(split[0], split[1]);
 					}
 				}
-				
+
 				for (ClassType classType: ClassType.values())
 				{
 					boolean contains = false;
@@ -237,7 +246,7 @@ public class RPlayerManager
 					if (!contains)
 						classes.add(new RPGClass(classType));
 				}
-				
+
 				for (SideClassType sideClassType: SideClassType.values())
 				{
 					boolean contains = false;
@@ -247,13 +256,29 @@ public class RPlayerManager
 					if (!contains)
 						sideClasses.add(new RPGSideClass(sideClassType, 0));
 				}
-				
-				RPlayer rp = addRPlayer(uuid, classes, sideClasses, currentClass, skills, gold, tokens, npcFlags, tutorialCompleted);
+
+				rp = addRPlayer(uuid, classes, sideClasses, currentClass, skills, gold, tokens, npcFlags, tutorialCompleted);
 				rp.lastSkillbookTier = lastSkillbookTier;
 				rp.arenaInstanceID = arenaInstanceID;
 				rp.leftForArenaLocation = leftForArenaLocation;
-			} catch (Exception e) {
+			} catch (Exception e)
+			{
 				RPGCore.msgConsole("&4Error reading RPlayer file: " + file.getName());
+				e.printStackTrace();
+			}
+			try
+			{
+				if (rp != null)
+					for (int i = 0; i < 3; i++)
+					{
+						File riFile = new File(accessoriesFolder.getPath() + "/" + i + "_" + uuidString + ".yml");
+						if (!riFile.exists())
+							continue;
+						rp.accessoryInventory.slots[i] = RItem.readRItemFile(riFile);
+					}
+			} catch (Exception e)
+			{
+				RPGCore.msgConsole("&4Error reading RPlayer accessories: " + file.getName());
 				e.printStackTrace();
 			}
 		}
@@ -270,6 +295,7 @@ public class RPlayerManager
 			lines.add("gold: " + rp.getGold());
 			lines.add("tutorialCompleted: " + rp.tutorialCompleted);
 			lines.add("lastSkillbookTier: " + rp.lastSkillbookTier);
+			lines.add("arenaInstanceID: " + rp.arenaInstanceID);
 			lines.add("classes:");
 			for (RPGClass rc: rp.classes)
 				lines.add(" " + rc.classType.toString() + ", " + rc.xp); 
@@ -291,9 +317,34 @@ public class RPlayerManager
 						+ ", " + rp.leftForArenaLocation.getBlockX() 
 						+ ", " + rp.leftForArenaLocation.getBlockY() 
 						+ ", " + rp.leftForArenaLocation.getBlockZ());
+
 			CakeLibrary.writeFile(lines, file);
+
 		} catch (Exception e) {
-			RPGCore.msgConsole("&4Error reading RPlayer file: " + file.getName());
+			RPGCore.msgConsole("&4Error writing RPlayer file: " + file.getName());
+			e.printStackTrace();
+		}
+		try
+		{
+			for (int i = 0; i < 3; i++)
+			{
+				File riFile = new File(accessoriesFolder.getPath() + "/" + i + "_" + rp.getUniqueID() + ".yml");
+				if (riFile.exists())
+					riFile.delete();
+			}
+			if (rp.accessoryInventory != null)
+				if (rp.accessoryInventory.slots != null)
+					for (int i = 0; i < rp.accessoryInventory.slots.length; i++)
+					{
+						RItem ri = rp.accessoryInventory.slots[i];
+						if (ri == null)
+							continue;
+						File riFile = new File(accessoriesFolder.getPath() + "/" + i + "_" + rp.getUniqueID() + ".yml");
+						ri.saveItemToFile(riFile);
+					}
+		} catch (Exception e)
+		{
+			RPGCore.msgConsole("&4Error writing RPlayer accessories: " + file.getName());
 			e.printStackTrace();
 		}
 	}

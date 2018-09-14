@@ -1,10 +1,10 @@
 package rpgcore.entities.bosses;
 
 import java.util.ArrayList;
-import java.util.Random;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
+import org.bukkit.Effect;
 import org.bukkit.FireworkEffect;
 import org.bukkit.FireworkEffect.Type;
 import org.bukkit.Location;
@@ -33,13 +33,13 @@ public class UndeadEmperor extends RPGMonster
 {
 	public static double maxHealth = 40000.0D;
 	public static String name = CakeLibrary.recodeColorCodes("&e&lUndead Emperor&7 Lv. 31");
-	public Random rand = new Random();
 	public BossBar bar;
 
 	public UndeadEmperor(Monster m)
 	{
 		super(m);
 		this.reachDistance = 32.0D;
+		entity.setRemoveWhenFarAway(false);
 		entity.setMaxHealth(maxHealth);
 		entity.setHealth(maxHealth);
 		entity.setCustomName(name);
@@ -80,7 +80,7 @@ public class UndeadEmperor extends RPGMonster
 			else
 				bar.removePlayer(p);
 		
-		int r = rand.nextInt(10) + 1;
+		int r = random.nextInt(10) + 1;
 		if (r <= 7)
 		{
 			castArcaneBolt();
@@ -105,7 +105,7 @@ public class UndeadEmperor extends RPGMonster
 		{
 			for (int i1 = 0; i1 < 3; i1++)
 			{
-				Location boom = p.getLocation().add(rand.nextInt(7) - 3, 1, rand.nextInt(7) - 3);
+				Location boom = p.getLocation().add(random.nextInt(7) - 3, 1, random.nextInt(7) - 3);
 				int i = 0;
 				for (; i < 7; i++)
 				{
@@ -139,15 +139,19 @@ public class UndeadEmperor extends RPGMonster
 			multiplier++;
 			Location point = entity.getEyeLocation().add(vector.clone().multiply(multiplier));
 			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
+			{
+				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()), multiplier);
 				break;
+			}
 			RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0, 1), multiplier / 2);
 			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.1F, 1.25F), multiplier / 2);
 			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, 3, entity, 20), multiplier / 2);
 		}
 	}
-
-	public ItemStack[] getDrops()
+	
+	public ArrayList<ItemStack> getDrops()
 	{
-		return null;
+		ArrayList<ItemStack> drops = new ArrayList<ItemStack>();
+		return drops;
 	}
 }

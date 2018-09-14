@@ -14,6 +14,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
@@ -36,6 +37,7 @@ import rpgcore.item.BonusStat.BonusStatCrystal;
 import rpgcore.item.EnhancementInventory;
 import rpgcore.item.RItem;
 import rpgcore.npc.CustomNPC;
+import rpgcore.npc.NPCManager;
 import rpgcore.player.RPlayer;
 import rpgcore.skills.effect.ArmageddonE;
 import rpgcore.songs.RSongManager;
@@ -62,13 +64,13 @@ public class RPGEvents implements Runnable
 		RPGCore.serverAliveTicks++;
 		RPGCore.playerManager.playersTick();
 		ArrayList<CustomNPC> remove = new ArrayList<CustomNPC>();
-		for (CustomNPC n: RPGCore.npcManager.npcs)
+		for (CustomNPC n: NPCManager.npcs)
 		{
 			n.tick();
 			if (n.removed)
 				remove.add(n);
 		}
-		RPGCore.npcManager.npcs.removeAll(remove);
+		NPCManager.npcs.removeAll(remove);
 		for (RPGMonster ce: RPGMonster.entities)
 			ce.tick();
 		RPGMonster.entities.removeAll(RPGMonster.remove);
@@ -203,6 +205,11 @@ public class RPGEvents implements Runnable
 		{
 			RPGCore.playerManager.playersTick20();
 			Area.tick();
+			for (World world: Bukkit.getWorlds())
+				for (Entity e: world.getEntities())
+					if (e instanceof Monster)
+						if (CakeLibrary.getNearbyPlayers(e.getLocation(), 64).size() <= 0)
+							e.remove();
 		}
 	}
 
@@ -233,11 +240,29 @@ public class RPGEvents implements Runnable
 			this.p = p;
 			this.state = state;
 		}
-		
+
 		@Override
 		public void run()
 		{
 			EnhancementInventory.updateInventory(inv, state);
+			p.updateInventory();
+		}
+	}
+
+	public static class UpdateEnhancementInventoryMiddleSlot implements Runnable
+	{
+		Inventory inv;
+		Player p;
+		public UpdateEnhancementInventoryMiddleSlot(Inventory inv, Player p)
+		{
+			this.inv = inv;
+			this.p = p;
+		}
+
+		@Override
+		public void run()
+		{
+			EnhancementInventory.updateMiddleItem(inv);
 			p.updateInventory();
 		}
 	}
@@ -253,7 +278,7 @@ public class RPGEvents implements Runnable
 			this.slot = slot;
 			this.item = item;;
 		}
-		
+
 		@Override
 		public void run()
 		{

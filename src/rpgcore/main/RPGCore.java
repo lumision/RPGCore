@@ -20,6 +20,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -42,6 +43,7 @@ import rpgcore.areas.ArenaInstance;
 import rpgcore.classes.ClassInventory;
 import rpgcore.classes.RPGClass;
 import rpgcore.entities.mobs.RPGMonster;
+import rpgcore.entities.mobs.RPGMonsterSpawn;
 import rpgcore.item.BonusStat.BonusStatCrystal;
 import rpgcore.item.EnhancementInventory;
 import rpgcore.item.RItem;
@@ -79,6 +81,8 @@ public class RPGCore extends JavaPlugin
 	public static Timer timer = new Timer();
 	public static NPCManager npcManager;
 	public static long serverAliveTicks;
+	public static int arenaSpawnTestIndex = 0;
+	public static boolean inventoryButtons = true;
 
 	public File configFile = new File("plugins/RPGCore/config.yml");
 	public static String areaInstanceWorld;
@@ -88,13 +92,13 @@ public class RPGCore extends JavaPlugin
 
 	static final String[] helpGold = new String[] { 
 			"&6===[&e /gold Help &6]===", 
-	"&6/gold withdraw/w <amt>: &eWithdraws Gold into item form"
-			};
+			"&6/gold withdraw/w <amt>: &eWithdraws Gold into item form"
+	};
 
 	static final String[] helpGoldAdmin = new String[] { 
 			"&6/gold add/a <amt> [player]: &eAdds Gold to a player",  
-	"&6/gold remove/r <amt> [player]: &eRemoves Gold from a player"
-			};
+			"&6/gold remove/r <amt> [player]: &eRemoves Gold from a player"
+	};
 
 	static final String[] helpParty = new String[] { 
 			"&5===[&d /party Help &5]===",  
@@ -106,8 +110,8 @@ public class RPGCore extends JavaPlugin
 			"&5/party kick <player>: &dKicks a player from your party (Host)",
 			"&5/party sethost <player>: &dPasses host to a member (Host)",
 			"&5/party disband: &dDisbands your party (Host)",
-	"&dBegin a message with '\\' to chat in the party."
-			};
+			"&dBegin a message with '\\' to chat in the party."
+	};
 
 	static final String[] helpItem = new String[] { 
 			"&6===[&e /item Help &6]===",
@@ -118,10 +122,12 @@ public class RPGCore extends JavaPlugin
 			"&6/item attackspeed <multiplier>",
 			"&6/item critchance <percentage>",
 			"&6/item critdamage <percentage>",
-			"&6/item cooldowns <percentage>",
-			"&6/item dmgreduction <percentage>",
-	"&6/item unbreakable"
-			};
+			"&6/item cooldownreduction <percentage>",
+			"&6/item damagereduction <percentage>",
+			"&6/item unbreakable",
+			"&6/item accessory",
+			"&eTip: You can use TAB to auto-complete"
+	};
 
 	static final String[] helpArea = new String[] { 
 			"&4===[&c /area Help &4]===",  
@@ -129,8 +135,8 @@ public class RPGCore extends JavaPlugin
 			"&4/area create <name>: &cCreates an area",
 			"&4/area list: &cLists all areas",
 			"&4/area editable <areaName>: &cToggles the editability of an area",
-	"&4/area bgm <areaName> <bgmName>: &cSets the BGM of an area"
-			};
+			"&4/area bgm <areaName> <bgmName>: &cSets the BGM of an area"
+	};
 
 	static final String[] helpArena = new String[] { 
 			"&6===[&e /arena Help &6]===",  
@@ -141,8 +147,9 @@ public class RPGCore extends JavaPlugin
 			"&6/arena tpspawntest <arenaName>: &eTeleports you to the test location for adding mob spawns",
 			"&6/arena addmobspawn <arenaName> <mobName>: &eAdds a mob spawn based on your current location",
 			"&6/arena enter <arenaName>: &eEnters an instance of an arena if it's been created",
-	"&6/arena leave: &eLeaves your current arena"
-			};
+			"&6/arena leave: &eLeaves your current arena",
+			"&6Tip: You can use TAB to auto-complete"
+	};
 
 	static final String[] helpNPC = new String[] { 
 			"&6===[&e /npc Help &6]===",  
@@ -152,9 +159,10 @@ public class RPGCore extends JavaPlugin
 			"&6/npc del: &eDeletes an NPC",
 			"&6/npc lockrotation: &eToggles head rotation lock on an NPC",
 			"&6/npc chatrange <blocks>: &eSets the chat range for an NPC",
-			"&6/npc databasename <databaseName>: &eSets the databaseName for an NPC"
-			};
-	
+			"&6/npc databasename <databaseName>: &eSets the databaseName for an NPC",
+			"&6Tip: You can use TAB to auto-complete"
+	};
+
 	public static NamespacedKey key;
 
 	public static void main(String[] args) {}
@@ -178,6 +186,7 @@ public class RPGCore extends JavaPlugin
 		listener = new RPGListener(this);
 		getServer().getPluginManager().registerEvents(listener, this);
 		RPGEvents.stopped = false;
+		RPGMonsterSpawn.onEnable();
 		ShopManager.readShopDatabase();
 		ConversationData.readConversationData();
 		RPGRecipe.readRecipeData();
@@ -194,6 +203,33 @@ public class RPGCore extends JavaPlugin
 		RPGEvents.scheduleRunnable(new RPGEvents.ConsoleCommand("gamerule doFireTick false"), 1);
 		RPGEvents.scheduleRunnable(new RPGEvents.ConsoleCommand("gamerule keepInventory true"), 1);
 		RPGEvents.scheduleRunnable(new RPGEvents.Message(Bukkit.getConsoleSender(), "&cCakeCraft has finished launching."), 5);
+
+
+		if (Bukkit.getMonsterSpawnLimit() < 512)
+			RPGEvents.scheduleRunnable(new RPGEvents.Message(Bukkit.getConsoleSender(), 
+					"&c[NOTE] &4spawn-limit&c: &4monsters&c in &4bukkit.yml&c is set to &4" + Bukkit.getMonsterSpawnLimit() + "&c; recommended value is &41024&c or higher."), 10);
+		if (Bukkit.getTicksPerMonsterSpawns() < 3 || Bukkit.getTicksPerMonsterSpawns() > 10)
+			RPGEvents.scheduleRunnable(new RPGEvents.Message(Bukkit.getConsoleSender(), 
+					"&c[NOTE] &4ticks-per&c: &4monster-spawns&c in &4bukkit.yml&c is set to &4" + Bukkit.getTicksPerMonsterSpawns() + "&c; recommended value is &45&c."), 11);
+		try
+		{
+			File file = new File("spigot.yml");
+			for (String line: CakeLibrary.readFile(file))
+			{
+				line = line.replace(" ", "");
+				if (line.startsWith("max:"))
+				{
+					String[] split = line.split(":");
+					if (Float.valueOf(split[1]) < 999999999)
+					{
+						RPGEvents.scheduleRunnable(new RPGEvents.Message(Bukkit.getConsoleSender(), 
+								"&c[NOTE] &4maxHealth&c, &4movementSpeed&c, or &4attackDamage&c variable in &4spigot.yml&c is not optimally set; recommended value is &4999999999&c (nine 9s) for all 3."), 12);
+						break;
+					}
+				}
+			}
+		} catch (Exception e) {}
+
 	}
 
 	@Override
@@ -223,12 +259,18 @@ public class RPGCore extends JavaPlugin
 			return;
 		}
 		ArrayList<String> lines = CakeLibrary.readFile(headsFile);
-		for (String line: lines)
+		try
 		{
-			String[] split = line.split(": ");
-			if (split.length < 2)
-				continue;
-			heads.put(split[0].toLowerCase(), split[1]);
+			for (String line: lines)
+			{
+				String[] split = line.split(": ");
+				if (split.length < 2)
+					continue;
+				heads.put(split[0].toLowerCase(), split[1]);
+			}
+		} catch (Exception e) 
+		{
+			RPGCore.msgConsole("Error reading heads file.");
 		}
 	}
 
@@ -247,11 +289,21 @@ public class RPGCore extends JavaPlugin
 			return;
 		}
 		ArrayList<String> lines = CakeLibrary.readFile(configFile);
-		for (String line: lines)
+		try
 		{
-			String[] split = line.split(": ");
-			if (split[0].equalsIgnoreCase("areaInstanceWorld"))
-				areaInstanceWorld = split[1];
+			for (String line: lines)
+			{
+				String[] split = line.split(": ");
+				if (split[0].equalsIgnoreCase("areaInstanceWorld"))
+					areaInstanceWorld = split[1];
+				if (split[0].equalsIgnoreCase("arenaSpawnTestIndex"))
+					arenaSpawnTestIndex = Integer.valueOf(split[1]);
+				if (split[0].equalsIgnoreCase("inventoryButtons"))
+					inventoryButtons = Boolean.valueOf(split[1]);
+			}
+		} catch (Exception e) 
+		{
+			RPGCore.msgConsole("Error reading config file.");
 		}
 	}
 
@@ -259,6 +311,8 @@ public class RPGCore extends JavaPlugin
 	{
 		ArrayList<String> lines = new ArrayList<String>();
 		lines.add("areaInstanceWorld: world_flat");
+		lines.add("arenaSpawnTestIndex: " + arenaSpawnTestIndex);
+		lines.add("inventoryButtons: " + inventoryButtons);
 		CakeLibrary.writeFile(lines, configFile);
 		readConfig();
 	}
@@ -276,89 +330,9 @@ public class RPGCore extends JavaPlugin
 				readItemFolder(file);
 				continue;
 			}
-			try
-			{
-				int id = 0;
-				int amount = 0;
-				short durability = 0;
-				boolean unbreakable = false;
-				int tier = 0;
-				String headTexture = null;
-
-				String name = null;
-				ArrayList<String> lore = new ArrayList<String>();
-
-				ArrayList<Enchantment> enchs = new ArrayList<Enchantment>();
-				ArrayList<Integer> levels = new ArrayList<Integer>();
-
-				ArrayList<String> lines = CakeLibrary.readFile(file);
-				String header = "";
-				for (String line: lines)
-				{
-					String[] split = line.split(": ");
-					if (line.startsWith(" "))
-					{
-						split[0] = split[0].substring(1);
-						line = line.substring(1);
-						if (header.equals("lore: "))
-							lore.add(line);
-						else if (header.equals("enchantments: "))
-						{
-							enchs.add(Enchantment.getById(Integer.valueOf(split[0])));
-							levels.add(Integer.valueOf(split[1]));
-						}
-					} else
-					{
-						header = line;
-						if (line.startsWith("id: "))
-							id = Integer.valueOf(split[1]);
-						if (line.startsWith("amount: "))
-							amount = Integer.valueOf(split[1]);
-						if (line.startsWith("durability: "))
-							durability = Short.valueOf(split[1]);
-						if (line.startsWith("unbreakable: "))
-							unbreakable = Boolean.valueOf(split[1]);
-						if (line.startsWith("tier: "))
-							tier = Integer.valueOf(split[1]);
-						if (line.startsWith("headTexture: "))
-							headTexture = split[1];
-
-						if (line.startsWith("name: "))
-							name = split[1];
-					}
-				}
-
-				ItemStack item;
-
-				if (headTexture != null && headTexture.length() > 0)
-					item = CakeLibrary.getSkullWithTexture(headTexture);
-				else
-					item = new ItemStack(id);
-
-				item.setAmount(amount);
-				item.setDurability(durability);
-
-				ItemMeta im = item.getItemMeta();
-				if (name != null)
-					im.setDisplayName(name);
-				if (lore.size() > 0)
-					im.setLore(lore);
-				if (unbreakable)
-					im.spigot().setUnbreakable(unbreakable);
-				item.setItemMeta(im);
-
-				for (int i = 0; i < enchs.size(); i++)
-					item.addUnsafeEnchantment(enchs.get(i), levels.get(i));
-
-				RItem ri = new RItem(item, file.getName().substring(0, file.getName().length() - 4));
-				ri.setTier(tier);
-				ri.headTexture = headTexture;
-				itemDatabase.add(ri);
-
-			} catch (Exception e) {
-				msgConsole("&4Unable to read item file: " + file.getName());
-				e.printStackTrace();
-			}
+			if (!file.getName().endsWith(".yml"))
+				continue;
+			itemDatabase.add(RItem.readRItemFile(file));
 		}
 	}
 
@@ -412,13 +386,30 @@ public class RPGCore extends JavaPlugin
 				return false;
 			if (command.getName().equalsIgnoreCase("enhance"))
 			{
-				p.openInventory(new EnhancementInventory().getInventory());
+				p.openInventory(EnhancementInventory.getNewInventory());
 				return true;
 			}
 			if (command.getName().equalsIgnoreCase("buffs"))
 			{
-				rp.buffInventory.updateInventory();
-				p.openInventory(rp.buffInventory.getInventory());
+				Inventory inv = rp.buffInventory.getInventory();
+				if (args.length > 0)
+				{
+					RPlayer target = playerManager.getRPlayer(args[0]);
+					if (target == null)
+					{
+						msg(p, "That player does not exist.");
+						return true;
+					}
+					if (target.getPlayer() == null)
+					{
+						msg(p, "That player is not online.");
+						return true;
+					}
+					inv = target.buffInventory.getInventory();
+					target.buffInventory.updateInventory();
+				} else
+					rp.buffInventory.updateInventory();
+				p.openInventory(inv);
 				return true;
 			}
 			if (command.getName().equalsIgnoreCase("testadv"))
@@ -665,10 +656,7 @@ public class RPGCore extends JavaPlugin
 					msg(p, "Skill does not exist");
 					return true;
 				}
-				ItemStack skillItem = skill.getSkillItem();
-				skillItem = CakeLibrary.renameItem(skillItem, "&eSkillbook &6< " + CakeLibrary.getItemName(skillItem) + "&6 >");
-				skillItem.setType(Material.ENCHANTED_BOOK);
-				p.getInventory().addItem(skillItem);
+				p.getInventory().addItem(skill.getSkillbook());
 				msg(p, "Skillbook for \"" + skill.skillName + "\" received.");
 				return true;
 			}
@@ -1334,7 +1322,7 @@ public class RPGCore extends JavaPlugin
 						msgNoTag(p, lore);
 					return true;
 				}
-				
+
 				if (args[0].equalsIgnoreCase("magicDamageAdd"))
 				{
 					if (args.length < 2)
@@ -1350,7 +1338,7 @@ public class RPGCore extends JavaPlugin
 						msgNoTag(p, lore);
 					return true;
 				}
-				
+
 				if (args[0].equalsIgnoreCase("bruteDamageAdd"))
 				{
 					if (args.length < 2)
@@ -1366,7 +1354,7 @@ public class RPGCore extends JavaPlugin
 						msgNoTag(p, lore);
 					return true;
 				}
-				
+
 				if (args[0].equalsIgnoreCase("magicDamageMultiplier"))
 				{
 					if (args.length < 2)
@@ -1382,7 +1370,7 @@ public class RPGCore extends JavaPlugin
 						msgNoTag(p, lore);
 					return true;
 				}
-				
+
 				if (args[0].equalsIgnoreCase("bruteDamageMultiplier"))
 				{
 					if (args.length < 2)
@@ -1398,7 +1386,7 @@ public class RPGCore extends JavaPlugin
 						msgNoTag(p, lore);
 					return true;
 				}
-				
+
 				if (args[0].equalsIgnoreCase("attackSpeedMultiplier"))
 				{
 					if (args.length < 2)
@@ -1414,7 +1402,7 @@ public class RPGCore extends JavaPlugin
 						msgNoTag(p, lore);
 					return true;
 				}
-				
+
 				if (args[0].equalsIgnoreCase("critChanceAdd"))
 				{
 					if (args.length < 2)
@@ -1430,7 +1418,7 @@ public class RPGCore extends JavaPlugin
 						msgNoTag(p, lore);
 					return true;
 				}
-				
+
 				if (args[0].equalsIgnoreCase("critDamageAdd"))
 				{
 					if (args.length < 2)
@@ -1446,7 +1434,7 @@ public class RPGCore extends JavaPlugin
 						msgNoTag(p, lore);
 					return true;
 				}
-				
+
 				if (args[0].equalsIgnoreCase("damageReductionAdd"))
 				{
 					if (args.length < 2)
@@ -1462,7 +1450,7 @@ public class RPGCore extends JavaPlugin
 						msgNoTag(p, lore);
 					return true;
 				}
-				
+
 				if (args[0].equalsIgnoreCase("cooldownReductionAdd"))
 				{
 					if (args.length < 2)
@@ -1478,7 +1466,7 @@ public class RPGCore extends JavaPlugin
 						msgNoTag(p, lore);
 					return true;
 				}
-				
+
 				if (args[0].equalsIgnoreCase("xpMultiplier"))
 				{
 					if (args.length < 2)
@@ -1494,7 +1482,7 @@ public class RPGCore extends JavaPlugin
 						msgNoTag(p, lore);
 					return true;
 				}
-				
+
 				if (args[0].equalsIgnoreCase("buffDuration"))
 				{
 					if (args.length < 2)
@@ -1505,7 +1493,9 @@ public class RPGCore extends JavaPlugin
 					ri.buffDuration = 0;
 					for (int i = 1; i < args.length; i++)
 					{
-						if (args[i].endsWith("m"))
+						if (args[i].endsWith("h"))
+							ri.buffDuration += Integer.parseInt(args[i].substring(0, args[i].length() - 1)) * 60 * 60 * 20;
+						else if (args[i].endsWith("m"))
 							ri.buffDuration += Integer.parseInt(args[i].substring(0, args[i].length() - 1)) * 60 * 20;
 						else if (args[i].endsWith("s"))
 							ri.buffDuration += Integer.parseInt(args[i].substring(0, args[i].length() - 1)) * 20;
@@ -1519,7 +1509,7 @@ public class RPGCore extends JavaPlugin
 						msgNoTag(p, lore);
 					return true;
 				}
-				
+
 				if (args[0].equalsIgnoreCase("consumableCooldown"))
 				{
 					if (args.length < 2)
@@ -1544,7 +1534,7 @@ public class RPGCore extends JavaPlugin
 						msgNoTag(p, lore);
 					return true;
 				}
-				
+
 				msg(p, "Unrecognized argument. Use tab maybe?");
 				return true;
 			}
@@ -1711,11 +1701,11 @@ public class RPGCore extends JavaPlugin
 					p.setItemInHand(ri.createItem());
 					msg(p, "Attack Speed attribute edited.");
 					return true;
-				} else if (args[0].equalsIgnoreCase("cooldowns"))
+				} else if (args[0].equalsIgnoreCase("cooldownreduction"))
 				{
 					if (args.length < 2)
 					{
-						msg(p, "Usage: /item cooldowns <percentage>");
+						msg(p, "Usage: /item cooldownreduction <percentage>");
 						return true;
 					}
 					int amt = -1;
@@ -1730,11 +1720,11 @@ public class RPGCore extends JavaPlugin
 					p.setItemInHand(ri.createItem());
 					msg(p, "Cooldown reduction attribute edited.");
 					return true;
-				} else if (args[0].equalsIgnoreCase("dmgreduction"))
+				} else if (args[0].equalsIgnoreCase("damagereduction"))
 				{
 					if (args.length < 2)
 					{
-						msg(p, "Usage: /item dmgreduction <percentage>");
+						msg(p, "Usage: /item damagereduction <percentage>");
 						return true;
 					}
 					int amt = -1;
@@ -1749,30 +1739,6 @@ public class RPGCore extends JavaPlugin
 					p.setItemInHand(ri.createItem());
 					msg(p, "Damage reduction attribute edited.");
 					return true;
-				} else if (args[0].equalsIgnoreCase("settier"))
-				{
-					if (args.length < 2)
-					{
-						msg(p, "Usage: /item settier <tier>");
-						return true;
-					}
-					int tier = -1;
-					try
-					{
-						tier = Integer.parseInt(args[1]);
-					} catch (Exception e) {
-						msg(p, "Enter a number.");
-						return true;
-					}
-					if (tier <= 0)
-					{
-						msg(p, "Enter a number more than 0.");
-						return true;
-					}
-					ri.bonusStat.tier = tier;
-					p.setItemInHand(ri.createItem());
-					msg(p, "Tier changed.");
-					return true;
 				} else if (args[0].equalsIgnoreCase("unbreakable"))
 				{
 					ItemMeta im = is.getItemMeta();
@@ -1781,6 +1747,12 @@ public class RPGCore extends JavaPlugin
 					is.setItemMeta(im);
 					p.setItemInHand(is);
 					msg(p, "Unbreakable attribute toggled to: " + !u);
+					return true;
+				} else if (args[0].equalsIgnoreCase("accessory"))
+				{
+					ri.accessory = !ri.accessory;
+					p.setItemInHand(ri.createItem());
+					msg(p, "Accessory attribute toggled to: " + ri.accessory);
 					return true;
 				}
 				msgNoTag(p, helpItem);
@@ -1801,13 +1773,15 @@ public class RPGCore extends JavaPlugin
 				int count = 1;
 				if (args.length > 1)
 					count = Math.min(10, Integer.parseInt(args[1]));
-				boolean mob = false;
-				for (int i = 0; i < count; i++)
-					mob = RPGMonster.spawnMob(args[0], p.getLocation()) != null;
-				if (!mob)
+				RPGMonsterSpawn mob = RPGMonsterSpawn.getRPGMonsterSpawn(args[0]);
+				if (mob == null)
+				{
 					msg(p, "No such mob available for spawning.");
-				else
-					msg(p, "Spawned.");
+					return true;
+				}
+				for (int i = 0; i < count; i++)
+					mob.spawnMonster(p.getLocation());
+				msg(p, "Spawned.");
 				return true;
 			}
 			if (command.getName().equalsIgnoreCase("arena"))
@@ -1843,6 +1817,7 @@ public class RPGCore extends JavaPlugin
 						return true;
 					}
 					new Arena(args[1]);
+					Arena.writeArenaData();
 					msg(p, "Arena \"" + args[1] + "\" created.");
 					return true;
 				}
@@ -1879,6 +1854,7 @@ public class RPGCore extends JavaPlugin
 					Location l = p.getLocation();
 					a.yaw = l.getYaw();
 					a.pitch = l.getPitch();
+					Arena.writeArenaData();
 					msg(p, "Arena spawn rotation set.");
 					return true;
 				}
@@ -1895,13 +1871,14 @@ public class RPGCore extends JavaPlugin
 						msg(p, "That arena does not exist.");
 						return true;
 					}
+					arenaSpawnTestIndex++;
 					try {
 						File file = new File("plugins/WorldEdit/schematics/" + a.schematicName + ".schematic");
 						EditSession es = WorldEdit.getInstance().getEditSessionFactory().getEditSession(ArenaInstance.getArenaInstanceWorld()
 								, WorldEdit.getInstance().getConfiguration().maxChangeLimit);
 						CuboidClipboard clip = SchematicFormat.MCEDIT.load(file);
 						try {
-							clip.paste(es, new Vector(0, 64, 0), true);
+							clip.paste(es, new Vector(arenaSpawnTestIndex * -256, 64, 0), true);
 						} catch (MaxChangedBlocksException e) {
 							e.printStackTrace();
 						}
@@ -1910,7 +1887,8 @@ public class RPGCore extends JavaPlugin
 					} catch (DataException e) {
 						e.printStackTrace();
 					}
-					p.teleport(new Location(Bukkit.getWorld(areaInstanceWorld), 0.5F, 64.5F, 0.5F));
+					p.teleport(new Location(Bukkit.getWorld(areaInstanceWorld), (arenaSpawnTestIndex * -256) + 0.5F, 64.5F, 0.5F));
+					writeConfig();
 					return true;
 				}
 				if (args[0].equalsIgnoreCase("addmobspawn"))
@@ -1926,8 +1904,63 @@ public class RPGCore extends JavaPlugin
 						msg(p, "That arena does not exist.");
 						return true;
 					}
-					a.mobSpawns.put(args[2], p.getLocation().add(0, -64, 0).toVector());
+					a.mobSpawns.put(args[2], p.getLocation().add((arenaSpawnTestIndex * 256), -64, 0).toVector());
 					msg(p, "Mob spawn for \"" + args[2] + "\" added to \"" + a.schematicName + "\".");
+					Arena.writeArenaData();
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("setentrance"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /arena setentrance <arenaName>");
+						return true;
+					}
+					Arena a = Arena.getArena(args[1]);
+					if (a == null)
+					{
+						msg(p, "That arena does not exist.");
+						return true;
+					}
+					a.entrance = p.getLocation();
+					msg(p, "Entrance for \"" + a.schematicName + "\" has been set.");
+					Arena.writeArenaData();
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("setinternalexit"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /arena setinternalexit <arenaName>");
+						return true;
+					}
+					Arena a = Arena.getArena(args[1]);
+					if (a == null)
+					{
+						msg(p, "That arena does not exist.");
+						return true;
+					}
+					a.exitInternal = p.getLocation().add((arenaSpawnTestIndex * 256), -64, 0).toVector();
+					msg(p, "Internal exit for \"" + a.schematicName + "\" has been set.");
+					Arena.writeArenaData();
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("setexternalexit"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /arena setexternalexit <arenaName>");
+						return true;
+					}
+					Arena a = Arena.getArena(args[1]);
+					if (a == null)
+					{
+						msg(p, "That arena does not exist.");
+						return true;
+					}
+					a.exitExternal = p.getLocation();
+					msg(p, "External exit for \"" + a.schematicName + "\" has been set.");
+					Arena.writeArenaData();
 					return true;
 				}
 				if (args[0].equalsIgnoreCase("clearmobspawns"))
@@ -2080,6 +2113,39 @@ public class RPGCore extends JavaPlugin
 				{
 					msg(p, "You do not have permissions to use this.");
 					return true;
+				}
+				if (args.length > 0)
+				{
+					if (args[0].equalsIgnoreCase("setlevel"))
+					{
+						if (args.length < 2)
+						{
+							msg(p, "Usage: /class setlevel <level>");
+							return true;
+						}
+						int level = -1;
+						try
+						{
+							level = Integer.parseInt(args[1]);
+						} catch (Exception e)
+						{
+							msg(p, "Enter a number.");
+							return true;
+						}
+						if (level < 0)
+						{
+							msg(p, "Enter a positive number.");
+							return true;
+						}
+						if (level > RPGClass.xpTable.size())
+						{
+							msg(p, "The maximum level is " + (RPGClass.xpTable.size() - 1) + ".");
+							return true;
+						}
+						rp.getCurrentClass().xp = RPGClass.getXPRequiredForLevel(level);
+						rp.checkLevel = true;
+						return true;
+					}
 				}
 				p.openInventory(ClassInventory.getClassInventory1(rp));
 				return true;

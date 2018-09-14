@@ -18,20 +18,24 @@ import com.sk89q.worldedit.schematic.SchematicFormat;
 import com.sk89q.worldedit.world.DataException;
 
 import rpgcore.entities.mobs.RPGMonster;
+import rpgcore.entities.mobs.RPGMonsterSpawn;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
 
 public class ArenaInstance 
 {
 	static BukkitWorld arenaInstanceWorld;
-	public static ArrayList<ArenaInstance> arenaInstanceList = new ArrayList<ArenaInstance>();
+	static ArrayList<ArenaInstance> arenaInstanceList = new ArrayList<ArenaInstance>();
 	public static File arenasFile = new File("plugins/RPGCore/ArenaInstances.yml");
 
 	public Arena arena;
 	public boolean occupied;
 	public boolean pasted;
+	public boolean mobsSpawned;
 	public int arenaInstanceID;
 	public ArrayList<Monster> mobList = new ArrayList<Monster>();
+	
+	Location spawnLocation, exitLocation;
 
 	public ArenaInstance(Arena arena, int arenaInstanceID, boolean pasted, boolean occupied)
 	{
@@ -63,15 +67,24 @@ public class ArenaInstance
 		arenaInstanceList.add(this);
 		writeArenaInstanceData();
 	}
+	
+	public static ArenaInstance getArenaInstance(int arenaInstanceID)
+	{
+		for (ArenaInstance ai: arenaInstanceList)
+			if (ai.arenaInstanceID == arenaInstanceID)
+				return ai;
+		return null;
+	}
 
 	public void spawnMobs()
 	{
+		mobsSpawned = true;
 		for (String mob: arena.mobSpawns.keySet())
 		{
 			try
 			{
 				org.bukkit.util.Vector v = arena.mobSpawns.get(mob);
-				mobList.add(RPGMonster.spawnMob(mob, getSpawnLocation().add(v)));
+				mobList.add(RPGMonsterSpawn.getRPGMonsterSpawn(mob).spawnMonster(getSpawnLocation().clone().add(v)).entity);
 			} catch (Exception e) {
 				Bukkit.broadcastMessage("Error spawning arena mob - \"" + mob + "\" (maybe it does not exist?)");
 			}
@@ -80,10 +93,19 @@ public class ArenaInstance
 
 	public Location getSpawnLocation()
 	{
-		Location l = new Location(Bukkit.getWorld(RPGCore.areaInstanceWorld), (arenaInstanceID * 256) + 0.5F, 64, 0.5F);
-		l.setYaw(arena.yaw);
-		l.setPitch(arena.pitch);
-		return l;
+		if (spawnLocation != null)
+			return spawnLocation.clone();
+		spawnLocation = new Location(Bukkit.getWorld(RPGCore.areaInstanceWorld), (arenaInstanceID * 256) + 0.5F, 64, 0.5F);
+		spawnLocation.setYaw(arena.yaw);
+		spawnLocation.setPitch(arena.pitch);
+		return spawnLocation.clone();
+	}
+	
+	public Location getExitLocation()
+	{
+		if (exitLocation != null)
+			return exitLocation.clone();
+		return (exitLocation = new Location(Bukkit.getWorld(RPGCore.areaInstanceWorld), arenaInstanceID * 256, 64, 0).add(arena.exitInternal)).clone();
 	}
 
 	public static ArenaInstance getArenaInstance(Arena arena)
@@ -93,7 +115,11 @@ public class ArenaInstance
 			if (instance.arena.equals(arena) && !instance.occupied)
 				return instance;
 		}
-		return new ArenaInstance(arena, arenaInstanceList.size(), false, false);
+		int id = 0;
+		for (ArenaInstance ai: arenaInstanceList)
+			if (ai.arenaInstanceID > id)
+				id = ai.arenaInstanceID;
+		return new ArenaInstance(arena, id + 1, false, false);
 	}
 
 	public static BukkitWorld getArenaInstanceWorld()
