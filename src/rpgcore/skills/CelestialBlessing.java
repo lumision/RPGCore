@@ -48,10 +48,10 @@ public class CelestialBlessing extends RPGSkill
 				"&fC&7e&fl&7e&fs&7t&fi&7a&fl &7B&fl&7e&fs&7s&fi&7n&fg"),
 				"&7Buff:",
 				"&7 * Combat XP: +" + CakeLibrary.convertMultiplierToAddedPercentage(buffStats.xpMultiplier) + "%",
-				"&7 * Buff Duration: " + (buffStats.buffDuration / 20) + "s",
+				"&7 * Buff Duration: " + CakeLibrary.convertTimeToString(buffStats.buffDuration / 20),
 				"&7 * Party Buff",
 				"&f",
-				"&7Cooldown: " + CakeLibrary.convertTimeToString(buffStats.buffDuration / 20),
+				"&7Cooldown: " + CakeLibrary.convertTimeToString(cooldown),
 				"&f",
 				"&8&oEmpowers the affected with",
 				"&8&olost magic; increasing their",
@@ -79,7 +79,7 @@ public class CelestialBlessing extends RPGSkill
 		if (p == null)
 			return;
 		RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 20), 0);
-		RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(p, Sound.ENTITY_PLAYER_LEVELUP, 0.2F, 0.6F), 0);
+		RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(p, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 0.5F, 1.5F), 0);
 		b.applyBuff(rp);
 		rp.updateScoreboard = true;
 	}

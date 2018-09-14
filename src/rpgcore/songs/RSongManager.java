@@ -44,6 +44,8 @@ public class RSongManager
 		songs.clear();
 		for (File file: songsFolder.listFiles())
 		{
+			if (!file.getName().endsWith(".yml"))
+				continue;
 			ArrayList<String> lines = CakeLibrary.readFile(file);
 			if (lines.size() < 2)
 				continue;

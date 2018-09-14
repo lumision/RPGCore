@@ -16,7 +16,7 @@ import rpgcore.skills.Armageddon;
 import rpgcore.skills.BladeMastery;
 import rpgcore.skills.Dash;
 import rpgcore.skills.Enlightenment;
-import rpgcore.skills.Heal;
+import rpgcore.skills.Heal1;
 import rpgcore.skills.Heartspan;
 import rpgcore.skills.HolyBolt;
 import rpgcore.skills.IceBolt;

@@ -2,6 +2,7 @@ package rpgcore.skills;
 
 import java.util.ArrayList;
 
+import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.LivingEntity;
@@ -55,7 +56,7 @@ public class HolyBolt extends RPGSkill
 	public void activate()
 	{
 		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
-		Vector vector = player.getLocation().getDirection().normalize().multiply(0.5D);
+		Vector vector = player.getLocation().getDirection().normalize().multiply(0.75D);
 		int multiplier = 0;
         player.getWorld().playSound(player.getEyeLocation(), Sound.BLOCK_ANVIL_LAND, 0.05F, 1.0F);
 		while (multiplier < 20)
@@ -63,7 +64,10 @@ public class HolyBolt extends RPGSkill
 			multiplier++;
 			Location point = player.getEyeLocation().add(vector.clone().multiply(multiplier));
 			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
+			{
+				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()), multiplier);
 				break;
+			}
 			RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0, 1), multiplier);
 			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.05F, 1.25F), multiplier);
 			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, getUnvariedDamage(), player, 20), multiplier);

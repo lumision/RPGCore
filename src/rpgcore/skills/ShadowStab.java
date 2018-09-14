@@ -86,6 +86,9 @@ public class ShadowStab extends RPGSkill
 			}
 		}
 		if (resetDash)
-			caster.addInstantCast("Dash");
+		{
+			caster.cooldowns.remove(Dash.skillName);
+			caster.castDelays.remove(Dash.skillName);
+		}
 	}
 }

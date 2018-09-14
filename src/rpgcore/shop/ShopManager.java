@@ -33,6 +33,8 @@ public class ShopManager
 		shopDatabase.clear();
 		for (File file: shopsFile.listFiles())
 		{
+			if (!file.getName().endsWith(".yml"))
+				continue;
 			String shopName = null;
 			ArrayList<ShopItem> shopItems = new ArrayList<ShopItem>();
 			try

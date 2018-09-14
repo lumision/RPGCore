@@ -2,6 +2,7 @@ package rpgcore.skills;
 
 import java.util.ArrayList;
 
+import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -72,7 +73,10 @@ public class TripleKunai extends RPGSkill
 					multiplier++;
 					Location point = player.getEyeLocation().add(vector.clone().multiply(multiplier));
 					if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
+					{
+						RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()), multiplier);
 						break;
+					}
 					RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0, 1), multiplier / 3);
 					if (i == 0)
 						RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.1F, 1.25F), multiplier/ 3);

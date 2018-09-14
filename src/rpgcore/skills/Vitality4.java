@@ -25,7 +25,7 @@ public class Vitality4 extends RPGSkill
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(351, 1, (short) 1), 
 				"&cVitality IV"),
 				"&7Passive Skill:",
-				"&7 * Max Health: +" + (maxHealthAdd / 2.0F) + " Hearts",
+				"&7 * Max Health: +" + maxHealthAdd + " Hearts",
 				"&f",
 				"&8&oIncreased fortitude to",
 				"&8&oreceiving damage.",

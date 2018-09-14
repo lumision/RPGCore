@@ -2,6 +2,7 @@ package rpgcore.skills;
 
 import java.util.ArrayList;
 
+import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -58,7 +59,7 @@ public class Kunai extends RPGSkill
 		super.applyCooldown(2);
 		
 		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
-		Vector vector = player.getLocation().getDirection().normalize().multiply(0.5D);
+		Vector vector = player.getLocation().getDirection().normalize().multiply(0.75D);
 		int multiplier = 0;
         player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.2F, 1.0F);
 		while (multiplier < 24)
@@ -66,7 +67,10 @@ public class Kunai extends RPGSkill
 			multiplier++;
 			Location point = player.getEyeLocation().add(vector.clone().multiply(multiplier));
 			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
+			{
+				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()), multiplier);
 				break;
+			}
 			RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0, 1), multiplier / 3);
 			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.1F, 1.25F), multiplier/ 3);
 			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 0.75D, getUnvariedDamage(), player, 20), multiplier / 3);

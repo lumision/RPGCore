@@ -2,70 +2,66 @@ package rpgcore.skills;
 
 import java.util.ArrayList;
 
-import org.bukkit.Color;
 import org.bukkit.Effect;
-import org.bukkit.FireworkEffect;
-import org.bukkit.FireworkEffect.Type;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
+import net.minecraft.server.v1_12_R1.EnumParticle;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGEvents;
 import rpgcore.player.RPlayer;
 
-public class ArcaneBarrage extends RPGSkill
+public class ArcaneStorm extends RPGSkill
 {
-	public final static String skillName = "Arcane Barrage";
+	public final static String skillName = "Arcane Storm";
 	public final static boolean passiveSkill = false;
-	public final static int skillTier = 5;
-	public final static int castDelay = 20;
+	public final static int skillTier = 3;
+	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.MAGE;
-	public final static float damage = 4.8F;
-	public final static int hits = 4;
-	public final static FireworkEffect fe = 
-			FireworkEffect.builder().with(Type.BURST).withColor(Color.WHITE).withColor(Color.GRAY).build();
-	public ArcaneBarrage(RPlayer caster)
+	public final static float damage = 1.2F;
+	public final static int hits = 24;
+	public final static int cooldown = 10;
+	public ArcaneStorm(RPlayer caster)
 	{
 		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
 	}
-	
-	public ArcaneBarrage()
+
+	public ArcaneStorm()
 	{
 		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
-	
+
 	@Override
 	public void insantiate(RPlayer rp)
 	{
-		new ArcaneBarrage(rp);
+		new ArcaneStorm(rp);
 	}
 
 	@Override
 	public ItemStack getSkillItem()
 	{
-		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.FEATHER, 1), 
-				"&fA&7r&fc&7a&fn&7e &fB&7a&fr&7r&fa&7g&fe"),
+		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(351, 1, (short) 6), 
+				"&3Arcane Storm"),
 				"&7Damage: " + (int) (damage * 100.0F) + "% x " + hits + " Hits",
-				"&7Interval: " + (castDelay / 20.0F) + "s",
+				"&7Radius: 3 blocks",
+				"&7Cooldown: " + cooldown + "s",
 				"&f",
-				"&8&oUnleash a barrage of arcane",
-				"&8&oprojectiles unto the target.",
+				"&8&oSummon a storm of arcane",
+				"&8&oenergy to rain onto the",
+				"&8&otarget area.",
 				"&f",
 				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
 	}
-
-	@Override
+	
 	public void activate()
 	{
-		player.getWorld().playSound(player.getEyeLocation(), Sound.BLOCK_ANVIL_LAND, 0.1F, 1.0F);
-		
+		super.applyCooldown(cooldown);
 		Location target = player.getTargetBlock(CakeLibrary.getPassableBlocks(), 16).getLocation();
 		
 		Vector direction = player.getLocation().getDirection().normalize();
@@ -86,30 +82,30 @@ public class ArcaneBarrage extends RPGSkill
 			if (b)
 				break;
 		}
-		
-		
-		
+		int delay = 0;
+        player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_CREEPER_DEATH, 1.0F, 0.7F);
 		for (int i = 0; i < hits; i++)
 		{
 			ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
+			Vector offset = new Vector(3 - rand.nextInt(7), 8 + rand.nextInt(3), 3 - rand.nextInt(7));
+			Location start = target.clone().add(offset);
+			Vector vector = new Vector(0, -1, 0).normalize().multiply(1.0F);
+			
 			int multiplier = 0;
-			Location start = player.getLocation().add(rand.nextInt(7) - 3, 4 + rand.nextInt(4), rand.nextInt(7) - 3);
-			Location b1 = target.clone().add(rand.nextInt(2) - 1 + 0.5D, 0, rand.nextInt(2) - 1 + 0.5D);
-			Vector vector = new Vector(b1.getX() - start.getX(), b1.getY() - start.getY(), b1.getZ() - start.getZ()).normalize().multiply(1.0D);
-			double distance = start.distance(b1);
-			while (multiplier < distance * 2)
+	        
+			while (multiplier < 16)
 			{
 				multiplier++;
+				delay = multiplier + i;
 				Location point = start.clone().add(vector.clone().multiply(multiplier));
 				if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
 				{
-					RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()), multiplier);
+					RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_FIRE_EXTINGUISH, 0.1F, 1.0F), delay);
+					RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()), delay);
 					break;
 				}
-				RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0.1F, 2), multiplier);
-				if (i == 0)
-					RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.1F, 1.25F), multiplier);
-				RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithFireworkEffect(hit, point, 1.25D, super.getUnvariedDamage(), player, fe), multiplier);
+				RPGEvents.scheduleRunnable(new RPGEvents.ParticleEffect(EnumParticle.CRIT_MAGIC, point, 0.1F, 3), delay);
+				RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, getUnvariedDamage(), player, 57), delay);
 			}
 		}
 	}

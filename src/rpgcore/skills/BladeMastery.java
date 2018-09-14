@@ -13,8 +13,8 @@ public class BladeMastery extends RPGSkill
 	public final static int skillTier = 1;
 	public final static int castDelay = 0;
 	public final static ClassType classType = ClassType.ASSASSIN;
-	public final static float bruteDamageMultiplier = 0.2F;
-	public final static float attackSpeedMultiplier = 0.2F;
+	public final static float bruteDamageMultiplier = 1.2F;
+	public final static float attackSpeedMultiplier = 1.2F;
 	public final static int cooldownReductionAdd = 10;
 	
 	public BladeMastery()
@@ -28,8 +28,8 @@ public class BladeMastery extends RPGSkill
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.IRON_SWORD), 
 				"&4Blade Mastery"),
 				"&7Passive Skill:",
-				"&7 * Brute Damage: +" + bruteDamageMultiplier + "%",
-				"&7 * Attack Speed: +" + (int) (attackSpeedMultiplier * 100.0F) + "%",
+				"&7 * Brute Damage: +" + CakeLibrary.convertMultiplierToAddedPercentage(bruteDamageMultiplier) + "%",
+				"&7 * Attack Speed: +" + CakeLibrary.convertMultiplierToAddedPercentage(attackSpeedMultiplier) + "%",
 				"&7 * Cooldowns: -" + cooldownReductionAdd + "%",
 				"&f",
 				"&8&oIncreases your mastery in blades,",

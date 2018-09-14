@@ -43,11 +43,11 @@ public class Accelerate extends RPGSkill
 	@Override
 	public ItemStack getSkillItem()
 	{
-		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.FEATHER, 1), 
+		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.SUGAR, 1), 
 				"&bAccelerate"),
 				"&7Buff:",
 				"&7 * Attack Speed: +" + CakeLibrary.convertMultiplierToAddedPercentage(buffStats.attackSpeedMultiplier) + "%",
-				"&7 * Buff Duration: " + (buffStats.buffDuration / 20) + "s",
+				"&7 * Buff Duration: " + CakeLibrary.convertTimeToString(buffStats.buffDuration / 20),
 				"&7 * Party Buff",
 				"&7Cooldown: " + cooldown + "s",
 				"&f",
@@ -76,7 +76,7 @@ public class Accelerate extends RPGSkill
 		Player p = rp.getPlayer();
 		if (p == null)
 			return;
-		RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 41), 0);
+		RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 20), 0);
 		b.applyBuff(rp);
 		rp.updateScoreboard = true;
 	}

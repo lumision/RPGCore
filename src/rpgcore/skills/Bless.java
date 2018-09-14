@@ -16,7 +16,7 @@ public class Bless extends RPGSkill
 {
 	public final static String skillName = "Bless";
 	public final static boolean passiveSkill = false;
-	public final static int skillTier = 4;
+	public final static int skillTier = 1;
 	public final static int castDelay = 0;
 	public final static ClassType classType = ClassType.PRIEST;
 	public final static int cooldown = 60;
@@ -48,7 +48,7 @@ public class Bless extends RPGSkill
 				"&7Buff:",
 				"&7 * Magic Damage: +" + CakeLibrary.convertMultiplierToAddedPercentage(buffStats.magicDamageMultiplier) + "%",
 				"&7 * Brute Damage: +" + CakeLibrary.convertMultiplierToAddedPercentage(buffStats.bruteDamageMultiplier) + "%",
-				"&7 * Buff Duration: " + (buffStats.buffDuration / 20) + "s",
+				"&7 * Buff Duration: " + CakeLibrary.convertTimeToString(buffStats.buffDuration / 20),
 				"&7 * Party Buff",
 				"&f",
 				"&7Cooldown: " + CakeLibrary.convertTimeToString(buffStats.buffDuration / 20),

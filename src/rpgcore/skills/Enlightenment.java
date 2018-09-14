@@ -48,7 +48,7 @@ public class Enlightenment extends RPGSkill
 				"&7Buff:",
 				"&7 * Magic Damage: +" + CakeLibrary.convertMultiplierToAddedPercentage(buffStats.magicDamageMultiplier) + "%",
 				"&7 * Brute Damage: +" + CakeLibrary.convertMultiplierToAddedPercentage(buffStats.bruteDamageMultiplier) + "%",
-				"&7 * Buff Duration: " + (buffStats.buffDuration / 20) + "s",
+				"&7 * Buff Duration: " + CakeLibrary.convertTimeToString(buffStats.buffDuration / 20),
 				"&7 * Party Buff",
 				"&f",
 				"&7Cooldown: " + CakeLibrary.convertTimeToString(buffStats.buffDuration / 20),

@@ -81,6 +81,8 @@ public class RPGRecipe
 		recipes.clear();
 		for (File file: recipesFolder.listFiles())
 		{
+			if (!file.getName().endsWith(".yml"))
+				continue;
 			try
 			{
 				ArrayList<String> lines = CakeLibrary.readFile(file);

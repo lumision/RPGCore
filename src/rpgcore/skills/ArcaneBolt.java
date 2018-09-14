@@ -2,6 +2,7 @@ package rpgcore.skills;
 
 import java.util.ArrayList;
 
+import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -46,7 +47,7 @@ public class ArcaneBolt extends RPGSkill
 				"&7Damage: " + (int) (damage * 100.0F) + "%",
 				"&7Interval: " + (castDelay / 20.0F) + "s",
 				"&f",
-				"&8&oShoots a beam of magical energy.",
+				"&8&oShoot a bolt of magical energy.",
 				"&f",
 				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
@@ -55,15 +56,18 @@ public class ArcaneBolt extends RPGSkill
 	public void activate()
 	{
 		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
-		Vector vector = player.getLocation().getDirection().normalize().multiply(0.5D);
+		Vector vector = player.getLocation().getDirection().normalize().multiply(0.75D);
 		int multiplier = 0;
         player.getWorld().playSound(player.getEyeLocation(), Sound.BLOCK_ANVIL_LAND, 0.05F, 1.0F);
-		while (multiplier < 30)
+		while (multiplier < 20)
 		{
 			multiplier++;
 			Location point = player.getEyeLocation().add(vector.clone().multiply(multiplier));
 			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
+			{
+				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()), multiplier);
 				break;
+			}
 			RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0, 1), multiplier);
 			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.05F, 1.25F), multiplier);
 			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, getUnvariedDamage(), player, 20), multiplier);

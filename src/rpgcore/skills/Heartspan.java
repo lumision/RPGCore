@@ -112,6 +112,6 @@ public class Heartspan extends RPGSkill
 		teleport.getWorld().playEffect(start, Effect.STEP_SOUND, 20);
 		teleport.getWorld().playEffect(start.clone().add(0, 1, 0), Effect.STEP_SOUND, 20);
 		player.teleport(teleport);
-		caster.castDelay = 5;
+		caster.castDelays.put(skillName, 3);
 	}
 }

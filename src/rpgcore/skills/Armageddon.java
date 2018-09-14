@@ -12,7 +12,7 @@ public class Armageddon extends RPGSkill
 {
 	public final static String skillName = "Armageddon";
 	public final static boolean passiveSkill = false;
-	public final static int skillTier = 8;
+	public final static int skillTier = 7;
 	public final static int castDelay = 100;
 	public final static ClassType classType = ClassType.MAGE;
 	public final static float damage = 24.8F;

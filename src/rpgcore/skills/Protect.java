@@ -46,7 +46,7 @@ public class Protect extends RPGSkill
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.IRON_INGOT, 1), 
 				"&dProtect"),
 				"&7Buff:",
-				"&7 * Damage Received: -" + buffStats.damageReductionAdd + "%",
+				"&7 * Damage Reduction: +" + buffStats.damageReductionAdd + "%",
 				"&7 * Buff Duration: " + (buffStats.buffDuration / 20) + "s",
 				"&7 * Party Buff",
 				"&f",

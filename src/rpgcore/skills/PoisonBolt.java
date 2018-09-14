@@ -19,10 +19,10 @@ public class PoisonBolt extends RPGSkill
 {
 	public final static String skillName = "Poison Bolt";
 	public final static boolean passiveSkill = false;
-	public final static int skillTier = 2;
+	public final static int skillTier = 1;
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.MAGE;
-	public final static float damage = 1.6F;
+	public final static float damage = 1.7F;
 	public final static int debuffDamage = 3;
 	public final static int debuffLength = 10 * 20;
 	public PoisonBolt(RPlayer caster)
@@ -53,8 +53,8 @@ public class PoisonBolt extends RPGSkill
 				"&7 * " + (debuffDamage / 2.0F) + " Hearts/s",
 				"&7 * Duration: " + (debuffLength / 20) + "s",
 				"&f",
-				"&8&oShoots a beam of poison energy",
-				"&8&owhich applies DoT to any victims.",
+				"&8&oShoots a bolt of poison energy;",
+				"&8&oapplying DoT to any victims.",
 				"&f",
 				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
@@ -63,15 +63,18 @@ public class PoisonBolt extends RPGSkill
 	public void activate()
 	{
 		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
-		Vector vector = player.getLocation().getDirection().normalize().multiply(0.5D);
+		Vector vector = player.getLocation().getDirection().normalize().multiply(0.75D);
 		int multiplier = 0;
         player.getWorld().playSound(player.getEyeLocation(), Sound.BLOCK_ANVIL_LAND, 0.1F, 1.0F);
-		while (multiplier < 30)
+		while (multiplier < 20)
 		{
 			multiplier++;
 			Location point = player.getEyeLocation().add(vector.clone().multiply(multiplier));
 			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
+			{
+				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()), multiplier);
 				break;
+			}
 			RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0, 1), multiplier);
 			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_SLIME_BREAK, 0.1F, 1.25F), multiplier);
 			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionCustom(hit, point, 1.25D, player, new Callable<Void>()

@@ -18,7 +18,7 @@ public class ArcaneBlast extends RPGSkill
 	public final static String skillName = "Arcane Blast";
 	public final static boolean passiveSkill = false;
 	public final static int skillTier = 1;
-	public final static int castDelay = 15;
+	public final static int castDelay = 20;
 	public final static ClassType classType = ClassType.MAGE;
 	public final static float damage = 1.7F;
 	public final static int radius = 4;
@@ -47,7 +47,7 @@ public class ArcaneBlast extends RPGSkill
 				"&7Radius: " + radius + " blocks",
 				"&7Interval: " + (castDelay / 20.0F) + "s",
 				"&f",
-				"&8&oBlasts a plane of arcane energy",
+				"&8&oBlast a plane of arcane energy",
 				"&8&ounto the target area.",
 				"&f",
 				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
@@ -75,14 +75,14 @@ public class ArcaneBlast extends RPGSkill
 		}
 		
 		x = radius;
-		for (z = radius; z > -radius + 1; z--)
+		for (z = radius; z > -radius; z--)
 		{
 			Location l = target.clone().add(x, 1, z);
 			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, l, 20), -z + radius);
 		}
 		
 		z = radius;
-		for (x = radius; x > -radius + 1; x--)
+		for (x = radius; x > -radius; x--)
 		{
 			Location l = target.clone().add(x, 1, z);
 			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, l, 20), -x + radius);

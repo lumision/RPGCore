@@ -25,7 +25,7 @@ public class IronBody extends RPGSkill
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.IRON_CHESTPLATE, 1), 
 				"&eIron Body"),
 				"&7Passive Skill:",
-				"&7 * Damage received: -" + damageReductionAdd + "%",
+				"&7 * Damage Reduction: +" + damageReductionAdd + "%",
 				"&f",
 				"&8&oFortifies your natural defense.",
 				"&f",

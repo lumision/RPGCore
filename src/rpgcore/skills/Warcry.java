@@ -52,7 +52,7 @@ public class Warcry extends RPGSkill
 				"&7Buff:",
 				"&7 * Brute Damage: +" + CakeLibrary.convertMultiplierToAddedPercentage(buffStats.bruteDamageMultiplier) + "%",
 				"&7 * Attack Speed: +" + CakeLibrary.convertMultiplierToAddedPercentage(buffStats.attackSpeedMultiplier) + "%",
-				"&7 * Buff Duration: " + (buffStats.buffDuration / 20) + "s",
+				"&7 * Buff Duration: " + CakeLibrary.convertTimeToString(buffStats.buffDuration / 20),
 				"&f",
 				"&7Cooldown: " + CakeLibrary.convertTimeToString(buffStats.buffDuration / 20),
 				"&f",
