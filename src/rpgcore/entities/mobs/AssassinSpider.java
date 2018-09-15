@@ -7,13 +7,11 @@ import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 import rpgcore.main.CakeLibrary;
-import rpgcore.main.RPGCore;
 import rpgcore.main.RPGEvents;
 
 public class AssassinSpider extends RPGMonster
@@ -99,13 +97,5 @@ public class AssassinSpider extends RPGMonster
 			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.1F, 1.25F), multiplier/ 3);
 			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 0.75D, 3, entity, 20), multiplier / 3);
 		}
-	}
-	
-	public ArrayList<ItemStack> getDrops()
-	{
-		ArrayList<ItemStack> drops = new ArrayList<ItemStack>();
-		if (random.nextInt(10) == 0)
-			drops.add(RPGCore.getItemFromDatabase("ZombieWarriorSword").createItem());
-		return drops;
 	}
 }

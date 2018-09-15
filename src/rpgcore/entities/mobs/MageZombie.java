@@ -19,9 +19,6 @@ import org.bukkit.util.Vector;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
 import rpgcore.main.RPGEvents;
-import rpgcore.skills.IceBolt;
-import rpgcore.skills.PoisonBolt;
-import rpgcore.skills.RPGSkill;
 
 public class MageZombie extends RPGMonster
 {
@@ -84,17 +81,5 @@ public class MageZombie extends RPGMonster
 			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.1F, 1.25F), multiplier);
 			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, 4, entity, 20), multiplier);
 		}
-	}
-	
-	public ArrayList<ItemStack> getDrops()
-	{
-		ArrayList<ItemStack> drops = new ArrayList<ItemStack>();
-		if (random.nextInt(10) == 0)
-			drops.add(RPGCore.getItemFromDatabase("ZombieMageStaff").createItem());
-		if (random.nextInt(10) == 0)
-			drops.add(RPGSkill.getSkill(PoisonBolt.skillName).getSkillbook());
-		if (random.nextInt(10) == 0)
-			drops.add(RPGSkill.getSkill(IceBolt.skillName).getSkillbook());
-		return drops;
 	}
 }

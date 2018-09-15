@@ -14,7 +14,7 @@ import rpgcore.main.RPGCore;
 public class Arena 
 {
 	public static ArrayList<Arena> arenaList = new ArrayList<Arena>();
-	public static File arenasFolder = new File("plugins/RPGCore/Arenas");
+	public static final File arenasFolder = new File("plugins/RPGCore/Arenas");
 
 	public String schematicName;
 	public float yaw, pitch;
@@ -117,7 +117,7 @@ public class Arena
 		{
 			if (a == null)
 				continue;
-			File file = new File("plugins/RPGCore/Arenas/" + a.schematicName + ".yml");
+			File file = new File(arenasFolder.getPath() + "/" + a.schematicName + ".yml");
 			ArrayList<String> lines = new ArrayList<String>();
 			lines.add("schematicName: " + a.schematicName);
 			lines.add("spawnYaw: " + a.yaw);

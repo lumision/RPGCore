@@ -26,6 +26,7 @@ public class BuffInventory
 
 	public void updateInventory()
 	{
+		rp.updatePlayerREquips();
 		getInventory().clear();
 		for (Buff b: rp.buffs)
 		{

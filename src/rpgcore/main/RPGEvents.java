@@ -40,6 +40,7 @@ import rpgcore.npc.CustomNPC;
 import rpgcore.npc.NPCManager;
 import rpgcore.player.RPlayer;
 import rpgcore.skills.effect.ArmageddonE;
+import rpgcore.skills.effect.InfinityTerminusE;
 import rpgcore.songs.RSongManager;
 import rpgcore.songs.RunningTrack;
 
@@ -77,6 +78,7 @@ public class RPGEvents implements Runnable
 		RPGMonster.remove.clear();
 
 		ArmageddonE.globalTick();
+		InfinityTerminusE.globalTick();
 		DamageOverTime.globalTick();
 	}
 
@@ -499,7 +501,7 @@ public class RPGEvents implements Runnable
 			//PacketPlayOutWorldParticles packet = new PacketPlayOutWorldParticles(particleType, true, (float) l.getX(), (float) l.getY(), (float) l.getZ(), r / 255F, g / 255F, b / 255F, 0, particles, 0);
 			//PacketPlayOutWorldParticles packet = new PacketPlayOutWorldParticles(particleType, true, (float) l.getX(), (float) l.getY(), (float) l.getZ(), range, range, range, 255, particles, 0, 128, 128);
 
-			for (Player p: CakeLibrary.getNearbyPlayers(l, 16))
+			for (Player p: CakeLibrary.getNearbyPlayers(l, 24))
 				//p.spawnParticle(Particle.REDSTONE, l.getX(), l.getY(), l.getZ(), 0, r / 255D, g / 255D, b / 255D, 1);
 				p.spawnParticle(particleType, l, particles, r / 255D, g / 255D, b / 255D, 1);
 			//((CraftPlayer) p).getHandle().playerConnection.sendPacket(packet);
@@ -945,7 +947,7 @@ public class RPGEvents implements Runnable
 		@Override
 		public void run()
 		{
-			for (Player p: CakeLibrary.getNearbyPlayers(l, 16))
+			for (Player p: CakeLibrary.getNearbyPlayers(l, 24))
 				CakeLibrary.spawnParticle(EnumParticle.FIREWORKS_SPARK, l, range, p, particles, speed);
 		}
 	}
@@ -996,7 +998,7 @@ public class RPGEvents implements Runnable
 		@Override
 		public void run()
 		{
-			for (Player p: CakeLibrary.getNearbyPlayers(l, 16))
+			for (Player p: CakeLibrary.getNearbyPlayers(l, 24))
 				CakeLibrary.spawnParticle(type, l, range, p, particles, speed, data);
 		}
 	}

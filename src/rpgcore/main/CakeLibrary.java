@@ -65,6 +65,7 @@ import net.minecraft.server.v1_12_R1.TileEntitySkull;
 
 public class CakeLibrary
 {
+	//§
 	private static final Random random = new Random();
 	private static final String chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 	// <ITEM-RELATED>

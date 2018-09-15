@@ -104,7 +104,7 @@ public class CustomNPC extends EntityPlayer
 			setDatabaseName(change);
 			return;
 		}
-		File file = new File("plugins/RPGCore/npcs/" + databaseName + ".yml");
+		File file = new File(NPCManager.npcFolder.getPath() + "/" + databaseName + ".yml");
 		file.delete();
 		setDatabaseName(change);
 		saveNPC();
@@ -266,7 +266,7 @@ public class CustomNPC extends EntityPlayer
 
 	public void deleteNPC()
 	{
-		File file = new File("plugins/RPGCore/npcs/" + databaseName + ".yml");
+		File file = new File(NPCManager.npcFolder.getPath() + "/" + databaseName + ".yml");
 		file.delete();
 		for (Player p: Bukkit.getOnlinePlayers())
 			despawnFor(p);
@@ -418,7 +418,7 @@ public class CustomNPC extends EntityPlayer
 	
 	public void saveNPC()
 	{
-		File file = new File("plugins/RPGCore/npcs/" + databaseName + ".yml");
+		File file = new File(NPCManager.npcFolder.getPath() + "/" + databaseName + ".yml");
 		ArrayList<String> lines = new ArrayList<String>();
 		Location l = getBukkitLocation();
 		lines.add("name: " + getName());

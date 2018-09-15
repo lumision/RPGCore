@@ -18,7 +18,6 @@ import org.bukkit.block.Chest;
 import org.bukkit.block.DoubleChest;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
@@ -67,8 +66,8 @@ import rpgcore.songs.RunningTrack;
 
 public class RPGCore extends JavaPlugin
 {
-	public File pluginFolder = new File("plugins/RPGCore");
-	public File itemsFolder = new File("plugins/RPGCore/items");
+	public static final File pluginFolder = new File("plugins/RPGCore");
+	public static final File itemsFolder = new File("plugins/RPGCore/items");
 	public static ArrayList<RItem> itemDatabase = new ArrayList<RItem>();
 	public static RPGEvents events;
 	public static RPGListener listener;
@@ -126,6 +125,7 @@ public class RPGCore extends JavaPlugin
 			"&6/item damagereduction <percentage>",
 			"&6/item unbreakable",
 			"&6/item accessory",
+			"&6/item d/desc <l/list / d/del / lineNumber> <lineNumber/newDesc>",
 			"&eTip: You can use TAB to auto-complete"
 	};
 
@@ -384,6 +384,22 @@ public class RPGCore extends JavaPlugin
 			RPlayer rp = playerManager.getRPlayer(p.getUniqueId());
 			if (rp == null)
 				return false;
+			if (command.getName().equalsIgnoreCase("mobdrops"))
+			{
+				if (args.length < 1)
+				{
+					msg(p, "Usage: /mobdrops <mobName> (tab-completable)");
+					return true;
+				}
+				RPGMonsterSpawn spawn = RPGMonsterSpawn.getRPGMonsterSpawn(args[0]);
+				if (spawn == null)
+				{
+					msg(p, "That mob does not exist");
+					return true;
+				}
+				p.openInventory(spawn.getDropsInventory());
+				return true;
+			}
 			if (command.getName().equalsIgnoreCase("enhance"))
 			{
 				p.openInventory(EnhancementInventory.getNewInventory());
@@ -733,6 +749,9 @@ public class RPGCore extends JavaPlugin
 				}
 				RItem ri = new RItem(is, args[0]);
 				ri.saveItemToFile(args[0]);
+				RItem get = getItemFromDatabase(args[0]);
+				if (get != null)
+					itemDatabase.remove(get);
 				itemDatabase.add(ri);
 				msg(p, "Item saved");
 				return true;
@@ -1753,6 +1772,100 @@ public class RPGCore extends JavaPlugin
 					ri.accessory = !ri.accessory;
 					p.setItemInHand(ri.createItem());
 					msg(p, "Accessory attribute toggled to: " + ri.accessory);
+					return true;
+				} else if (args[0].equalsIgnoreCase("desc") || args[0].equalsIgnoreCase("description") || args[0].equalsIgnoreCase("d"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /item d/desc <l/list / d/del / lineNumber> <lineNumber/newDesc>");
+						return true;
+					}
+					ArrayList<String> lore = CakeLibrary.getItemLore(is);
+					int descriptionIndex = -1;
+					int lastDescriptionIndex = -1;
+					for (int i = 0; i < lore.size(); i++)
+						if (lore.get(i).startsWith("§7§o"))
+						{
+							if (descriptionIndex == -1)
+								descriptionIndex = i;
+							lastDescriptionIndex = i;
+						}
+					if (args[1].equalsIgnoreCase("l") || args[1].equalsIgnoreCase("list"))
+					{
+						if (descriptionIndex == -1)
+						{
+							msg(p, "This item does not have a description");
+							return true;
+						}
+						for (int i = 0; i < lastDescriptionIndex + 1 - descriptionIndex; i++)
+							msgNoTag(p, "&f#" + (i + 1) + "&7: " + lore.get(descriptionIndex + i));
+						return true;
+					}
+					if (args.length < 3)
+					{
+						msg(p, "Usage: /item d/desc <l/list / d/del / lineNumber> <lineNumber/newDesc>");
+						return true;
+					}
+					if (args[1].equalsIgnoreCase("d") || args[1].equalsIgnoreCase("del"))
+					{
+						int lineNumber = -1;
+						try
+						{
+							lineNumber = Integer.valueOf(args[2]);
+						} catch (Exception e)
+						{
+							msg(p, "Usage: /item desc del <lineNumber>");
+							return true;
+						}
+						if (descriptionIndex == -1)
+						{
+							msg(p, "This item does not have a description");
+							return true;
+						}
+						if (lastDescriptionIndex < descriptionIndex + lineNumber - 1)
+						{
+							for (int i = 0; i < lastDescriptionIndex + 1 - descriptionIndex; i++)
+								msgNoTag(p, "&f#" + (i + 1) + "&7: " + lore.get(descriptionIndex + i));
+							msg(p, "Usage: /item desc del <lineNumber>");
+							return true;
+						}
+						String line = lore.get(descriptionIndex + lineNumber - 1);
+						lore.remove(descriptionIndex + lineNumber - 1);
+						is = CakeLibrary.setItemLore(is, lore);
+						p.setItemInHand(is);
+						msg(p, "Removed description line &f#" + lineNumber + "&c '" + line + "§c'");
+						return true;
+					}
+					int lineNumber = -1;
+					try
+					{
+						lineNumber = Integer.valueOf(args[1]);
+					} catch (Exception e)
+					{
+						msg(p, "Usage: /item d/desc <l/list / d/del / lineNumber> <lineNumber/newDesc>");
+						return true;
+					}
+					String desc = "§7§o" + args[2];
+					if (args.length > 3)
+						for (int i = 3; i < args.length; i++)
+							desc += " " + args[i];
+					if (descriptionIndex == -1)
+					{
+						lineNumber = 1;
+						lore.add("§f");
+						lore.add(desc);
+					} else
+					{
+						if (lastDescriptionIndex < descriptionIndex + lineNumber - 1)
+						{
+							lore.add(desc);
+							lineNumber = lastDescriptionIndex - descriptionIndex + 2;
+						} else
+							lore.set(descriptionIndex + lineNumber - 1, desc);
+					}
+					is = CakeLibrary.setItemLore(is, lore);
+					p.setItemInHand(is);
+					msg(p, "Description line &f#" + lineNumber + "&c set to '" + desc + "§c'");
 					return true;
 				}
 				msgNoTag(p, helpItem);

@@ -22,7 +22,6 @@ import rpgcore.main.RPGCore;
 import rpgcore.main.RPGEvents;
 import rpgcore.skills.IceBolt;
 import rpgcore.skills.PoisonBolt;
-import rpgcore.skills.RPGSkill;
 
 public class SorcererZombie extends RPGMonster
 {
@@ -162,17 +161,5 @@ public class SorcererZombie extends RPGMonster
 
 			}), multiplier);
 		}
-	}
-
-	public ArrayList<ItemStack> getDrops()
-	{
-		ArrayList<ItemStack> drops = new ArrayList<ItemStack>();
-		if (random.nextInt(10) == 0)
-			drops.add(RPGCore.getItemFromDatabase("ZombieSorcererStaff").createItem());
-		if (random.nextInt(10) == 0)
-			drops.add(RPGSkill.getSkill(PoisonBolt.skillName).getSkillbook());
-		if (random.nextInt(10) == 0)
-			drops.add(RPGSkill.getSkill(IceBolt.skillName).getSkillbook());
-		return drops;
 	}
 }

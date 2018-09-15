@@ -41,7 +41,7 @@ import rpgcore.main.RPGCore;
 public class RPGRecipe 
 {
 	public static ArrayList<RPGRecipe> recipes = new ArrayList<RPGRecipe>();
-	public static File recipesFolder = new File("plugins/RPGCore/recipes");
+	public static final File recipesFolder = new File("plugins/RPGCore/recipes");
 
 	public RItem result;
 	public String[] shape;

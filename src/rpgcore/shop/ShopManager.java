@@ -13,7 +13,7 @@ public class ShopManager
 {
 	public static ArrayList<Inventory> openShops = new ArrayList<Inventory>();
 	public static ArrayList<Shop> shopDatabase = new ArrayList<Shop>();
-	public static File shopsFile = new File("plugins/RPGCore/shops");
+	public static final File shopsFile = new File("plugins/RPGCore/shops");
 
 	public ShopManager()
 	{

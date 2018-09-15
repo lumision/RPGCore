@@ -26,7 +26,7 @@ public class ArenaInstance
 {
 	static BukkitWorld arenaInstanceWorld;
 	static ArrayList<ArenaInstance> arenaInstanceList = new ArrayList<ArenaInstance>();
-	public static File arenasFile = new File("plugins/RPGCore/ArenaInstances.yml");
+	public static final File arenasFile = new File("plugins/RPGCore/ArenaInstances.yml");
 
 	public Arena arena;
 	public boolean occupied;

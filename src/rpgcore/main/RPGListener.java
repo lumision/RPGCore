@@ -239,12 +239,17 @@ public class RPGListener implements Listener
 			RPGMonster ce = RPGMonster.getRPGMob(e.getEntityId());
 			if (ce != null)
 			{
-				ArrayList<ItemStack >drops = ce.getDrops();
-				if (drops != null && drops.size() > 0)
-				{
-					for (ItemStack is: drops)
-						e.getWorld().dropItem(e.getLocation(), is).setVelocity(new Vector(0, 0.5F, 0));
-				}
+				for (RPGMonsterSpawn spawn: RPGMonsterSpawn.spawns)
+					if (spawn.rpgMonster.isInstance(ce))
+					{
+						for (RItem drop: spawn.drops.keySet())
+						{
+							if (RPGMonster.random.nextInt(spawn.drops.get(drop)) != 0)
+								continue;
+							e.getWorld().dropItem(e.getLocation(), drop.createItem()).setVelocity(new Vector(0, 1.0F, 0));
+						}
+						break;
+					}
 			}
 		}
 
@@ -453,7 +458,47 @@ public class RPGListener implements Listener
 			}
 		if (bottom)
 		{
-			if (name.equals("Accessories") && event.isShiftClick())
+			if (name.startsWith("Drops - "))
+			{
+				event.setCancelled(true);
+				ItemStack current = event.getCurrentItem().clone();
+				if (CakeLibrary.isItemStackNull(current))
+					return;
+				current.setAmount(1);
+				RPGMonsterSpawn spawn = RPGMonsterSpawn.getRPGMonsterSpawn(name.split(" - ")[1]);
+				if (spawn == null)
+					return;
+
+				RItem ri = new RItem(current);
+				RItem riCheck = null;
+				for (RItem key: spawn.drops.keySet())
+					if (key.compare(ri))
+						riCheck = key;
+
+				if (riCheck != null)
+				{
+					for (int i = 0; i < inv.getSize(); i++)
+					{
+						ItemStack check = inv.getItem(i);
+						if (CakeLibrary.getItemName(check).equals(CakeLibrary.getItemName(current)))
+						{
+							check.setAmount(check.getAmount() + 1);
+							inv.setItem(i, check);
+							break;
+						}
+					}
+					spawn.drops.put(riCheck, spawn.drops.get(riCheck) + 1);
+				}
+				else
+				{
+					spawn.drops.put(ri, 1);
+					inv.addItem(current.clone());
+				}
+				new RPGEvents.PlaySoundEffect(p, Sound.UI_BUTTON_CLICK, 0.2F, 1.1F).run();
+				spawn.saveDrops();
+				return;
+			}
+			else if (name.equals("Accessories") && event.isShiftClick())
 			{
 				event.setCancelled(true);
 				ItemStack current = event.getCurrentItem();
@@ -463,6 +508,15 @@ public class RPGListener implements Listener
 				if (!ri.accessory)
 				{
 					RPGCore.msg(p, "That item is not an accessory.");
+					return;
+				}
+				boolean duplicate = false;
+				for (RItem check: rp.accessoryInventory.slots)
+					if (check != null && CakeLibrary.getItemName(check.itemVanilla).equals(CakeLibrary.getItemName(current)))
+						duplicate = true;
+				if (duplicate)
+				{
+					RPGCore.msg(p, "You can only equip one accessory of its kind.");
 					return;
 				}
 				for (int slot = 10; slot < 17; slot += 3)
@@ -591,6 +645,43 @@ public class RPGListener implements Listener
 					c.updateUI();
 				}
 		}
+		else if (name.startsWith("Drops - "))
+		{
+			event.setCancelled(true);
+			ItemStack current = event.getCurrentItem();
+			if (CakeLibrary.isItemStackNull(current))
+				return;
+			RPGMonsterSpawn spawn = RPGMonsterSpawn.getRPGMonsterSpawn(name.split(" - ")[1]);
+			if (spawn == null)
+				return;
+
+			RItem ri = new RItem(current);
+			RItem riCheck = null;
+			for (RItem key: spawn.drops.keySet())
+				if (key.compare(ri))
+					riCheck = key;
+
+			if (riCheck == null)
+				return;
+
+			int amt = spawn.drops.get(riCheck) - 1;
+			if (amt <= 0)
+				spawn.drops.remove(riCheck);
+			else
+				spawn.drops.put(riCheck, amt);
+
+			int stack = current.getAmount() - 1;
+			if (stack <= 0)
+				event.setCurrentItem(new ItemStack(Material.AIR));
+			else
+			{
+				current.setAmount(stack);
+				event.setCurrentItem(current);
+			}
+			new RPGEvents.PlaySoundEffect(p, Sound.UI_BUTTON_CLICK, 0.2F, 0.9F).run();
+			spawn.saveDrops();
+			return;
+		}
 		else if (name.equals("Accessories"))
 		{
 			event.setCancelled(true);
@@ -609,6 +700,15 @@ public class RPGListener implements Listener
 					if (!ri.accessory)
 					{
 						RPGCore.msg(p, "That item is not an accessory.");
+						return;
+					}
+					boolean duplicate = false;
+					for (RItem check: rp.accessoryInventory.slots)
+						if (check != null && CakeLibrary.getItemName(check.itemVanilla).equals(CakeLibrary.getItemName(cursor)))
+							duplicate = true;
+					if (duplicate)
+					{
+						RPGCore.msg(p, "You can only equip one accessory of its kind.");
 						return;
 					}
 					int amount = cursor.getAmount();
@@ -658,6 +758,15 @@ public class RPGListener implements Listener
 						if (!ri.accessory)
 						{
 							RPGCore.msg(p, "That item is not an accessory.");
+							return;
+						}
+						boolean duplicate = false;
+						for (RItem check: rp.accessoryInventory.slots)
+							if (check != null && CakeLibrary.getItemName(check.itemVanilla).equals(CakeLibrary.getItemName(cursor)))
+								duplicate = true;
+						if (duplicate)
+						{
+							RPGCore.msg(p, "You can only equip one accessory of its kind.");
 							return;
 						}
 						event.setCursor(inSlot);
@@ -781,7 +890,12 @@ public class RPGListener implements Listener
 					RPGCore.msg(p, "These 2 items are not the same.");
 					return;
 				}
-				if (ri1.getTier() >= 5 || ri2.getTier() >= 5)
+				if (ri1.magicDamage == 0 && ri1.bruteDamage == 0)
+				{
+					RPGCore.msg(p, "Only items with damage can be enhanced.");
+					return;
+				}
+				if (ri1.getTier() >= 5)
 				{
 					RPGCore.msg(p, "These items have already reached the maximum enhancement tier.");
 					return;
@@ -1159,6 +1273,7 @@ public class RPGListener implements Listener
 			String name = CakeLibrary.getItemName(is);
 			if (CakeLibrary.hasColor(name))
 			{
+				event.setCancelled(true);
 				RItem ri = new RItem(is);
 				if (ri.consumable)
 				{
@@ -1227,6 +1342,11 @@ public class RPGListener implements Listener
 						break;
 					}
 				}
+				if (rp.lastInteractTicks == 0)
+				{
+					rp.lastInteractTicks = 1;
+					handleSkillCast(event.getPlayer());
+				}
 			}
 		}
 
@@ -1234,11 +1354,6 @@ public class RPGListener implements Listener
 		{
 			Heartspan.strike(rp);
 			return;
-		}
-		if (rp.lastInteractTicks == 0)
-		{
-			rp.lastInteractTicks = 2;
-			handleSkillCast(event.getPlayer());
 		}
 	}
 
@@ -1422,6 +1537,7 @@ public class RPGListener implements Listener
 					"damageReduction",
 					"unbreakable",
 					"accessory",
+					"desc"
 			};
 			if (split.length == 1 && msg.endsWith(" "))
 			{
@@ -1467,7 +1583,7 @@ public class RPGListener implements Listener
 			}
 		}
 
-		else if (msg.startsWith(s + "mob "))
+		else if (msg.startsWith(s + "mob ") || msg.startsWith(s + "mobdrops "))
 		{
 			String[] split = msg.split(" ");
 			if (msg.endsWith(" "))

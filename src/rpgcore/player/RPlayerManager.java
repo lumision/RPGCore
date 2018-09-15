@@ -23,8 +23,8 @@ public class RPlayerManager
 {
 	public RPGCore instance;
 	public ArrayList<RPlayer> players = new ArrayList<RPlayer>();
-	public File playersFolder = new File("plugins/RPGCore/players");
-	public File accessoriesFolder = new File("plugins/RPGCore/players/accessories");
+	public static final File playersFolder = new File("plugins/RPGCore/players");
+	public static final File accessoriesFolder = new File("plugins/RPGCore/players/accessories");
 	public RPlayerManager(RPGCore instance)
 	{
 		this.instance = instance;
@@ -286,7 +286,7 @@ public class RPlayerManager
 
 	public void writeData(RPlayer rp)
 	{
-		File file = new File("plugins/RPGCore/players/" + rp.getUniqueID() + ".yml");
+		File file = new File(playersFolder.getPath() + "/" + rp.getUniqueID() + ".yml");
 		try
 		{
 			ArrayList<String> lines = new ArrayList<String>();

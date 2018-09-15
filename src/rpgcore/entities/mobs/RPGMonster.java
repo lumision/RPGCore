@@ -7,7 +7,6 @@ import java.util.Random;
 import org.bukkit.GameMode;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 
 import rpgcore.main.CakeLibrary;
 
@@ -95,6 +94,4 @@ public abstract class RPGMonster
 			}
 		}
 	}
-	
-	public abstract ArrayList<ItemStack> getDrops();
 }

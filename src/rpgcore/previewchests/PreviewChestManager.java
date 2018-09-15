@@ -12,7 +12,7 @@ import rpgcore.main.RPGCore;
 public class PreviewChestManager 
 {
 	public RPGCore instance;
-	public File chestsFile = new File("plugins/RPGCore/PreviewChests.yml");
+	public static final File chestsFile = new File("plugins/RPGCore/PreviewChests.yml");
 	
 	public ArrayList<Location> previewChests = new ArrayList<Location>();
 	public PreviewChestManager(RPGCore instance)

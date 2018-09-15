@@ -384,7 +384,8 @@ public class RPlayer
 		for (String remove: cooldownRemove)
 		{
 			cooldowns.remove(remove);
-			RPGCore.msgNoTag(getPlayer(), "&a=== Cooldown for &2" + CakeLibrary.getItemName(RPGSkill.getSkill(remove).getSkillItem()) + "&a has ended ===");
+			titleQueue.add(new Title("&6< "  + CakeLibrary.getItemName(RPGSkill.getSkill(remove).getSkillItem()) + "&6 >", "&eCooldown ended", 
+					10, 5, 10));
 		}
 
 		ArrayList<Integer> buffRemove = new ArrayList<Integer>();

@@ -36,9 +36,9 @@ public class NPCManager
 	public RPGCore instance;
 	public ArrayList<SkinData> skinDatas = new ArrayList<SkinData>();
 	public static ArrayList<CustomNPC> npcs = new ArrayList<CustomNPC>();
-	public File skinDataFile = new File("plugins/RPGCore/SkinData.yml");
-	public File skinDataFetchedFile = new File("plugins/RPGCore/SkinDataFetched.yml");
-	public File npcFolder = new File("plugins/RPGCore/npcs");
+	public static final File skinDataFile = new File("plugins/RPGCore/SkinData.yml");
+	public static final File skinDataFetchedFile = new File("plugins/RPGCore/SkinDataFetched.yml");
+	public static final File npcFolder = new File("plugins/RPGCore/npcs");
 
 	private static TinyProtocol protocol = null;
 
