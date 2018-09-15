@@ -26,6 +26,8 @@ commands:
     description: Checks your stats
   mob:
     description: Spawns a mob for testing
+  mobdrops:
+    description: Opens up mob drops for specific mobs
   crystal:
     description: Spawns crystals for testing
   npc:
