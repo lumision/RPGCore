@@ -52,7 +52,6 @@ public class Armageddon extends RPGSkill
 	@Override
 	public void activate()
 	{
-		ArmageddonE.newEffect(this);
-		super.applyCooldown(60);
+		new ArmageddonE(this);
 	}
 }

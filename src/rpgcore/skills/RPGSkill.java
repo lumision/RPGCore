@@ -24,6 +24,7 @@ public class RPGSkill
 
 	public static final RPGSkill[] skillList = { //ADDSKILL
 
+			new InfinityTerminus(),
 			new Armageddon(),
 			new Heartspan(),
 			new TripleKunai(),

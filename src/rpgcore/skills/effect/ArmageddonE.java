@@ -31,7 +31,7 @@ public class ArmageddonE
 	public ArrayList<Location> offset = new ArrayList<Location>();
 	public Random rand = new Random();
 
-	private ArmageddonE(Armageddon skill)
+	public ArmageddonE(Armageddon skill)
 	{
 		ArrayList<LivingEntity> nearby = CakeLibrary.getNearbyLivingEntities(skill.player.getLocation(), Armageddon.radius);
 		this.skill = skill;
@@ -54,12 +54,15 @@ public class ArmageddonE
 			return;
 		}
 		skill.applyCooldown(60);
+		effects.add(this);
 	}
 
 	public void tick()
 	{
 		if (tick <= 40 && tick % 2 == 0)
 			new RPGEvents.PlaySoundEffect(skill.player, Sound.BLOCK_ANVIL_LAND, 0.2F, 0.5F + (tick / 40F)).run();
+		
+		int damage;
 		for (int index = 0; index < hit.size(); index++)
 		{
 			LivingEntity e = hit.get(index);
@@ -74,7 +77,7 @@ public class ArmageddonE
 					new RPGEvents.ParticleEffect(EnumParticle.BLOCK_CRACK, point, 0.2F, 16, 0, 42).run();
 				}
 			} else if (tick == 43) {
-				int damage = RPlayer.varyDamage(skill.getUnvariedDamage());
+				damage = RPlayer.varyDamage(skill.getUnvariedDamage());
 				new RPGEvents.ApplyDamage(skill.player, e, damage).run();
 				new RPGEvents.PlayLightningEffect(e).run();
 				new InstantFirework(fe, e.getLocation());
@@ -90,11 +93,6 @@ public class ArmageddonE
 		tick++;
 		if (tick > 43)
 			remove.add(this);
-	}
-
-	public static void newEffect(Armageddon skill)
-	{
-		effects.add(new ArmageddonE(skill));
 	}
 
 	public static void globalTick()
