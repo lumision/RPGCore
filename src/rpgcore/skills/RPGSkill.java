@@ -24,7 +24,7 @@ public class RPGSkill
 
 	public static final RPGSkill[] skillList = { //ADDSKILL
 
-			new InfinityTerminus(),
+			new HellfireTerminus(),
 			new Armageddon(),
 			new Heartspan(),
 			new TripleKunai(),
@@ -51,9 +51,10 @@ public class RPGSkill
 			new Fireball(),
 
 			//WARRIOR TIER 1
-			new PowerPierce(),
 			new IronBody(),
+			new PowerPierce(),
 			new Leap(),
+			new Warcry(),
 
 			//PRIEST TIER 1
 			new HolyBolt(),
@@ -71,8 +72,6 @@ public class RPGSkill
 			//PRIEST TIER 2
 			new Heal2(),
 
-			//WARRIOR TIER 2
-			new Warcry(),
 
 			//ASSASSIN TIER 2
 			new Kunai(),

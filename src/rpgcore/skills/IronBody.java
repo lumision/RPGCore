@@ -13,7 +13,7 @@ public class IronBody extends RPGSkill
 	public final static int skillTier = 1;
 	public final static int castDelay = 0;
 	public final static ClassType classType = ClassType.WARRIOR;
-	public final static int damageReductionAdd = 20;
+	public final static int damageReductionAdd = 40;
 	public IronBody()
 	{
 		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);

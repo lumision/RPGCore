@@ -16,7 +16,7 @@ public class Warcry extends RPGSkill
 {
 	public final static String skillName = "Warcry";
 	public final static boolean passiveSkill = false;
-	public final static int skillTier = 2;
+	public final static int skillTier = 1;
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.WARRIOR;
 	public final static int heal = 10;
