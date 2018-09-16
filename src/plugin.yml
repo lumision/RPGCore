@@ -59,6 +59,8 @@ commands:
   itemfood:
     aliases: if
     description: Edits attributes/stats of a food item
+  itemprice:
+    description: Sets the price of an item
   buffs:
     aliases: b
     description: Checks your buffs
