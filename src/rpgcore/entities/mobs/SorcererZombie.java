@@ -8,6 +8,7 @@ import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.inventory.EntityEquipment;
@@ -38,17 +39,22 @@ public class SorcererZombie extends RPGMonster
 
 		entity.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, Integer.MAX_VALUE, 1));
 		entity.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, Integer.MAX_VALUE, 0));
-		
-		ItemStack helmet = new ItemStack(Material.LEATHER_HELMET);
-		LeatherArmorMeta meta = (LeatherArmorMeta) helmet.getItemMeta();
-		meta.setColor(Color.fromBGR(210, 210, 0));
-		helmet.setItemMeta(meta);
+
+		ItemStack boots = new ItemStack(Material.LEATHER_BOOTS);
+		ItemStack chestplate = new ItemStack(Material.LEATHER_CHESTPLATE);
+		ItemStack leggings = new ItemStack(Material.LEATHER_LEGGINGS);
+		ItemStack hand = new ItemStack(Material.STICK);
+		hand.addUnsafeEnchantment(Enchantment.KNOCKBACK, 1);
 
 		EntityEquipment eq = entity.getEquipment();
-		eq.setItemInMainHand(RPGCore.getItemFromDatabase("ZombieSorcererStaff").createItem());
+		eq.setItemInMainHand(hand);
 		eq.setItemInMainHandDropChance(0);
-		eq.setHelmet(helmet);
-		eq.setHelmetDropChance(0);
+		eq.setChestplate(chestplate);
+		eq.setChestplateDropChance(0);
+		eq.setLeggings(leggings);
+		eq.setLeggingsDropChance(0);
+		eq.setBoots(boots);
+		eq.setBootsDropChance(0);
 	}
 
 	@Override

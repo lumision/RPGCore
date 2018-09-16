@@ -68,6 +68,7 @@ public class CakeLibrary
 	//§
 	private static final Random random = new Random();
 	private static final String chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	private static HashSet<Material> bypass;
 	// <ITEM-RELATED>
 	public static ItemStack getSkullWithURL(String url) 
 	{
@@ -484,7 +485,9 @@ public class CakeLibrary
 
 	public static HashSet<Material> getPassableBlocks()
 	{
-		HashSet<Material> bypass = new HashSet<Material>();
+		if (bypass != null)
+			return bypass;
+		bypass = new HashSet<Material>();
 		bypass.add(Material.AIR);
 		bypass.add(Material.LAVA);
 		bypass.add(Material.WEB);
@@ -510,6 +513,7 @@ public class CakeLibrary
 		bypass.add(Material.REDSTONE);
 		bypass.add(Material.REDSTONE_TORCH_ON);
 		bypass.add(Material.REDSTONE_TORCH_OFF);
+		bypass.add(Material.SNOW);
 		return bypass;
 	}
 

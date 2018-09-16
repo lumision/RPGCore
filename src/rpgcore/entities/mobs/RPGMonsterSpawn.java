@@ -38,10 +38,19 @@ public class RPGMonsterSpawn
 	Inventory dropsInventory;
 	
 	public static final ItemStack itemDrop = CakeLibrary.editNameAndLore(new ItemStack(Material.PAPER, 1, (short) 0),
-			"§c§nDrop Rate",
+			"§c§nInfo",
 			"§7The drop rate is determined",
 			"§7with a (1 in §lx§7) chance; §lx",
-			"§7being the item stack amount.");
+			"§7being the item stack amount.",
+			"&f",
+			"&7Click on an item in &oyour",
+			"&7&oinventory&7 to &oadd&7 it to the",
+			"&7mob's drop list; click on",
+			"&7an item in the &odrop list&7 to",
+			"&7&osubtract&7 it from there.",
+			"&f",
+			"&7&lShift-click&7 an item in the",
+			"&7drop list to receive its copy.");
 
 	
 	//ADDMOB
@@ -106,8 +115,6 @@ public class RPGMonsterSpawn
 		this.monsterType = monsterType;
 		this.rpgMonster = rpgMonster;
 		this.rpgMonsterName = rpgMonster.getSimpleName();
-
-		spawns.add(this);
 	}
 
 	public RPGMonsterSpawn(Class<? extends RPGMonster> rpgMonster, Class<? extends Monster> monsterType, int minSpawnDistance, int maxSpawnDistance, int spawnRoll)
@@ -118,8 +125,6 @@ public class RPGMonsterSpawn
 		this.minSpawnDistance = minSpawnDistance;
 		this.maxSpawnDistance = maxSpawnDistance;
 		this.spawnRoll = spawnRoll;
-
-		spawns.add(this);
 	}
 	
 	public static RPGMonsterSpawn getRPGMonsterSpawn(String mobName)

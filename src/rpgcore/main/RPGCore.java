@@ -55,6 +55,7 @@ import rpgcore.player.RPlayer;
 import rpgcore.player.RPlayerManager;
 import rpgcore.previewchests.PreviewChestManager;
 import rpgcore.recipes.RPGRecipe;
+import rpgcore.shop.GuildShop;
 import rpgcore.shop.Shop;
 import rpgcore.shop.ShopManager;
 import rpgcore.sideclasses.RPGSideClass;
@@ -192,6 +193,7 @@ public class RPGCore extends JavaPlugin
 		RPGRecipe.readRecipeData();
 		Arena.readArenaData();
 		ArenaInstance.readArenaInstanceData();
+		GuildShop.readItemPrices();
 
 		if (areaInstanceWorld != null && areaInstanceWorld.length() > 0)
 			Bukkit.getServer().createWorld(new WorldCreator(areaInstanceWorld));
@@ -386,6 +388,11 @@ public class RPGCore extends JavaPlugin
 				return false;
 			if (command.getName().equalsIgnoreCase("mobdrops"))
 			{
+				if (!p.hasPermission("rpgcore.mobdrops"))
+				{
+					msg(p, "No permissions.");
+					return true;
+				}
 				if (args.length < 1)
 				{
 					msg(p, "Usage: /mobdrops <mobName> (tab-completable)");
@@ -443,6 +450,11 @@ public class RPGCore extends JavaPlugin
 			}
 			if (command.getName().equalsIgnoreCase("skull"))
 			{
+				if (!p.hasPermission("rpgcore.skull"))
+				{
+					msg(p, "No permissions.");
+					return true;
+				}
 				if (args.length < 1)
 				{
 					msg(p, "Usage: /skull <headName>");
@@ -460,6 +472,11 @@ public class RPGCore extends JavaPlugin
 			}
 			if (command.getName().equalsIgnoreCase("area"))
 			{
+				if (!p.hasPermission("rpgcore.area"))
+				{
+					msg(p, "No permissions.");
+					return true;
+				}
 				if (args.length == 0)
 				{
 					msgNoTag(p, helpArea);
@@ -563,6 +580,11 @@ public class RPGCore extends JavaPlugin
 				}
 				if (args[0].equalsIgnoreCase("add") || args[0].equalsIgnoreCase("a"))
 				{
+					if (!p.hasPermission("rpgcore.gold"))
+					{
+						msg(p, "No permissions.");
+						return true;
+					}
 					if (args.length < 2)
 					{
 						msg(p, "Usage: /gold add/a <amt> [player]");
@@ -593,6 +615,11 @@ public class RPGCore extends JavaPlugin
 				}
 				if (args[0].equalsIgnoreCase("remove") || args[0].equalsIgnoreCase("r"))
 				{
+					if (!p.hasPermission("rpgcore.gold"))
+					{
+						msg(p, "No permissions.");
+						return true;
+					}
 					if (args.length < 2)
 					{
 						msg(p, "Usage: /gold remove/r <amt> [player]");
@@ -1306,6 +1333,93 @@ public class RPGCore extends JavaPlugin
 				msgNoTag(p, "&4 * Crit Damage: &c" + (int) (target.calculateCritDamageMultiplier() * 100.0F) + "%");
 				msgNoTag(p, "&2 * Attack Speed: &ax" + Float.parseFloat(String.format("%.1f", (1.0F / target.calculateCastDelayMultiplier()))));
 				msgNoTag(p, "&2 * Cooldowns: &a-" + target.calculateCooldownReduction() + "%");
+				return true;
+			}
+			if (command.getName().equalsIgnoreCase("itemprice"))
+			{
+				if (!p.hasPermission("rpgcore.itemprice"))
+				{
+					msg(p, "You do not have permissions to use this command.");
+					return true;
+				}
+
+				if (args.length < 1)
+				{
+					msg(p, "Usage: /itemprice <check/list/priceToSet/del> <listPageNumber>");
+					return true;
+				}
+
+				if (args[0].equalsIgnoreCase("list") || args[0].equals("l"))
+				{
+					int pageNumber = 0;
+					if (args.length > 1)
+					{
+						try
+						{
+							pageNumber = Integer.parseInt(args[1]) - 1;
+						} catch (Exception e)
+						{
+							msg(p, "That is not a number.");
+							return true;
+						}
+					}
+					pageNumber = Math.min(pageNumber < 0 ? 0 : pageNumber, GuildShop.getItemPriceListPages() - 1);
+					p.openInventory(GuildShop.getItemPriceList(pageNumber));
+					return true;
+				}
+
+				ItemStack is = p.getItemInHand();
+				if (CakeLibrary.isItemStackNull(is))
+				{
+					msg(p, "Hold the item you want to edit.");
+					return true;
+				}
+				RItem ri = new RItem(is);
+				ri.itemVanilla.setAmount(1);
+
+				RItem check = null;
+				for (RItem key: GuildShop.itemPrices.keySet())
+					if (key.compare(ri))
+						check = key;
+				
+				if (args[0].equalsIgnoreCase("delete") || args[0].equalsIgnoreCase("del") || args[0].equalsIgnoreCase("d"))
+				{
+					if (check == null)
+					{
+						msg(p, "That item does not exist in the price list.");
+						return true;
+					}
+					GuildShop.itemPrices.remove(check);
+					GuildShop.saveItemPrices();
+					msg(p, "Item cost of &6" + CakeLibrary.getItemName(is) + "&e removed.");
+					return true;
+				}
+				
+				if (args[0].equalsIgnoreCase("check") || args[0].equalsIgnoreCase("c"))
+				{
+					if (check == null)
+					{
+						msg(p, "That item does not exist in the price list.");
+						return true;
+					}
+					msg(p, "Item cost of &6" + CakeLibrary.getItemName(is) + "&e: &6" + GuildShop.itemPrices.get(check) + " Gold");
+					return true;
+				}
+
+				int cost = 0;
+					try
+					{
+						cost = Integer.parseInt(args[0]);
+					} catch (Exception e)
+					{
+						msg(p, "That is not a number.");
+						return true;
+					}
+
+				GuildShop.itemPrices.put(check == null ? ri : check, cost);
+				GuildShop.saveItemPrices();
+				msg(p, "Item cost of &6" + CakeLibrary.getItemName(is) + "&e set to &6" + cost + "&e.");
+
 				return true;
 			}
 			if (command.getName().equalsIgnoreCase("itemfood"))

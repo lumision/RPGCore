@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.util.UUID;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -40,6 +41,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.server.TabCompleteEvent;
 import org.bukkit.inventory.Inventory;
@@ -69,6 +71,7 @@ import rpgcore.player.AccessoryInventory;
 import rpgcore.player.RPlayer;
 import rpgcore.player.RPlayerManager;
 import rpgcore.recipes.RPGRecipe;
+import rpgcore.shop.GuildShop;
 import rpgcore.shop.Shop;
 import rpgcore.shop.ShopItem;
 import rpgcore.shop.ShopManager;
@@ -146,7 +149,7 @@ public class RPGListener implements Listener
 			return;
 		LivingEntity e = (LivingEntity) entity;
 
-		if (CakeLibrary.getNearbyEntities(e.getLocation(), 64).size() > 128)
+		if (CakeLibrary.getNearbyEntities(e.getLocation(), 64).size() > 48)
 		{
 			event.setCancelled(true);
 			return;
@@ -212,20 +215,9 @@ public class RPGListener implements Listener
 		String name = inv.getName();
 		if (!CakeLibrary.hasColor(name))
 			return;
-		name = CakeLibrary.removeColorCodes(name);
-		boolean crystal = false;
-		for (BonusStatCrystal type: BonusStatCrystal.values())
-			if (name.equals(type.getItemName()))
-			{
-				crystal = true;
-				break;
-			}
-		if (name.equals("Party Info") || name.equals("Equipment Enhancement") || name.equals("Stats / Buffs") || name.equals("Class Selection") || name.startsWith("Skillbook: ") || name.startsWith("Learnt Skills") || crystal)
-		{
-			for (int i: event.getRawSlots())
-				if (i < event.getView().getTopInventory().getSize())
-					event.setCancelled(true);
-		}
+		for (int i: event.getRawSlots())
+			if (i < event.getView().getTopInventory().getSize())
+				event.setCancelled(true);
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -331,6 +323,13 @@ public class RPGListener implements Listener
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
+	public void handleItemPickup(PlayerPickupItemEvent event)
+	{
+		if (CakeLibrary.hasColor(event.getPlayer().getOpenInventory().getTitle()))
+			event.setCancelled(true);
+	}
+
+	@EventHandler(priority = EventPriority.HIGHEST)
 	public void handleInventoryClick(InventoryClickEvent event)
 	{
 		Player p = (Player) event.getWhoClicked();
@@ -347,7 +346,7 @@ public class RPGListener implements Listener
 					event.setCancelled(true);
 					if (!CakeLibrary.isItemStackNull(event.getCursor()))
 						return;
-					new RPGEvents.PlaySoundEffect(p, Sound.UI_BUTTON_CLICK, 0.2F, 1.0F).run();
+					p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 1.0F);
 					p.openInventory(rp.accessoryInventory.getInventory());
 					return;
 				} else if (event.getRawSlot() == 26) //Buffs / Stats
@@ -355,7 +354,7 @@ public class RPGListener implements Listener
 					event.setCancelled(true);
 					if (!CakeLibrary.isItemStackNull(event.getCursor()))
 						return;
-					new RPGEvents.PlaySoundEffect(p, Sound.UI_BUTTON_CLICK, 0.2F, 1.0F).run();
+					p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 1.0F);
 					rp.buffInventory.updateInventory();
 					p.openInventory(rp.buffInventory.getInventory());
 					return;
@@ -364,7 +363,7 @@ public class RPGListener implements Listener
 					event.setCancelled(true);
 					if (!CakeLibrary.isItemStackNull(event.getCursor()))
 						return;
-					new RPGEvents.PlaySoundEffect(p, Sound.UI_BUTTON_CLICK, 0.2F, 1.0F).run();
+					p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 1.0F);
 					p.openInventory(SkillInventory2.getSkillInventory(rp, rp.lastSkillbookTier));
 					return;
 				}
@@ -415,7 +414,10 @@ public class RPGListener implements Listener
 			{
 				event.setCancelled(true);
 				if ((hasColor 
-						&& !name.equals("Equipment Enhancement") && !name.equals("Class Selection") && !name.startsWith("Conversation - ")) 
+						&& !name.equals("Equipment Enhancement") 
+						&& !name.equals("Class Selection") 
+						&& !name.equals("Receptionist") 
+						&& !name.startsWith("Conversation - ")) 
 						|| !hasColor)
 				{
 					int check = invSlot + 9;
@@ -423,14 +425,14 @@ public class RPGListener implements Listener
 					{
 						if (!CakeLibrary.isItemStackNull(event.getCursor()))
 							return;
-						new RPGEvents.PlaySoundEffect(p, Sound.UI_BUTTON_CLICK, 0.2F, 1.0F).run();
+						p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 1.0F);
 						p.openInventory(rp.accessoryInventory.getInventory());
 						return;
 					} else if (check == 26) //Buffs / Stats
 					{
 						if (!CakeLibrary.isItemStackNull(event.getCursor()))
 							return;
-						new RPGEvents.PlaySoundEffect(p, Sound.UI_BUTTON_CLICK, 0.2F, 1.0F).run();
+						p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 1.0F);
 						rp.buffInventory.updateInventory();
 						p.openInventory(rp.buffInventory.getInventory());
 						return;
@@ -438,7 +440,7 @@ public class RPGListener implements Listener
 					{
 						if (!CakeLibrary.isItemStackNull(event.getCursor()))
 							return;
-						new RPGEvents.PlaySoundEffect(p, Sound.UI_BUTTON_CLICK, 0.2F, 1.0F).run();
+						p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 1.0F);
 						p.openInventory(SkillInventory2.getSkillInventory(rp, rp.lastSkillbookTier));
 						return;
 					}
@@ -494,9 +496,86 @@ public class RPGListener implements Listener
 					spawn.drops.put(ri, 1);
 					inv.addItem(current.clone());
 				}
-				new RPGEvents.PlaySoundEffect(p, Sound.UI_BUTTON_CLICK, 0.2F, 1.1F).run();
+				p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 1.1F);
 				spawn.saveDrops();
 				return;
+			}
+			else if (name.equals("Receptionist"))
+			{
+				event.setCancelled(true);
+				ItemStack current = event.getCurrentItem();
+				if (CakeLibrary.isItemStackNull(current))
+					return;
+
+				int amount = current.getAmount();
+
+				if (event.isRightClick())
+				{
+					if (!GuildShop.canBeSold(current))
+					{
+						RPGCore.msg(p, "This item cannot be sold.");
+						return;
+					}
+					current.setAmount(1);
+
+					int slot = 0;
+					boolean exists = false;
+					ItemStack item = null;
+					int itemAmount = 0;
+					for (; slot < inv.getSize(); slot++)
+					{
+						item = inv.getItem(slot);
+						if (CakeLibrary.isItemStackNull(item))
+							continue;
+						item = GuildShop.convertToUnpriced(item.clone());
+						itemAmount = item.getAmount();
+						if (itemAmount >= 64)
+							continue;
+						item.setAmount(1);
+						if (item.equals(current))
+						{
+							exists = true;
+							break;
+						}
+					}
+
+					if (exists)
+					{
+						item.setAmount(itemAmount + 1);
+						inv.setItem(slot, GuildShop.convertToPriced(item));
+					} else
+					{
+						if (CakeLibrary.getInventoryVacantSlots(inv) == 0)
+						{
+							current.setAmount(amount);
+							return;
+						}
+						inv.addItem(GuildShop.convertToPriced(current.clone()));
+					}
+
+					current.setAmount(amount - 1);
+					event.setCurrentItem(current);
+					GuildShop.updateTotalPrice(inv);
+					p.updateInventory();
+					p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 1.1F);
+					return;
+				} else if (event.isLeftClick())
+				{
+					if (!GuildShop.canBeSold(current))
+					{
+						RPGCore.msg(p, "This item cannot be sold.");
+						return;
+					}
+					if (CakeLibrary.getInventoryVacantSlots(inv) == 0)
+						return;
+					inv.addItem(GuildShop.convertToPriced(current));
+					event.setCurrentItem(new ItemStack(Material.AIR));
+					GuildShop.updateTotalPrice(inv);
+					p.updateInventory();
+					p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 1.1F);
+					return;
+				} else
+					return;
 			}
 			else if (name.equals("Accessories") && event.isShiftClick())
 			{
@@ -539,7 +618,7 @@ public class RPGListener implements Listener
 							inv.setItem(slot, current);
 							rp.accessoryInventory.slots[riSlot] = ri;
 						}
-						new RPGEvents.PlaySoundEffect(p, Sound.UI_BUTTON_CLICK, 0.2F, 1.1F).run();
+						p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 1.1F);
 						RPGCore.playerManager.writeData(rp);
 						return;
 					}
@@ -568,7 +647,7 @@ public class RPGListener implements Listener
 							event.setCurrentItem(new ItemStack(Material.AIR));
 							inv.setItem(slot, current);
 						}
-						new RPGEvents.PlaySoundEffect(p, Sound.UI_BUTTON_CLICK, 0.2F, 1.1F).run();
+						p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 1.1F);
 						EnhancementInventory.updateMiddleItem(inv);
 						return;
 					}
@@ -645,6 +724,99 @@ public class RPGListener implements Listener
 					c.updateUI();
 				}
 		}
+		else if (name.startsWith("Item Prices - Page "))
+		{
+			event.setCancelled(true);
+			ItemStack inSlot = event.getCurrentItem();
+			if (CakeLibrary.isItemStackNull(inSlot))
+				return;
+			p.getInventory().addItem(GuildShop.convertToUnpriced(inSlot.clone()));
+			p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 0.9F);
+			return;
+		}
+		else if (name.startsWith("Receptionist"))
+		{
+			event.setCancelled(true);
+			if (event.getSlot() == inv.getSize() - 1)
+			{
+				int gold = GuildShop.calculateTotalInventoryPrice(inv);
+				if (gold == 0)
+					return;
+				for (int i = 0; i < inv.getSize() - 3; i++)
+					inv.setItem(i, new ItemStack(Material.AIR));
+				rp.addGold(gold);
+				RPGCore.msg(p, "&e" + gold + " Gold &6has been added to your account");
+				p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.2F, 1.0F);
+				new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 89).run();
+				inv.setItem(inv.getSize() - 1, GuildShop.slotSell.clone());
+				return;
+			}
+			if (event.getSlot() == inv.getSize() - 2)
+				return;
+			ItemStack current = event.getCurrentItem();
+			if (CakeLibrary.isItemStackNull(current))
+				return;
+
+			if (event.isRightClick())
+			{
+				int amount = current.getAmount();
+				current.setAmount(1);
+				p.getInventory().addItem(GuildShop.convertToUnpriced(current.clone()));
+				if (amount == 1)
+				{
+					event.setCurrentItem(new ItemStack(Material.AIR));
+					if (event.getSlot() < inv.getSize() - 1)
+						for (int i = event.getSlot() + 1; i < inv.getSize() - 2; i++)
+						{
+							if (i == inv.getSize() - 3)
+							{
+								inv.setItem(i, new ItemStack(Material.AIR));
+								break;
+							}
+							ItemStack move = inv.getItem(i);
+							if (CakeLibrary.isItemStackNull(move))
+							{
+								inv.setItem(i - 1, new ItemStack(Material.AIR));
+								break;
+							}
+							inv.setItem(i - 1, move.clone());
+						}
+				} else
+				{
+					current.setAmount(amount - 1);
+					event.setCurrentItem(GuildShop.convertToPriced(GuildShop.convertToUnpriced(current)));
+				}
+				GuildShop.updateTotalPrice(inv);
+				p.updateInventory();
+				p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 0.9F);
+			} else if (event.isLeftClick())
+			{
+				p.getInventory().addItem(GuildShop.convertToUnpriced(current));
+				event.setCurrentItem(new ItemStack(Material.AIR));
+
+				if (event.getSlot() < inv.getSize() - 1)
+					for (int i = event.getSlot() + 1; i < inv.getSize() - 2; i++)
+					{
+						if (i == inv.getSize() - 3)
+						{
+							inv.setItem(i, new ItemStack(Material.AIR));
+							break;
+						}
+						ItemStack move = inv.getItem(i);
+						if (CakeLibrary.isItemStackNull(move))
+						{
+							inv.setItem(i - 1, new ItemStack(Material.AIR));
+							break;
+						}
+						inv.setItem(i - 1, move.clone());
+					}
+				GuildShop.updateTotalPrice(inv);
+				p.updateInventory();
+				p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 0.9F);
+			} else
+				return;
+			return;
+		}
 		else if (name.startsWith("Drops - "))
 		{
 			event.setCancelled(true);
@@ -664,6 +836,13 @@ public class RPGListener implements Listener
 			if (riCheck == null)
 				return;
 
+			if (event.isShiftClick())
+			{
+				p.getInventory().addItem(riCheck.createItem());
+				p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 0.9F);
+				return;
+			}
+
 			int amt = spawn.drops.get(riCheck) - 1;
 			if (amt <= 0)
 				spawn.drops.remove(riCheck);
@@ -678,7 +857,7 @@ public class RPGListener implements Listener
 				current.setAmount(stack);
 				event.setCurrentItem(current);
 			}
-			new RPGEvents.PlaySoundEffect(p, Sound.UI_BUTTON_CLICK, 0.2F, 0.9F).run();
+			p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 0.9F);
 			spawn.saveDrops();
 			return;
 		}
@@ -726,7 +905,7 @@ public class RPGListener implements Listener
 						rp.accessoryInventory.slots[riSlot] = ri;
 					}
 
-					new RPGEvents.PlaySoundEffect(p, Sound.UI_BUTTON_CLICK, 0.2F, 1.1F).run();
+					p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 1.1F);
 					RPGCore.playerManager.writeData(rp);
 				} else
 				{
@@ -736,7 +915,7 @@ public class RPGListener implements Listener
 							return;
 						event.setCancelled(false);
 						RPGEvents.scheduleRunnable(new RPGEvents.SetInventoryItem(inv, event.getSlot(), AccessoryInventory.slotItem.clone()), 1);
-						new RPGEvents.PlaySoundEffect(p, Sound.UI_BUTTON_CLICK, 0.2F, 0.9F).run();
+						p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 0.9F);
 						rp.accessoryInventory.slots[riSlot] = null;
 						return;
 					}
@@ -745,7 +924,7 @@ public class RPGListener implements Listener
 					{
 						event.setCursor(inSlot);
 						event.setCurrentItem(AccessoryInventory.slotItem.clone());
-						new RPGEvents.PlaySoundEffect(p, Sound.UI_BUTTON_CLICK, 0.2F, 0.9F).run();
+						p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 0.9F);
 						rp.accessoryInventory.slots[riSlot] = null;
 					} else
 					{
@@ -771,7 +950,7 @@ public class RPGListener implements Listener
 						}
 						event.setCursor(inSlot);
 						event.setCurrentItem(cursor);
-						new RPGEvents.PlaySoundEffect(p, Sound.UI_BUTTON_CLICK, 0.2F, 1.1F).run();
+						p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 1.1F);
 						rp.accessoryInventory.slots[riSlot] = new RItem(cursor);
 					}
 					RPGCore.playerManager.writeData(rp);
@@ -813,7 +992,7 @@ public class RPGListener implements Listener
 						event.setCursor(new ItemStack(Material.AIR));
 					}
 
-					new RPGEvents.PlaySoundEffect(p, Sound.UI_BUTTON_CLICK, 0.2F, 1.1F).run();
+					p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 1.1F);
 					EnhancementInventory.updateMiddleItem(inv);
 				} else
 				{
@@ -823,7 +1002,7 @@ public class RPGListener implements Listener
 							return;
 						event.setCancelled(false);
 						RPGEvents.scheduleRunnable(new RPGEvents.SetInventoryItem(inv, event.getSlot(), EnhancementInventory.slotItem.clone()), 1);
-						new RPGEvents.PlaySoundEffect(p, Sound.UI_BUTTON_CLICK, 0.2F, 0.9F).run();
+						p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 0.9F);
 						EnhancementInventory.updateMiddleItem(inv);
 						return;
 					}
@@ -832,7 +1011,7 @@ public class RPGListener implements Listener
 					{
 						event.setCursor(inSlot);
 						event.setCurrentItem(EnhancementInventory.slotItem.clone());
-						new RPGEvents.PlaySoundEffect(p, Sound.UI_BUTTON_CLICK, 0.2F, 0.9F).run();
+						p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 0.9F);
 					} else
 					{
 						if (cursor.getAmount() > 1)
@@ -842,7 +1021,7 @@ public class RPGListener implements Listener
 						}
 						event.setCursor(inSlot);
 						event.setCurrentItem(cursor);
-						new RPGEvents.PlaySoundEffect(p, Sound.UI_BUTTON_CLICK, 0.2F, 1.1F).run();
+						p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 1.1F);
 					}
 					EnhancementInventory.updateMiddleItem(inv);
 				}
@@ -871,7 +1050,7 @@ public class RPGListener implements Listener
 						event.setCursor(inSlot);
 						inv.setItem(13, new ItemStack(Material.AIR));
 					}
-					new RPGEvents.PlaySoundEffect(p, Sound.UI_BUTTON_CLICK, 0.2F, 0.9F).run();
+					p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 0.9F);
 					RPGEvents.scheduleRunnable(new RPGEvents.UpdateEnhancementInventoryMiddleSlot(inv, p), 1);
 					return;
 				}
@@ -901,7 +1080,7 @@ public class RPGListener implements Listener
 					return;
 				}
 				inv.setItem(13, EnhancementInventory.getSlotEnhance(0));
-				new RPGEvents.PlaySoundEffect(p, Sound.UI_BUTTON_CLICK, 0.2F, 0.9F).run();
+				p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 0.9F);
 				for (int i = 1; i < EnhancementInventory.maxState + 1; i++)
 					RPGEvents.scheduleRunnable(new RPGEvents.CheckEnhancementInventory(inv, p, i), i * 2);
 				return;
@@ -1169,6 +1348,18 @@ public class RPGListener implements Listener
 			{
 				xp += 10;
 				b.getWorld().dropItem(b.getLocation(), calcite.clone()).setVelocity(new Vector(0, 0.5F, 0));
+			} else if (prospector.lastCheckedLevel >= 3 && RPGCore.rand.nextInt(30) == 0)
+			{
+				xp += 30;
+				b.getWorld().dropItem(b.getLocation(), platinum.clone()).setVelocity(new Vector(0, 0.5F, 0));
+			} else if (prospector.lastCheckedLevel >= 5 && RPGCore.rand.nextInt(40) == 0)
+			{
+				xp += 50;
+				b.getWorld().dropItem(b.getLocation(), topaz.clone()).setVelocity(new Vector(0, 0.5F, 0));
+			} else if (prospector.lastCheckedLevel >= 8 && RPGCore.rand.nextInt(50) == 0)
+			{
+				xp += 80;
+				b.getWorld().dropItem(b.getLocation(), sapphire.clone()).setVelocity(new Vector(0, 0.5F, 0));
 			}
 			rp.addSideclassXP(SideClassType.PROSPECTOR, xp);
 		} else if (b.getType().equals(Material.COBBLESTONE))
@@ -1216,7 +1407,7 @@ public class RPGListener implements Listener
 		RPlayer rp = RPGCore.playerManager.getRPlayer(player.getUniqueId());
 		if (rp == null)
 			return;
-		ItemStack is = player.getItemInHand();
+		ItemStack is = event.getItemInHand();
 		if (CakeLibrary.isItemStackNull(is))
 			return;
 		String name = CakeLibrary.getItemName(is);
@@ -1328,7 +1519,7 @@ public class RPGListener implements Listener
 					int gold = Integer.parseInt(name.substring(6, name.length() - 1).replaceAll(",", "")) * is.getAmount();
 					rp.addGold(gold);
 					p.setItemInHand(null);
-					RPGCore.msg(p, "&e" + gold + " Gold &6has been added to your bank");
+					RPGCore.msg(p, "&e" + gold + " Gold &6has been added to your account");
 					event.setCancelled(true);
 					return;
 				}

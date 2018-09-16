@@ -616,7 +616,7 @@ public class RPlayer
 			if (acc != null)
 				equipment += acc.magicDamage;
 
-		int additions = 1;
+		int additions = 4;
 		float multiplier = 1.0F;
 
 		for (String skill: skills)
@@ -654,7 +654,7 @@ public class RPlayer
 			if (acc != null)
 				equipment += acc.bruteDamage;
 
-		int additions = 1;
+		int additions = 4;
 		float multiplier = 1.0F;
 
 		for (String skill: skills)
@@ -678,11 +678,11 @@ public class RPlayer
 		float percentage = 0;
 
 		for (RItem eq: rEquips)
-			if (eq != null)
+			if (eq != null && eq.cooldownReduction != 0)
 				percentage += addRemainingPercentage(percentage, eq.cooldownReduction);
 
 		for (RItem acc: accessoryInventory.slots)
-			if (acc != null)
+			if (acc != null && acc.cooldownReduction != 0)
 				percentage += addRemainingPercentage(percentage, acc.cooldownReduction);
 
 		for (Buff b: buffs)
@@ -697,11 +697,11 @@ public class RPlayer
 		float percentage = 0;
 
 		for (RItem eq: rEquips)
-			if (eq != null)
+			if (eq != null && eq.damageReduction != 0)
 				percentage += addRemainingPercentage(percentage, eq.damageReduction);
 
 		for (RItem acc: accessoryInventory.slots)
-			if (acc != null)
+			if (acc != null && acc.damageReduction != 0)
 				percentage += addRemainingPercentage(percentage, acc.damageReduction);
 
 		int additions = 0;
@@ -728,7 +728,7 @@ public class RPlayer
 				sum *= eq.attackSpeed;
 
 		for (RItem acc: accessoryInventory.slots)
-			if (acc != null)
+			if (acc != null && acc.attackSpeed != 0)
 				sum *= acc.attackSpeed;
 
 		float multiplier = 1.0F;

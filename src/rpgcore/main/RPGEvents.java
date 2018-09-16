@@ -40,7 +40,7 @@ import rpgcore.npc.CustomNPC;
 import rpgcore.npc.NPCManager;
 import rpgcore.player.RPlayer;
 import rpgcore.skills.effect.ArmageddonE;
-import rpgcore.skills.effect.InfinityTerminusE;
+import rpgcore.skills.effect.HellfireTerminusE;
 import rpgcore.songs.RSongManager;
 import rpgcore.songs.RunningTrack;
 
@@ -78,7 +78,7 @@ public class RPGEvents implements Runnable
 		RPGMonster.remove.clear();
 
 		ArmageddonE.globalTick();
-		InfinityTerminusE.globalTick();
+		HellfireTerminusE.globalTick();
 		DamageOverTime.globalTick();
 	}
 

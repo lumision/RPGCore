@@ -7,6 +7,7 @@ import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.inventory.EntityEquipment;
@@ -37,12 +38,11 @@ public class MageZombie extends RPGMonster
 		entity.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, Integer.MAX_VALUE, 0));
 		
 		ItemStack helmet = new ItemStack(Material.LEATHER_HELMET);
-		LeatherArmorMeta meta = (LeatherArmorMeta) helmet.getItemMeta();
-		meta.setColor(Color.fromBGR(64, 64, 255));
-		helmet.setItemMeta(meta);
+		ItemStack hand = new ItemStack(Material.STICK);
+		hand.addUnsafeEnchantment(Enchantment.KNOCKBACK, 1);
 		
 		EntityEquipment eq = entity.getEquipment();
-		eq.setItemInMainHand(RPGCore.getItemFromDatabase("ZombieMageStaff").createItem());
+		eq.setItemInMainHand(hand);
 		eq.setItemInMainHandDropChance(0);
 		eq.setHelmet(helmet);
 		eq.setHelmetDropChance(0);

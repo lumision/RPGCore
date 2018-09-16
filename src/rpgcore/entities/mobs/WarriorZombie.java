@@ -4,16 +4,18 @@ import java.util.ArrayList;
 
 import org.bukkit.Effect;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.inventory.EntityEquipment;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 import rpgcore.main.CakeLibrary;
-import rpgcore.main.RPGCore;
 import rpgcore.main.RPGEvents;
 
 public class WarriorZombie extends RPGMonster
@@ -31,9 +33,11 @@ public class WarriorZombie extends RPGMonster
 
 		entity.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, Integer.MAX_VALUE, 4));
 		entity.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, Integer.MAX_VALUE, 0));
+		ItemStack hand = new ItemStack(Material.IRON_SWORD);
+		hand.addUnsafeEnchantment(Enchantment.DAMAGE_ALL, 1);
 		
 		EntityEquipment eq = entity.getEquipment();
-		eq.setItemInMainHand(RPGCore.getItemFromDatabase("ZombieWarriorSword").createItem());
+		eq.setItemInMainHand(hand);
 		eq.setItemInMainHandDropChance(0);
 	}
 

@@ -140,12 +140,12 @@ public class RPGClass
 		case MAGE:
 			if (level >= 2)
 				player.learnSkill(RPGSkill.getSkill(ArcaneBlast.skillName));
+			if (level >= 4)
+				player.learnSkill(RPGSkill.getSkill(ArcaneSpears.skillName));
 			if (level >= 5)
 				player.learnSkill(RPGSkill.getSkill(Vitality1.skillName));
 			if (level >= 6)
 				player.learnSkill(RPGSkill.getSkill(MagicMastery1.skillName));
-			if (level >= 4)
-				player.learnSkill(RPGSkill.getSkill(ArcaneSpears.skillName));
 			if (level >= 8)
 				player.learnSkill(RPGSkill.getSkill(IceBolt.skillName));
 			

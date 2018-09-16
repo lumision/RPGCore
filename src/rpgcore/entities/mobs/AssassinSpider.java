@@ -16,8 +16,8 @@ import rpgcore.main.RPGEvents;
 
 public class AssassinSpider extends RPGMonster
 {
-	public static double maxHealth = 120.0D;
-	public static String name = "§bAssassin Spider §7Lv. 11";
+	public static double maxHealth = 150.0D;
+	public static String name = "§bAssassin Spider §7Lv. 12";
 
 	public AssassinSpider(Monster entity)
 	{

@@ -16,6 +16,7 @@ import rpgcore.main.RPGEvents;
 import rpgcore.npc.ConversationData.ConversationPart;
 import rpgcore.npc.ConversationData.ConversationPartType;
 import rpgcore.player.RPlayer;
+import rpgcore.shop.GuildShop;
 import rpgcore.shop.Shop;
 import rpgcore.shop.ShopManager;
 
@@ -85,6 +86,14 @@ public class NPCConversation
 		{
 			Shop shop = ShopManager.getShopWithDB(part.string.split(": ")[1]);
 			RPGEvents.scheduleRunnable(new RPGEvents.InventoryOpen(p, shop.getShopInventory()), 1);
+			if (part.next.size() <= 0)
+				part = null;
+			else
+				part = part.next.get(0);
+			return -1;
+		} else if (part.string.toLowerCase().startsWith("@ui: receptionist"))
+		{
+			RPGEvents.scheduleRunnable(new RPGEvents.InventoryOpen(p, GuildShop.getGuildShopInventory()), 1);
 			if (part.next.size() <= 0)
 				part = null;
 			else
