@@ -4,11 +4,15 @@ name: RPGCore
 depend: [WorldEdit]
 
 commands:
+  eq:
+    description: Peek into someone else's equipment
+  colors:
+    description: Lists all colors
   area:
     description: Core area management command
   arena:
     description: Core arena management command
-  sound:
+  testsound:
     description: Plays a sound
   skills:
     description: Opens up your skillbook
@@ -22,8 +26,6 @@ commands:
     description: Edits attributes/stats of an item
   party:
     description: Manages your party
-  stats:
-    description: Checks your stats
   mob:
     description: Spawns a mob for testing
   mobdrops:
@@ -62,7 +64,7 @@ commands:
   itemprice:
     description: Sets the price of an item
   buffs:
-    aliases: b
+    aliases: [b, stats]
     description: Checks your buffs
   enhance:
     description: Opens up the item enhancement UI
