@@ -22,11 +22,18 @@ public class SkillInventory2
 
 		int passiveSkillIndex = 0;
 		int activeSkillIndex = 0;
+		int passiveSkillIndexAll = 8;
+		int activeSkillIndexAll = 8;
 		for (RPGSkill skill: RPGSkill.skillList)
 			if (skill.skillTier == tier 
 			&& (skill.classType.equals(player.currentClass) || skill.classType.equals(ClassType.ALL)) 
 			&& player.skills.contains(skill.skillName))
-				inv.setItem(skill.passiveSkill ? passiveSkillIndex++ : 9 + activeSkillIndex++, skill.getSkillItem());
+				inv.setItem(skill.passiveSkill ? 
+						(skill.classType.equals(ClassType.ALL) ? 
+						passiveSkillIndexAll-- : passiveSkillIndex++) : 
+							(skill.classType.equals(ClassType.ALL) ? 
+									9 + activeSkillIndexAll-- : 
+										9 + activeSkillIndex++), skill.getSkillItem());
 
 		inv.setItem(18 + 3, getPrevTierItem(player, tier));
 		inv.setItem(18 + 5, getNextTierItem(player, tier));

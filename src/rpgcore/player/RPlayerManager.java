@@ -37,6 +37,7 @@ public class RPlayerManager
 			if (rp == null)
 				rp = addRPlayer(p.getUniqueId());
 			rp.updatePlayerREquips();
+			rp.updateStats();
 			p.setScoreboard(rp.scoreboard);
 		}
 	}
@@ -77,20 +78,15 @@ public class RPlayerManager
 
 	public void playersTick()
 	{
-		for (RPlayer rp: players)
+		for (int i = 0; i < players.size(); i++)
+		{
+			RPlayer rp = players.get(i);
+			if (RPGCore.serverAliveTicks % 20 == 0)
+				rp.tick20();
+			if (RPGCore.serverAliveTicks % 10 == 0)
+				rp.tick10();
 			rp.tick();
-	}
-
-	public void playersTick10()
-	{
-		for (RPlayer rp: players)
-			rp.tick10();
-	}
-
-	public void playersTick20()
-	{
-		for (RPlayer rp: players)
-			rp.tick20();
+		}
 	}
 
 	public int getRPlayerAmount()
@@ -101,26 +97,28 @@ public class RPlayerManager
 	public void readData()
 	{
 		players.clear();
+		UUID uuid = null;
+		ClassType currentClass = ClassType.ALL;
+		ArrayList<RPGClass> classes = new ArrayList<RPGClass>();
+		ArrayList<RPGSideClass> sideClasses = new ArrayList<RPGSideClass>();
+		ArrayList<String> skills = new ArrayList<String>();
+		Map<String, String> npcFlags = new HashMap<String, String>();
+		boolean tutorialCompleted = false;
+		int lastSkillbookTier = 1;
+		int gold = 0;
+		int tokens = 0;
+		int arenaInstanceID = -1;
+		int cooldownDisplayMode = 0;
+		Location leftForArenaLocation = null;
 		for (File file: playersFolder.listFiles())
 		{
 			if (!file.getName().endsWith(".yml"))
 				continue;
 			RPlayer rp = null;
 			String uuidString = file.getName().substring(0, file.getName().length() - 4);
+			uuid = UUID.fromString(uuidString);
 			try
 			{
-				UUID uuid = UUID.fromString(uuidString);
-				ClassType currentClass = ClassType.MAGE;
-				ArrayList<RPGClass> classes = new ArrayList<RPGClass>();
-				ArrayList<RPGSideClass> sideClasses = new ArrayList<RPGSideClass>();
-				ArrayList<String> skills = new ArrayList<String>();
-				Map<String, String> npcFlags = new HashMap<String, String>();
-				boolean tutorialCompleted = false;
-				int lastSkillbookTier = 1;
-				int gold = 0;
-				int tokens = 0;
-				int arenaInstanceID = -1;
-				Location leftForArenaLocation = null;
 
 				ArrayList<String> lines = CakeLibrary.readFile(file);
 				String header = "";
@@ -165,6 +163,14 @@ public class RPlayerManager
 							try
 							{
 								lastSkillbookTier = Integer.parseInt(s.split(": ")[1]);
+							} catch (Exception e) {}
+							continue;
+						}
+						if (s.startsWith("cooldownDisplayMode: "))
+						{
+							try
+							{
+								cooldownDisplayMode = Integer.parseInt(s.split(": ")[1]);
 							} catch (Exception e) {}
 							continue;
 						}
@@ -261,6 +267,7 @@ public class RPlayerManager
 				rp.lastSkillbookTier = lastSkillbookTier;
 				rp.arenaInstanceID = arenaInstanceID;
 				rp.leftForArenaLocation = leftForArenaLocation;
+				rp.cooldownDisplayMode = cooldownDisplayMode;
 			} catch (Exception e)
 			{
 				RPGCore.msgConsole("&4Error reading RPlayer file: " + file.getName());
@@ -281,6 +288,20 @@ public class RPlayerManager
 				RPGCore.msgConsole("&4Error reading RPlayer accessories: " + file.getName());
 				e.printStackTrace();
 			}
+
+			uuid = null;
+			currentClass = ClassType.ALL;
+			classes = new ArrayList<RPGClass>();
+			sideClasses = new ArrayList<RPGSideClass>();
+			skills = new ArrayList<String>();
+			npcFlags = new HashMap<String, String>();
+			tutorialCompleted = false;
+			lastSkillbookTier = 1;
+			gold = 0;
+			tokens = 0;
+			arenaInstanceID = -1;
+			cooldownDisplayMode = 0;
+			leftForArenaLocation = null;
 		}
 	}
 
@@ -295,7 +316,10 @@ public class RPlayerManager
 			lines.add("gold: " + rp.getGold());
 			lines.add("tutorialCompleted: " + rp.tutorialCompleted);
 			lines.add("lastSkillbookTier: " + rp.lastSkillbookTier);
-			lines.add("arenaInstanceID: " + rp.arenaInstanceID);
+			if (rp.arenaInstanceID != -1)
+				lines.add("arenaInstanceID: " + rp.arenaInstanceID);
+			if (rp.cooldownDisplayMode != 0)
+			lines.add("cooldownDisplayMode: " + rp.cooldownDisplayMode);
 			lines.add("classes:");
 			for (RPGClass rc: rp.classes)
 				lines.add(" " + rc.classType.toString() + ", " + rc.xp); 

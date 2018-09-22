@@ -52,7 +52,7 @@ public class RPGParty
 
 			if (p != null)
 				is = CakeLibrary.addLore(is, "&7Atk Damage: " + color + rp.getDamageOfClass(),
-						"&7Attack Speed: " + color + "x" + String.format("%.1f", 1.0D / rp.calculateCastDelayMultiplier()));
+						"&7Attack Speed: " + color + "x" + String.format("%.1f", 1.0D / rp.getStats().attackSpeedMultiplier));
 			else
 				is = CakeLibrary.addLore(is, "&7 * Offline");
 			if (rp == host)

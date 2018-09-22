@@ -11,7 +11,7 @@ public class ReinforcedZombie extends RPGMonster
 	
 	public ReinforcedZombie(Monster entity)
 	{
-		super(entity);
+		super(entity, false);
 		entity.setMaxHealth(maxHealth);
 		entity.setHealth(maxHealth);
 		entity.setCustomName(name);

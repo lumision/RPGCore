@@ -12,7 +12,9 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
-import org.bukkit.entity.Monster;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
@@ -26,23 +28,29 @@ import rpgcore.areas.Arena;
 import rpgcore.areas.ArenaInstance;
 import rpgcore.buff.Buff;
 import rpgcore.buff.BuffInventory;
+import rpgcore.buff.Stats;
 import rpgcore.classes.RPGClass;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.external.Title;
+import rpgcore.item.BonusStat;
+import rpgcore.item.BonusStat.BonusStatType;
 import rpgcore.item.RItem;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
 import rpgcore.main.RPGEvents;
+import rpgcore.monsterbar.MonsterBar;
 import rpgcore.npc.CustomNPC;
 import rpgcore.sideclasses.RPGSideClass;
 import rpgcore.sideclasses.RPGSideClass.SideClassType;
-import rpgcore.skills.BladeMastery;
+import rpgcore.skills.BladeMastery1;
 import rpgcore.skills.IronBody;
 import rpgcore.skills.LightFeet;
 import rpgcore.skills.MagicMastery1;
 import rpgcore.skills.MagicMastery2;
 import rpgcore.skills.MagicMastery3;
+import rpgcore.skills.PriestsBlessing;
 import rpgcore.skills.RPGSkill;
+import rpgcore.skills.Vigor1;
 import rpgcore.skills.Wisdom;
 import rpgcore.tutorial.Tutorial;
 
@@ -88,6 +96,17 @@ public class RPlayer
 	public int consumableCooldownTicks;
 	public int arenaEnterLeaveTicks;
 	public AccessoryInventory accessoryInventory;
+	public MonsterBar monsterBar;
+	public int lastBarTicks;
+	public HashMap<BossBar, Integer> cooldownBars = new HashMap<BossBar, Integer>();
+	public int cooldownDisplayMode = 0; //0 = bossbar, 1 = title, 2 = chat
+	public int recoverMaxTicks = 60;
+	private static final int recoverMaxTicksDefault = 60;
+	private Stats lastCalculatedStats;
+	private Stats postStatsMultipliers;
+	public boolean updateStats;
+	public int invulnerabilityTicks;
+	public int uiClickDelay;
 
 	public int sneakTicks;
 	public int heartspanTicks;
@@ -111,7 +130,7 @@ public class RPlayer
 		this.castDelays = new HashMap<String, Integer>();
 		this.buffs = new ArrayList<Buff>();
 		this.titleQueue = new ArrayList<Title>();
-		this.currentClass = ClassType.MAGE;
+		this.currentClass = ClassType.ALL;
 		this.lastSkill = "";
 		this.partyID = -1;
 		this.arenaInstanceID = -1;
@@ -186,35 +205,40 @@ public class RPlayer
 
 	public void enterArena(Arena arena)
 	{
-		leaveArena();
-		Player p = getPlayer();
-		if (p == null)
+		if (getPlayer() == null)
 			return;
+		arenaEnterLeaveTicks = 20;
+		leaveArena(false);
 		ArenaInstance ai = null;
-		for (Player p1: Bukkit.getOnlinePlayers())
-		{
-			if (p1.equals(p))
-				continue;
-			RPlayer rp1 = RPGCore.playerManager.getRPlayer(p1.getUniqueId());
-			if (rp1.partyID != partyID)
-				continue;
-			if (rp1.arenaInstanceID >= 0)
-				ai = ArenaInstance.getArenaInstance(arenaInstanceID);
-		}
+		if (partyID != -1)
+			for (Player p1: Bukkit.getOnlinePlayers())
+			{
+				if (p1 == getPlayer())
+					continue;
+				RPlayer rp1 = RPGCore.playerManager.getRPlayer(p1.getUniqueId());
+				if (rp1.partyID != partyID)
+					continue;
+				if (rp1.arenaInstanceID >= 0)
+				{
+					ai = ArenaInstance.getArenaInstance(rp1.arenaInstanceID);
+					if (!ai.arena.schematicName.equals(arena.schematicName))
+						ai = null;
+				}
+			}
 		if (ai == null)
 			ai = ArenaInstance.getArenaInstance(arena);
-		leftForArenaLocation = p.getLocation();
-		p.teleport(ai.getSpawnLocation());
+		leftForArenaLocation = getPlayer().getLocation();
+		getPlayer().teleport(ai.getSpawnLocation());
 		ai.occupied = true;
 		arenaInstanceID = ai.arenaInstanceID;
-		arenaEnterLeaveTicks = 20;
 
 		RPGCore.playerManager.writeData(this);
 		ArenaInstance.writeArenaInstanceData();
 	}
 
-	public void leaveArena()
+	public void leaveArena(boolean teleport)
 	{
+		arenaEnterLeaveTicks = 20;
 		if (arenaInstanceID == -1)
 			return;
 		Player p = getPlayer();
@@ -226,19 +250,19 @@ public class RPlayer
 		boolean stillOccupied = false;
 		arenaInstanceID = -1;
 
-		for (RPlayer rp: RPGCore.playerManager.players)
-			if (rp.arenaInstanceID == ai.arenaInstanceID)
+		for (int i = 0; i < RPGCore.playerManager.players.size(); i++)
+			if (RPGCore.playerManager.players.get(i).arenaInstanceID == ai.arenaInstanceID)
 				stillOccupied = true;
 		ai.occupied = stillOccupied;
 		if (!ai.occupied)
 		{
-			for (Monster m: ai.mobList)
-				m.remove();
+			for (int i = 0; i < ai.mobList.size(); i++)
+				ai.mobList.get(i).remove();
 			ai.mobsSpawned = false;
 		}
-		p.teleport(ai.arena.exitExternal);
+		if (teleport)
+			p.teleport(ai.arena.exitExternal);
 		leftForArenaLocation = null;
-		arenaEnterLeaveTicks = 20;
 
 		RPGCore.playerManager.writeData(this);
 		ArenaInstance.writeArenaInstanceData();
@@ -269,7 +293,6 @@ public class RPlayer
 		objective.getScore(CakeLibrary.recodeColorCodes("&eLevel: ")).setScore(getLevel());
 		objective.getScore(CakeLibrary.recodeColorCodes("&e% EXP: ")).setScore(getPercentageToNextLevel());
 		objective.getScore(CakeLibrary.recodeColorCodes("&aGold: ")).setScore(gold);
-		objective.getScore(CakeLibrary.recodeColorCodes("&cDamage: ")).setScore(getDamageOfClass());
 
 		updateScoreboard = false;
 		lastUpdateScoreboardTicks = 20;
@@ -288,7 +311,7 @@ public class RPlayer
 
 	public int getDamageOfClass()
 	{
-		return (currentClass.getDamageType() == 0) ? calculateBruteDamage() : calculateMagicDamage();
+		return (currentClass.getDamageType() == 0) ? getStats().bruteDamageAdd : getStats().magicDamageAdd;
 	}
 
 	public RPGSideClass getSideClass(SideClassType sideClassType)
@@ -312,7 +335,34 @@ public class RPlayer
 		if (getPlayer() == null)
 			return;
 		updatePlayerREquips();
+		if (updateStats)
+		{
+			updateStats = false;
+			updateStats();
+		}
 		updateScoreboard = true;
+		int debuffTick = 0;
+		for (String skill: skills)
+			if (skill.startsWith("Tenacity"))
+				debuffTick += 20;
+		if (debuffTick > 0)
+			for (PotionEffect pe: getPlayer().getActivePotionEffects())
+			{
+				if (pe.getType().equals(PotionEffectType.BLINDNESS) 
+						|| pe.getType().equals(PotionEffectType.CONFUSION)
+						|| pe.getType().equals(PotionEffectType.HUNGER)
+						|| pe.getType().equals(PotionEffectType.POISON)
+						|| pe.getType().equals(PotionEffectType.SLOW)
+						|| pe.getType().equals(PotionEffectType.SLOW_DIGGING)
+						|| pe.getType().equals(PotionEffectType.UNLUCK)
+						|| pe.getType().equals(PotionEffectType.WEAKNESS)
+						|| pe.getType().equals(PotionEffectType.WITHER))
+				{
+					PotionEffect n = new PotionEffect(pe.getType(), pe.getDuration() - debuffTick, pe.getAmplifier());
+					getPlayer().removePotionEffect(pe.getType());
+					getPlayer().addPotionEffect(n);
+				}
+			}
 	}
 
 	public void tick10()
@@ -331,7 +381,7 @@ public class RPlayer
 
 		int maxHealthAdd = 0;
 		for (String skill: skills)
-			if (skill.startsWith("Vitality"))
+			if (skill.startsWith("Vitality "))
 				maxHealthAdd += 2;
 		getPlayer().setMaxHealth(20 + maxHealthAdd);
 	}
@@ -340,6 +390,22 @@ public class RPlayer
 	{
 		if (getPlayer() == null)
 			return;
+		if (uiClickDelay > 0)
+			uiClickDelay--;
+		if (invulnerabilityTicks > 0)
+			invulnerabilityTicks--;
+		if (lastBarTicks > -100)
+			lastBarTicks--;
+		else if (monsterBar != null)
+		{
+			if (monsterBar.bar.getPlayers().size() == 1)
+				monsterBar.destroy();
+			else
+			{
+				monsterBar.bar.removePlayer(getPlayer());
+				monsterBar = null;
+			}
+		}
 		if (arenaEnterLeaveTicks > 0)
 			arenaEnterLeaveTicks--;
 		if (lastUpdateScoreboardTicks > 0)
@@ -373,34 +439,64 @@ public class RPlayer
 			castDelays.remove(remove);
 
 		ArrayList<String> cooldownRemove = new ArrayList<String>();
+		ArrayList<BossBar> cooldownbarRemove = new ArrayList<BossBar>();
 		for (String key: cooldowns.keySet())
 		{
-			int value = cooldowns.get(key) - 1;
-			if (value <= 0)
+			int value = cooldowns.get(key);
+			if (value == 40)
+			{
+				BossBar bar = Bukkit.createBossBar("§a" + key, BarColor.GREEN, BarStyle.SOLID);
+				bar.addPlayer(getPlayer());
+				cooldownBars.put(bar, 40);
+			}
+			if (value <= 1)
 				cooldownRemove.add(key);
 			else
-				cooldowns.put(key, value);
+				cooldowns.put(key, value - 1);
 		}
+		if (RPGCore.serverAliveTicks % 2 == 0)
+			for (BossBar key: cooldownBars.keySet())
+			{
+				int value = cooldownBars.get(key) - 2;
+				if (value < 0)
+					cooldownbarRemove.add(key);
+				else
+				{
+					key.setProgress(value / 40.0D);
+					cooldownBars.put(key, value);
+				}
+			}
 		for (String remove: cooldownRemove)
 		{
 			cooldowns.remove(remove);
-			titleQueue.add(new Title("&6< "  + CakeLibrary.getItemName(RPGSkill.getSkill(remove).getSkillItem()) + "&6 >", "&eCooldown ended", 
-					10, 5, 10));
+			if (cooldownDisplayMode == 1)
+				titleQueue.add(new Title("&6< "  + CakeLibrary.getItemName(RPGSkill.getSkill(remove).getSkillItem()) + "&6 >", "&eCooldown ended", 
+						10, 5, 10));
+			else if (cooldownDisplayMode == 2)
+			{
+				RPGCore.msgNoTag(getPlayer(), "&a*** Cooldown time for &2" 
+						+ CakeLibrary.getItemName(RPGSkill.getSkill(remove).getSkillItem()) 
+						+ " &2ended&a ***");
+			}
+		}
+		for (BossBar remove: cooldownbarRemove)
+		{
+			remove.removeAll();
+			cooldownBars.remove(remove);
 		}
 
-		ArrayList<Integer> buffRemove = new ArrayList<Integer>();
 		for (int i = 0; i < buffs.size(); i++)
 		{
 			Buff b = buffs.get(i);
-			b.tick();
 			if (b.duration < 1)
 			{
-				buffRemove.add(i);
 				b.removeBuff(getPlayer());
+				updateStats = true;
+
+				buffs.remove(i);
+				i--;
 			}
 		}
-		for (int i: buffRemove)
-			buffs.remove(i);
 
 		if (checkLevel)
 		{
@@ -420,18 +516,17 @@ public class RPlayer
 				checkSideClassLevel = null;
 			}
 		}
-		int health = (int) getPlayer().getHealth();
-		int maxHealth = (int) getPlayer().getMaxHealth();
-		if (health < maxHealth && !getPlayer().isDead())
+		if (getPlayer().getHealth() < getPlayer().getMaxHealth() && !getPlayer().isDead())
 		{
 			recoverTicks++;
-			if (recoverTicks >= 20)
+			if (recoverTicks >= recoverMaxTicks)
 			{
 				recoverTicks = 0;
-				getPlayer().setHealth(health + 1);
+				getPlayer().setHealth((int) getPlayer().getHealth() + 1);
 			}
 		} else
 			recoverTicks = 0;
+
 		try
 		{
 			if (titleQueue.size() > 0)
@@ -470,6 +565,8 @@ public class RPlayer
 	{
 		if (player == null)
 			return player = Bukkit.getPlayer(uuid);
+		if (!player.isOnline())
+			return player = null;
 		return player;
 	}
 
@@ -537,6 +634,7 @@ public class RPlayer
 			getPlayer().playSound(getPlayer().getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.3f, 1.0f);
 			new RPGEvents.PlayEffect(Effect.STEP_SOUND, getPlayer(), 20).run();
 		}
+		updateStats();
 		RPGCore.playerManager.writeData(this);
 	}
 
@@ -553,6 +651,8 @@ public class RPlayer
 				if (name.equals(lastEquipmentCheck[i]))
 					continue;
 
+				updateStats = true;
+
 				lastEquipmentCheck[i] = name;
 				boolean isWeapon = i == 0;
 
@@ -561,29 +661,214 @@ public class RPlayer
 		}
 	}
 
+	public Stats getStats()
+	{
+		if (lastCalculatedStats != null)
+			return lastCalculatedStats;
+		updateStats();
+		return lastCalculatedStats;
+	}
 
+	public void updateStats()
+	{
+		if (lastCalculatedStats == null)
+			lastCalculatedStats = Stats.createStats("", new ItemStack(Material.AIR));
+		if (postStatsMultipliers == null)
+			postStatsMultipliers = Stats.createStats("", new ItemStack(Material.AIR));
+
+		lastCalculatedStats.attackSpeedMultiplier = 1.0F;
+		lastCalculatedStats.bruteDamageAdd = currentClass.getDamageType() == 0 ? getCurrentClass().lastCheckedLevel : 0;
+		lastCalculatedStats.cooldownReductionAdd = 0;
+		lastCalculatedStats.critChanceAdd = 5;
+		lastCalculatedStats.critDamageAdd = 150;
+		lastCalculatedStats.damageReductionAdd = 0;
+		lastCalculatedStats.magicDamageAdd = currentClass.getDamageType() == 1 ? getCurrentClass().lastCheckedLevel : 0;
+		lastCalculatedStats.recoverySpeedAdd = 0;
+		lastCalculatedStats.xpMultiplier = 1.0F;
+		lastCalculatedStats.totalDamageMultiplier = 1.0F;
+		lastCalculatedStats.bossDamageMultiplier = 1.0F;
+
+		postStatsMultipliers.bruteDamageAdd = 0;
+		postStatsMultipliers.magicDamageAdd = 0;
+		postStatsMultipliers.critChanceAdd = 0;
+		postStatsMultipliers.critDamageAdd = 0;
+
+		for (RItem eq: rEquips)
+			if (eq != null)
+				addToStats(eq);
+		for (RItem acc: accessoryInventory.slots)
+			if (acc != null)
+				addToStats(acc);
+
+		for (Buff b: buffs)
+		{
+			if (b.buffStats.attackSpeedMultiplier != 0)
+				lastCalculatedStats.attackSpeedMultiplier *= b.buffStats.attackSpeedMultiplier;
+			lastCalculatedStats.bruteDamageAdd += b.buffStats.bruteDamageAdd;
+			if (b.buffStats.bruteDamageMultiplier != 0)
+				postStatsMultipliers.bruteDamageAdd += CakeLibrary.convertMultiplierToAddedPercentage(b.buffStats.bruteDamageMultiplier);
+			lastCalculatedStats.cooldownReductionAdd += addRemainingPercentage(lastCalculatedStats.cooldownReductionAdd, b.buffStats.cooldownReductionAdd);
+			lastCalculatedStats.critChanceAdd += b.buffStats.critChanceAdd;
+			lastCalculatedStats.critDamageAdd += b.buffStats.critDamageAdd;
+			lastCalculatedStats.damageReductionAdd += addRemainingPercentage(lastCalculatedStats.damageReductionAdd, b.buffStats.damageReductionAdd);
+			lastCalculatedStats.magicDamageAdd += b.buffStats.magicDamageAdd;
+			if (b.buffStats.magicDamageMultiplier != 0)
+				postStatsMultipliers.magicDamageAdd += CakeLibrary.convertMultiplierToAddedPercentage(b.buffStats.magicDamageMultiplier);
+			lastCalculatedStats.recoverySpeedAdd += addRemainingPercentage(lastCalculatedStats.recoverySpeedAdd, b.buffStats.recoverySpeedAdd);
+			if (b.buffStats.xpMultiplier != 0)
+				lastCalculatedStats.xpMultiplier *= b.buffStats.xpMultiplier;
+		}
+
+		boolean priestsBlessing = false;
+
+		if (!priestsBlessing && partyID != -1)
+		{
+			boolean b = false;
+			for (RPlayer partyMember: RPGCore.partyManager.getParty(partyID).players)
+			{
+				if (b)
+					break;
+				for (String skill: partyMember.skills)
+				{
+					if (skill.equals(PriestsBlessing.skillName))
+						priestsBlessing = true;
+					b = true;
+					break;
+				}
+			}
+		}
+
+		if (priestsBlessing)
+			lastCalculatedStats.xpMultiplier *= PriestsBlessing.xpMultiplier;
+
+		for (String skill: skills)
+		{
+			//Additions
+			if(skill.equals(MagicMastery1.skillName))
+				lastCalculatedStats.magicDamageAdd += MagicMastery1.magicDamageAdd;
+			if(skill.equals(MagicMastery2.skillName))
+				lastCalculatedStats.magicDamageAdd += MagicMastery2.magicDamageAdd;
+			if(skill.equals(MagicMastery3.skillName))
+				lastCalculatedStats.magicDamageAdd += MagicMastery3.magicDamageAdd;
+			
+			if(skill.equals(BladeMastery1.skillName))
+				lastCalculatedStats.bruteDamageAdd += BladeMastery1.bruteDamageAdd;
+
+			if (skill.equals(IronBody.skillName))
+				lastCalculatedStats.damageReductionAdd += addRemainingPercentage(lastCalculatedStats.damageReductionAdd, IronBody.damageReductionAdd);
+
+			if (skill.startsWith("Vigor "))
+				lastCalculatedStats.recoverySpeedAdd += addRemainingPercentage(lastCalculatedStats.recoverySpeedAdd, Vigor1.recoverySpeedAdd);
+
+			//Multipliers
+			if (skill.equals(BladeMastery1.skillName))
+				lastCalculatedStats.attackSpeedMultiplier *= BladeMastery1.attackSpeedMultiplier;
+
+			if(skill.equals(Wisdom.skillName))
+				lastCalculatedStats.magicDamageAdd *= Wisdom.magicDamageMultiplier;
+
+			if (skill.equals(PriestsBlessing.skillName))
+				priestsBlessing = true;
+		}
+
+		lastCalculatedStats.bruteDamageAdd *= CakeLibrary.convertAddedPercentageToMultiplier(postStatsMultipliers.bruteDamageAdd);
+		lastCalculatedStats.magicDamageAdd *= CakeLibrary.convertAddedPercentageToMultiplier(postStatsMultipliers.magicDamageAdd);
+		lastCalculatedStats.critChanceAdd *= CakeLibrary.convertAddedPercentageToMultiplier(postStatsMultipliers.critChanceAdd);
+		lastCalculatedStats.critDamageAdd *= CakeLibrary.convertAddedPercentageToMultiplier(postStatsMultipliers.critDamageAdd);
+
+		if (lastCalculatedStats.bruteDamageAdd < 0)
+			lastCalculatedStats.bruteDamageAdd = 2147483647;
+		if (lastCalculatedStats.cooldownReductionAdd < 0 || lastCalculatedStats.cooldownReductionAdd > 100)
+			lastCalculatedStats.cooldownReductionAdd = 100;
+		if (lastCalculatedStats.critChanceAdd < 0 || lastCalculatedStats.critChanceAdd > 100)
+			lastCalculatedStats.critChanceAdd = 100;
+		if (lastCalculatedStats.critDamageAdd < 0)
+			lastCalculatedStats.critDamageAdd = 2147483647;
+		if (lastCalculatedStats.damageReductionAdd < 0 || lastCalculatedStats.damageReductionAdd > 100)
+			lastCalculatedStats.damageReductionAdd = 100;
+		if (lastCalculatedStats.magicDamageAdd < 0)
+			lastCalculatedStats.magicDamageAdd = 2147483647;
+		if (lastCalculatedStats.recoverySpeedAdd < 0 || lastCalculatedStats.recoverySpeedAdd > 100)
+			lastCalculatedStats.recoverySpeedAdd = 100;
+
+		lastCalculatedStats.attackSpeedMultiplier = 1.0F / lastCalculatedStats.attackSpeedMultiplier;
+		recoverMaxTicks = (int) (recoverMaxTicksDefault - (recoverMaxTicksDefault / 100.0F * lastCalculatedStats.recoverySpeedAdd));
+	}
+
+	private void addToStats(RItem item)
+	{
+		if (item.attackSpeed != 0)
+			lastCalculatedStats.attackSpeedMultiplier *= item.attackSpeed;
+		lastCalculatedStats.bruteDamageAdd += item.bruteDamage + item.addedBruteDamage;
+		lastCalculatedStats.cooldownReductionAdd += addRemainingPercentage(lastCalculatedStats.cooldownReductionAdd, item.cooldownReduction);
+		lastCalculatedStats.critChanceAdd += item.critChance;
+		lastCalculatedStats.critDamageAdd += item.critDamage;
+		lastCalculatedStats.damageReductionAdd += addRemainingPercentage(lastCalculatedStats.damageReductionAdd, item.damageReduction);
+		lastCalculatedStats.magicDamageAdd += item.magicDamage + item.addedMagicDamage;
+		lastCalculatedStats.recoverySpeedAdd += addRemainingPercentage(lastCalculatedStats.recoverySpeedAdd, item.recoverySpeed);
+		if (item.xpMultiplier != 0)
+			lastCalculatedStats.xpMultiplier *= item.xpMultiplier;
+
+		if (item.bonusStat != null)
+			for (int i = 0; i < item.bonusStat.statLines.size(); i++)
+			{
+				BonusStatType type = item.bonusStat.statLines.get(i);
+				float multiplier = item.bonusStat.statLower.get(i) ? BonusStat.lowerStatMultiplier : 1.0F;
+				if (type.equals(BonusStatType.BRUTE_DAMAGE))
+					lastCalculatedStats.bruteDamageAdd += 
+					(int) (type.getMultiplier() * (float) item.bonusStat.tier * multiplier);
+				else if (type.equals(BonusStatType.CAST_SPEED_PERCENTAGE))
+					lastCalculatedStats.attackSpeedMultiplier *= 
+					CakeLibrary.convertAddedPercentageToMultiplier((int) (type.getMultiplier() * (float) item.bonusStat.tier * multiplier));
+				else if (type.equals(BonusStatType.BRUTE_DAMAGE_PERCENTAGE))
+					postStatsMultipliers.bruteDamageAdd += 
+					(int) (type.getMultiplier() * (float) item.bonusStat.tier * multiplier);
+				else if (type.equals(BonusStatType.CRIT_CHANCE))
+					postStatsMultipliers.critChanceAdd += 
+					(int) (type.getMultiplier() * (float) item.bonusStat.tier * multiplier);
+				else if (type.equals(BonusStatType.CRIT_DAMAGE))
+					postStatsMultipliers.critDamageAdd += 
+					(int) (type.getMultiplier() * (float) item.bonusStat.tier * multiplier);
+				else if (type.equals(BonusStatType.MAGIC_DAMAGE))
+					lastCalculatedStats.magicDamageAdd += 
+					(int) (type.getMultiplier() * (float) item.bonusStat.tier * multiplier);
+				else if (type.equals(BonusStatType.MAGIC_DAMAGE_PERCENTAGE))
+					postStatsMultipliers.magicDamageAdd += 
+					(int) (type.getMultiplier() * (float) item.bonusStat.tier * multiplier);
+				else if (type.equals(BonusStatType.TOTAL_DAMAGE_PERCENTAGE))
+					lastCalculatedStats.totalDamageMultiplier *= 
+					CakeLibrary.convertAddedPercentageToMultiplier((int) (type.getMultiplier() * (float) item.bonusStat.tier * multiplier));
+				else if (type.equals(BonusStatType.BOSS_DAMAGE_PERCENTAGE))
+					lastCalculatedStats.bossDamageMultiplier *= 
+					CakeLibrary.convertAddedPercentageToMultiplier((int) (type.getMultiplier() * (float) item.bonusStat.tier * multiplier));
+			}
+	}
+
+	/*
 	public int calculateCritChance()
 	{
 		int equipment = 0;
 
 		for (RItem eq: rEquips)
 			if (eq != null)
+			{
 				equipment += eq.critChance;
+			}
 
 		for (RItem acc: accessoryInventory.slots)
 			if (acc != null)
 				equipment += acc.critChance;
 
 		int additions = 5;
-		float multiplier = 1.0F;
 
 		for (Buff b: buffs)
 			additions += b.buffStats.critChanceAdd;
 
-		return (int) ((equipment + additions) * multiplier);
+		int total = (int) (equipment + additions);
+		return total < 0 ? 2147483647 : total;
 	}
 
-	public double calculateCritDamageMultiplier()
+	public int calculateCritDamage()
 	{
 		int equipment = 0;
 
@@ -595,13 +880,13 @@ public class RPlayer
 			if (acc != null)
 				equipment += acc.critDamage;
 
-		float additions = 1.5F;
-		float multiplier = 1.0F;
+		int additions = 150;
 
 		for (Buff b: buffs)
-			additions += b.buffStats.critDamageAdd / 100.0F;
+			additions += b.buffStats.critDamageAdd;
 
-		return ((equipment / 100.0F) + additions) * multiplier;
+		int total = equipment + additions;
+		return total < 0 ? 2147483647 : total;
 	}
 
 	public int calculateMagicDamage()
@@ -610,13 +895,13 @@ public class RPlayer
 
 		for (RItem eq: rEquips)
 			if (eq != null)
-				equipment += eq.magicDamage;
+				equipment += eq.magicDamage + eq.addedMagicDamage;
 
 		for (RItem acc: accessoryInventory.slots)
 			if (acc != null)
 				equipment += acc.magicDamage;
 
-		int additions = 4;
+		int additions = 4 + getCurrentClass().lastCheckedLevel;
 		float multiplier = 1.0F;
 
 		for (String skill: skills)
@@ -648,13 +933,13 @@ public class RPlayer
 
 		for (RItem eq: rEquips)
 			if (eq != null)
-				equipment += eq.bruteDamage;
+				equipment += eq.bruteDamage + eq.addedBruteDamage;
 
 		for (RItem acc: accessoryInventory.slots)
 			if (acc != null)
 				equipment += acc.bruteDamage;
 
-		int additions = 4;
+		int additions = 4 + getCurrentClass().lastCheckedLevel;
 		float multiplier = 1.0F;
 
 		for (String skill: skills)
@@ -704,7 +989,6 @@ public class RPlayer
 			if (acc != null && acc.damageReduction != 0)
 				percentage += addRemainingPercentage(percentage, acc.damageReduction);
 
-		int additions = 0;
 
 		for (String skill: skills)
 		{
@@ -715,7 +999,35 @@ public class RPlayer
 		for (Buff b: buffs)
 			percentage += addRemainingPercentage(percentage, b.buffStats.damageReductionAdd);
 
-		int total = (int) Math.min(100, percentage + additions);
+		int total = (int) Math.min(100, percentage);
+		return total < 0 ? 100 : total;
+	}
+
+	public int calculateRecoverySpeed()
+	{
+		float percentage = 0;
+
+		for (RItem eq: rEquips)
+			if (eq != null && eq.recoverySpeed != 0)
+				percentage += addRemainingPercentage(percentage, eq.recoverySpeed);
+
+		for (RItem acc: accessoryInventory.slots)
+			if (acc != null && acc.recoverySpeed != 0)
+				percentage += addRemainingPercentage(percentage, acc.recoverySpeed);
+
+		for (String skill: skills)
+		{
+			if (skill.startsWith("Vigor "))
+				percentage += addRemainingPercentage(percentage, Vigor1.recoverySpeedAdd);
+		}
+
+		for (Buff b: buffs)
+			percentage += addRemainingPercentage(percentage, b.buffStats.recoverySpeedAdd);
+
+		int total = (int) Math.min(100, percentage);
+
+		recoverMaxTicks = (int) (recoverMaxTicksDefault - (recoverMaxTicksDefault / 100.0F * total));
+
 		return total < 0 ? 100 : total;
 	}
 
@@ -746,6 +1058,27 @@ public class RPlayer
 
 		return (sum == 0 ? 1 : (1.0F / sum)) / multiplier;
 	}
+
+	public float calculateXPMultiplier()
+	{
+		float sum = 1;
+
+		for (RItem eq: rEquips)
+			if (eq != null && eq.xpMultiplier != 0)
+				sum *= eq.xpMultiplier;
+
+		for (RItem acc: accessoryInventory.slots)
+			if (acc != null && acc.xpMultiplier != 0)
+				sum *= acc.xpMultiplier;
+
+		for (Buff b: buffs)
+		{
+			if (b.buffStats.xpMultiplier != 0)
+				sum *= b.buffStats.xpMultiplier;
+		}
+		return sum;
+	}
+	 */
 
 	public static int varyDamage(int damage) //Makes the number random up to a 10% change
 	{

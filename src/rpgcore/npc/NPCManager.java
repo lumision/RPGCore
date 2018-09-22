@@ -164,7 +164,7 @@ public class NPCManager
 									if (p.hasPermission("rpgcore.npc") && p.isSneaking())
 									{
 										rp.selectedNPC = npc;
-										RPGCore.msg(p, "NPC Selected: " + npc.getName());
+										RPGCore.msg(p, "NPC Selected: " + npc.getName() + "&e (&6" + npc.databaseName + "&e)");
 									} else
 									{
 										if (npc.getConversationData() != null && npc.getConversationData().masters.size() > 0)

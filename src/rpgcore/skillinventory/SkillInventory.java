@@ -13,8 +13,8 @@ import rpgcore.main.CakeLibrary;
 import rpgcore.player.RPlayer;
 import rpgcore.skills.ArcaneBarrage;
 import rpgcore.skills.Armageddon;
-import rpgcore.skills.BladeMastery;
-import rpgcore.skills.Dash;
+import rpgcore.skills.BladeMastery1;
+import rpgcore.skills.Dash1;
 import rpgcore.skills.Enlightenment;
 import rpgcore.skills.Heal1;
 import rpgcore.skills.Heartspan;
@@ -28,9 +28,9 @@ import rpgcore.skills.PoisonBolt;
 import rpgcore.skills.PowerPierce;
 import rpgcore.skills.WindDrive;
 import rpgcore.skills.RPGSkill;
-import rpgcore.skills.ShadowStab;
+import rpgcore.skills.ShadowStab1;
 import rpgcore.skills.TripleKunai;
-import rpgcore.skills.Warcry;
+import rpgcore.skills.Enrage;
 import rpgcore.skills.Wisdom;
 
 public class SkillInventory 

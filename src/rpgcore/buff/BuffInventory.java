@@ -8,6 +8,7 @@ import org.bukkit.inventory.ItemStack;
 import rpgcore.classes.RPGClass;
 import rpgcore.main.CakeLibrary;
 import rpgcore.player.RPlayer;
+import rpgcore.sideclasses.RPGSideClass.SideClassType;
 import rpgcore.skillinventory2.SkillInventory2;
 
 public class BuffInventory 
@@ -34,13 +35,14 @@ public class BuffInventory
 				continue;
 			getInventory().addItem(b.getBuffIcon());
 		}
-		getInventory().setItem(16, getCumulativeBuffEffectsIcon());
+		getInventory().setItem(15, getCumulativeBuffEffectsIcon());
+		getInventory().setItem(16, getSideclassesIcon());
 		getInventory().setItem(17, getPlayerStatsIcon());
 	}
 
 	public ItemStack getCumulativeBuffEffectsIcon()
 	{
-		BuffStats bf = BuffStats.createBuffStats("&f&nCumulative Buff Stats", new ItemStack(Material.PAPER));
+		Stats bf = Stats.createStats("&f&nCumulative Buff Stats", new ItemStack(Material.PAPER));
 		bf.buffDuration = 0;
 		for (Buff b: rp.buffs)
 		{
@@ -67,7 +69,7 @@ public class BuffInventory
 			bf.magicDamageMultiplier += 1.0F;
 		if (bf.xpMultiplier != 0)
 			bf.xpMultiplier += 1.0F;
-	
+
 		return Buff.createBuff(bf).getBuffIcon();
 	}
 
@@ -77,16 +79,39 @@ public class BuffInventory
 		is = CakeLibrary.editNameAndLore(is, "&4&n" + rp.getPlayerName(), "&6Level: &e" + rp.getCurrentClass().getLevel() + 
 				" &6(&e" + rp.getCurrentClass().xp + "&6/&e" + RPGClass.getXPRequiredForLevel(rp.getCurrentClass().lastCheckedLevel + 1) + "XP&6)",
 				"&f",
-				"&3 * Magic Damage: &b" + rp.calculateMagicDamage(),
-				"&3 * Brute Damage: &b" + rp.calculateBruteDamage(),
+				"&3 * Magic Damage: &b" + rp.getStats().magicDamageAdd,
+				"&3 * Brute Damage: &b" + rp.getStats().bruteDamageAdd,
+				"&3 * Total Damage: &bx" + String.format("%.2f", rp.getStats().totalDamageMultiplier),
+				"&3 * Boss Damage: &bx" + String.format("%.2f", rp.getStats().bossDamageMultiplier),
 				"&f",
-				"&4 * Crit Chance: &c" + rp.calculateCritChance() + "%",
-				"&4 * Crit Damage: &c" + (int) (rp.calculateCritDamageMultiplier() * 100.0F) + "%",
+				"&4 * Crit Chance: &c" + rp.getStats().critChanceAdd + "%",
+				"&4 * Crit Damage: &c" + rp.getStats().critDamageAdd + "%",
 				"&f",
-				"&2 * Attack Speed: &ax" + Float.parseFloat(String.format("%.1f", (1.0F / rp.calculateCastDelayMultiplier()))),
-				"&2 * Cooldown Reduction: &a" + rp.calculateCooldownReduction() + "%",
+				"&2 * Attack Speed: &ax" + String.format("%.1f", (1.0F / rp.getStats().attackSpeedMultiplier)),
+				"&2 * Cooldown Reduction: &a" + rp.getStats().cooldownReductionAdd + "%",
 				"&f",
-				"&5 * Damage Reduction: &d" + rp.calculateDamageReduction() + "%");
+				"&5 * Damage Reduction: &d" + rp.getStats().damageReductionAdd + "%",
+				"&5 * Recovery Interval: &d" + String.format("%.2f", (rp.recoverMaxTicks / 20.0F)) + "s",
+				"&f",
+				"&6 * Combat XP: &e" + (100 + CakeLibrary.convertMultiplierToAddedPercentage(rp.getStats().xpMultiplier)) + "%");
+		return is;
+	}
+
+	public ItemStack getSideclassesIcon()
+	{
+		ItemStack is = new ItemStack(Material.WORKBENCH);
+		is = CakeLibrary.editNameAndLore(is, "&e&nSideclasses",
+				"&cProspector",
+				"&4 * Level: &c" + rp.getSideClass(SideClassType.PROSPECTOR).lastCheckedLevel,
+				"&f",
+				"&dAlchemist",
+				"&5 * Level: &d" + rp.getSideClass(SideClassType.ALCHEMIST).lastCheckedLevel,
+				"&f",
+				"&aCrafter",
+				"&2 * Level: &a" + rp.getSideClass(SideClassType.CRAFTER).lastCheckedLevel,
+				"&f",
+				"&eEnchanter",
+				"&6 * Level: &e" + rp.getSideClass(SideClassType.ENCHANTER).lastCheckedLevel);
 		return is;
 	}
 

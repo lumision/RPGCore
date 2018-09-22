@@ -28,10 +28,9 @@ public class ClassInventory
 				inv.setItem(1, CakeLibrary.addLore(CakeLibrary.renameItem(SkillInventory2.getClassIcon(c.classType), "&fClass: " + color + c.classType.getClassName()),
 						"&7DMG: &7[&e&ki!i!i!i!&7      ]",
 						"&7DEF: &7[&a&ki!i!i!i!i!i!&7    ]",
-						color + "The Warrior class prides on being",
-						color + "able to receive direct attacks",
-						color + "and being able to survive whilst",
-						color + "simultaneously dealing damage.",
+						color + "The Warrior class is able to last",
+						color + "the longest in battle, with its",
+						color + "high damage reduction and recovery.",
 						"&c",
 						"&7Level: " + c.getLevel()));
 			}
@@ -42,9 +41,9 @@ public class ClassInventory
 				inv.setItem(3, CakeLibrary.addLore(CakeLibrary.renameItem(SkillInventory2.getClassIcon(c.classType), "&fClass: " + color + c.classType.getClassName()),
 						"&7DMG: &7[&a&ki!i!i!i!i!i!&7    ]",
 						"&7DEF: &7[&e&ki!i!i!i!&7      ]",
-						color + "The Mage class focuses on",
-						color + "long-range attacks that deal",
-						color + "high damage.",
+						color + "The Mage class performs long-range",
+						color + "attacks that deal high damage;",
+						color + "being the core damager of a team.",
 						"&c",
 						"&7Level: " + c.getLevel()));
 			}
@@ -55,9 +54,9 @@ public class ClassInventory
 				inv.setItem(5, CakeLibrary.addLore(CakeLibrary.renameItem(SkillInventory2.getClassIcon(c.classType), "&fClass: " + color + c.classType.getClassName()),
 						"&7DMG: &7[&e&ki!i!i!i!i!&7     ]",
 						"&7DEF: &7[&e&ki!i!i!i!i!&7     ]",
-						color + "The Priest class utilizes buffs",
-						color + "and heals to aid party members",
-						color + "whilst giving opponents debuffs.",
+						color + "The Priest class utilizes unique",
+						color + "buffs and heals to aid party members'",
+						color + "supporting a team's survivability.",
 						"&c",
 						"&7Level: " + c.getLevel()));
 			}
@@ -68,9 +67,9 @@ public class ClassInventory
 				inv.setItem(7, CakeLibrary.addLore(CakeLibrary.renameItem(SkillInventory2.getClassIcon(c.classType), "&fClass: " + color + c.classType.getClassName()),
 						"&7DMG: &7[&a&ki!i!i!i!i!i!i!&7   ]",
 						"&7DEF: &7[&c&ki!i!i!&7       ]",
-						color + "The Thief class focuses on skill",
-						color + "combinations and evasion",
-						color + "techniques to hit and run.",
+						color + "The Assassin class focuses on skill",
+						color + "combinations and evasion techniques",
+						color + "to hit critically and run.",
 						"&c",
 						"&7Level: " + c.getLevel()));
 			}

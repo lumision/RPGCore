@@ -1,7 +1,7 @@
 package rpgcore.shop;
 
 import java.io.File;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -29,7 +29,7 @@ public class GuildShop
 
 	public static final File pricesFolder = new File("plugins/RPGCore/item-prices");
 
-	public static HashMap<RItem, Integer> itemPrices = new HashMap<RItem, Integer>();
+	public static LinkedHashMap<RItem, Integer> itemPrices = new LinkedHashMap<RItem, Integer>();
 
 	public static void readItemPrices()
 	{
@@ -88,6 +88,52 @@ public class GuildShop
 
 		int offset = page * 54;
 		int max = Math.min(offset + 54, keySet.length);
+		for (i = offset; i < max; i++)
+			inv.setItem(i - offset, convertToPriced(keySet[i].createItem(), itemPrices.get(keySet[i])));
+
+		return inv;
+	}
+
+	public static Inventory getCustomItemPriceList(int page)
+	{
+		Inventory inv = Bukkit.createInventory(null, 54, priceListInventoryName + (page + 1));
+
+		RItem[] keySet = new RItem[itemPrices.size()];
+		int i = 0;
+		for (RItem key: itemPrices.keySet())
+		{
+			if (key.itemVanilla.getItemMeta().getDisplayName() != null)
+			{
+				keySet[i] = key;
+				i++;
+			}
+		}
+
+		int offset = page * 54;
+		int max = Math.min(offset + 54, i);
+		for (i = offset; i < max; i++)
+			inv.setItem(i - offset, convertToPriced(keySet[i].createItem(), itemPrices.get(keySet[i])));
+
+		return inv;
+	}
+
+	public static Inventory getVanillaItemPriceList(int page)
+	{
+		Inventory inv = Bukkit.createInventory(null, 54, priceListInventoryName + (page + 1));
+
+		RItem[] keySet = new RItem[itemPrices.size()];
+		int i = 0;
+		for (RItem key: itemPrices.keySet())
+		{
+			if (key.itemVanilla.getItemMeta().getDisplayName() == null)
+			{
+				keySet[i] = key;
+				i++;
+			}
+		}
+
+		int offset = page * 54;
+		int max = Math.min(offset + 54, i);
 		for (i = offset; i < max; i++)
 			inv.setItem(i - offset, convertToPriced(keySet[i].createItem(), itemPrices.get(keySet[i])));
 
@@ -153,18 +199,19 @@ public class GuildShop
 	public static int calculateTotalInventoryPrice(Inventory inv)
 	{
 		int total = 0;
-		for (int i = 0; i < inv.getSize(); i++)
+		for (int i = 0; i < inv.getSize() - 2; i++)
 		{
-			ItemStack item = inv.getItem(i);
-			if (CakeLibrary.isItemStackNull(item))
-				break;
-			ItemMeta im = item.getItemMeta();
-			if (im == null)
-				continue;
-			if (im.getDisplayName() == null)
-				continue;
-			String s = im.getDisplayName().split("§a \\(§2")[1];
-			total += Integer.parseInt(s.substring(0, s.length() - 8));
+			try
+			{
+				ItemStack item = inv.getItem(i);
+				if (CakeLibrary.isItemStackNull(item))
+					break;
+				ItemMeta im = item.getItemMeta();
+				if (im.getDisplayName() == null)
+					continue;
+				String s = im.getDisplayName().split("§a \\(§2")[1];
+				total += Integer.parseInt(s.substring(0, s.length() - 8));
+			} catch (Exception e) {}
 		}
 		return total;
 	}

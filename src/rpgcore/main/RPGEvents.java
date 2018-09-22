@@ -3,6 +3,7 @@ package rpgcore.main;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -19,28 +20,33 @@ import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.HumanEntity;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.CraftingInventory;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 import net.minecraft.server.v1_12_R1.EnumParticle;
 import net.minecraft.server.v1_12_R1.PacketPlayOutPlayerInfo;
 import net.minecraft.server.v1_12_R1.PlayerConnection;
-import rpgcore.areas.Area;
+import rpgcore.buff.Buff;
+import rpgcore.entities.bosses.CorruptedMage;
 import rpgcore.entities.mobs.RPGMonster;
 import rpgcore.external.InstantFirework;
 import rpgcore.item.BonusStat.BonusStatCrystal;
 import rpgcore.item.EnhancementInventory;
 import rpgcore.item.RItem;
-import rpgcore.npc.CustomNPC;
+import rpgcore.monsterbar.MonsterBar;
 import rpgcore.npc.NPCManager;
 import rpgcore.player.RPlayer;
-import rpgcore.skills.effect.ArmageddonE;
-import rpgcore.skills.effect.HellfireTerminusE;
+import rpgcore.recipes.RPGRecipe;
+import rpgcore.skills.RPGSkill.SkillEffect;
 import rpgcore.songs.RSongManager;
 import rpgcore.songs.RunningTrack;
 
@@ -48,6 +54,8 @@ public class RPGEvents implements Runnable
 {
 	public static RPGCore instance;
 	public static boolean stopped;
+	public static ArrayList<Item> itemDropTrails = new ArrayList<Item>();
+	public static final Random critRandom = new Random();
 
 	public static LivingEntity customHit;
 	public RPGEvents(RPGCore instance)
@@ -64,22 +72,112 @@ public class RPGEvents implements Runnable
 	{
 		RPGCore.serverAliveTicks++;
 		RPGCore.playerManager.playersTick();
-		ArrayList<CustomNPC> remove = new ArrayList<CustomNPC>();
-		for (CustomNPC n: NPCManager.npcs)
-		{
-			n.tick();
-			if (n.removed)
-				remove.add(n);
-		}
-		NPCManager.npcs.removeAll(remove);
-		for (RPGMonster ce: RPGMonster.entities)
-			ce.tick();
-		RPGMonster.entities.removeAll(RPGMonster.remove);
-		RPGMonster.remove.clear();
+		for (int i = 0; i < NPCManager.npcs.size(); i++)
+			if (NPCManager.npcs.get(i).tick())
+			{
+				NPCManager.npcs.remove(i);
+				i--;
+			}
+		for (int i = 0; i < RPGMonster.entities.size(); i++)
+			if (RPGMonster.entities.get(i).tick())
+			{
+				RPGMonster.entities.remove(i);
+				i--;
+			}
+		for (int i = 0; i < Buff.buffs.size(); i++)
+			if (Buff.buffs.get(i).tick())
+			{
+				Buff.buffs.remove(i);
+				i--;
+			}
 
-		ArmageddonE.globalTick();
-		HellfireTerminusE.globalTick();
+		if (RPGCore.serverAliveTicks % 2 == 0)
+		{
+			for (int i = 0; i < itemDropTrails.size(); i++)
+			{
+				Item item = itemDropTrails.get(i);
+				if (item.isOnGround())
+				{
+					itemDropTrails.remove(i);
+					i--;
+					continue;
+				}
+				new RPGEvents.ParticleEffect(EnumParticle.BLOCK_DUST, item.getLocation(), 0, 1, 0, 20).run();
+			}
+		}
+
+		SkillEffect.globalTick();
+
 		DamageOverTime.globalTick();
+		Bind.globalTick();
+	}
+
+	public static class Bind
+	{
+		public static ArrayList<Bind> binds = new ArrayList<Bind>();
+
+		public LivingEntity victim;
+		public int bindDuration;
+		private RPGMonster victimR;
+		public boolean showEffects;
+		private Bind(LivingEntity victim, int bindDuration, boolean showEffects)
+		{
+			this.victim = victim;
+			this.bindDuration = bindDuration;
+			this.showEffects = showEffects;
+
+			this.victimR = RPGMonster.getRPGMob(victim.getEntityId());
+			if (this.victimR != null)
+				this.victimR.bound = true;
+		}
+
+		public static void bindTarget(LivingEntity victim, int bindDuration, boolean showEffects)
+		{
+			victim.removePotionEffect(PotionEffectType.SLOW);
+			victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, bindDuration, 32767));
+			
+			if (showEffects)
+			{
+				new RPGEvents.PlayEffect(Effect.STEP_SOUND, victim, 30).run();
+				if (victim instanceof Player)
+				{
+					Player p = (Player) victim;
+					RPGCore.msgNoTag(p, "&c * You have been bound! *");
+					RPlayer rp = RPGCore.playerManager.getRPlayer(p.getUniqueId());
+					if (rp != null)
+						rp.globalCastDelay = bindDuration;
+				}
+			}
+			for (Bind bind: binds)
+				if (bind.victim == victim)
+				{
+					if (bind.bindDuration < bindDuration)
+						bind.bindDuration = bindDuration;
+					return;
+				}
+
+			binds.add(new Bind(victim, bindDuration, showEffects));
+		}
+
+		public static void globalTick()
+		{
+			for (int i = 0; i < binds.size(); i++)
+			{
+				Bind bind = binds.get(i);
+				bind.bindDuration--;
+				if (bind.bindDuration <= 0)
+				{
+					if (bind.victimR != null)
+						bind.victimR.bound = false;
+					binds.remove(i);
+					i--;
+					continue;
+				}
+				if (bind.showEffects)
+					new RPGEvents.ParticleEffect(EnumParticle.BLOCK_DUST, bind.victim.getEyeLocation(), 0.25F, 8, 0, 30).run();
+
+			}
+		}
 	}
 
 	public static class EntityDamageHistory
@@ -127,7 +225,6 @@ public class RPGEvents implements Runnable
 		Entity damager;
 
 		public static ArrayList<DamageOverTime> list = new ArrayList<DamageOverTime>();
-		public static ArrayList<DamageOverTime> remove = new ArrayList<DamageOverTime>();
 
 		public DamageOverTime(int length, int interval, int damage, Entity damager, LivingEntity victim)
 		{
@@ -143,11 +240,13 @@ public class RPGEvents implements Runnable
 
 		public static void globalTick()
 		{
-			for (DamageOverTime dot: list)
+			for (int i = 0; i < list.size(); i++)
 			{
+				DamageOverTime dot = list.get(i);
 				if (dot.victim.getHealth() <= 0 || dot.victim.isDead())
 				{
-					remove.add(dot);
+					list.remove(i);
+					i--;
 					continue;
 				}
 
@@ -161,10 +260,12 @@ public class RPGEvents implements Runnable
 				}
 
 				if (dot.length <= 0)
-					remove.add(dot);
+				{
+					list.remove(i);
+					i--;
+					continue;
+				}
 			}
-			list.removeAll(remove);
-			remove.clear();
 		}
 	}
 
@@ -180,22 +281,24 @@ public class RPGEvents implements Runnable
 		{
 			if (stopped)
 				return;
-			ArrayList<RunningTrack> remove = new ArrayList<RunningTrack>();
-			ArrayList<RunningTrack> run = (ArrayList<RunningTrack>) RSongManager.runningTracks.clone();
-			for (RunningTrack rt: run)
-				if (rt != null)
+
+			for (int i = 0; i < RSongManager.runningTracks.size(); i++)
+			{
+				RunningTrack rt = RSongManager.runningTracks.get(i);
+				if (rt == null)
 				{
-					if (rt.stopped)
-					{
-						remove.add(rt);
-						continue;
-					}
-					rt.run();
-				} else {
-					remove.add(rt);
+					RSongManager.runningTracks.remove(i);
+					i--;
 					continue;
 				}
-			RSongManager.runningTracks.removeAll(remove);
+				if (rt.stopped)
+				{
+					RSongManager.runningTracks.remove(i);
+					i--;
+					continue;
+				}
+				rt.run();
+			}
 		}
 
 	}
@@ -205,13 +308,17 @@ public class RPGEvents implements Runnable
 		@Override
 		public void run()
 		{
-			RPGCore.playerManager.playersTick20();
-			Area.tick();
-			for (World world: Bukkit.getWorlds())
-				for (Entity e: world.getEntities())
-					if (e instanceof Monster)
-						if (CakeLibrary.getNearbyPlayers(e.getLocation(), 64).size() <= 0)
-							e.remove();
+			for (int w = 0; w < Bukkit.getWorlds().size(); w++)
+			{
+				World world = Bukkit.getWorlds().get(w);
+				for (int e = 0; e < world.getLivingEntities().size(); e++)
+				{
+					LivingEntity entity = world.getLivingEntities().get(e);
+					if (!(entity instanceof Player))
+						if (CakeLibrary.getNearbyPlayers(entity.getLocation(), 128).size() <= 0)
+							entity.remove();
+				}
+			}
 		}
 	}
 
@@ -220,9 +327,6 @@ public class RPGEvents implements Runnable
 		@Override
 		public void run()
 		{
-			for (RPGMonster ce: RPGMonster.entities)
-				ce.findTarget();
-			RPGCore.playerManager.playersTick10();
 		}
 	}
 
@@ -269,6 +373,113 @@ public class RPGEvents implements Runnable
 		}
 	}
 
+	public static class UpdateMonsterBar implements Runnable
+	{
+		MonsterBar mb;
+		public UpdateMonsterBar(MonsterBar mb)
+		{
+			this.mb = mb;
+		}
+
+		@Override
+		public void run()
+		{
+			mb.updateBar();
+		}
+	}
+
+	public static class SubtractCursor implements Runnable
+	{
+		InventoryView view;
+		public SubtractCursor(InventoryView view)
+		{
+			this.view = view;
+		}
+
+		@Override
+		public void run()
+		{
+			ItemStack cursor = view.getCursor();
+			if (CakeLibrary.isItemStackNull(cursor))
+				return;
+			if (cursor.getAmount() == 1)
+			{
+				view.setCursor(new ItemStack(Material.AIR));
+				return;
+			}
+			cursor.setAmount(cursor.getAmount() - 1);
+			view.setCursor(cursor);
+		}
+	}
+
+	public static class SetCursor implements Runnable
+	{
+		InventoryView view;
+		ItemStack item;
+		public SetCursor(InventoryView view, ItemStack item)
+		{
+			this.view = view;
+			this.item = item;
+		}
+
+		@Override
+		public void run()
+		{
+			view.setCursor(item);
+		}
+	}
+
+	public static class CheckForRecipe implements Runnable
+	{
+		CraftingInventory inv;
+		public CheckForRecipe(CraftingInventory inv)
+		{
+			this.inv = inv;
+		}
+
+		@Override
+		public void run()
+		{
+			ItemStack[] matrix = inv.getMatrix();
+			ItemStack result = inv.getResult();
+			RItem ri = null;
+			if (!CakeLibrary.isItemStackNull(result))
+				ri = new RItem(result);
+			boolean remove = false;
+
+			for (RPGRecipe recipe: RPGRecipe.recipes)
+				if (recipe.crafted(matrix))
+				{
+					if (ri != null && recipe.result.compare(ri))
+						return;
+					inv.setItem(0, recipe.result.createItem());
+					for (HumanEntity player: inv.getViewers())
+						if (player instanceof Player)
+						{
+							Player p = (Player) player;
+							if (recipe.sound != null)
+								p.playSound(player.getLocation(), recipe.sound, recipe.volume, recipe.pitch);
+							p.updateInventory();
+						}
+					return;
+				} else if (ri != null && recipe.result.compare(ri))
+					remove = true;
+
+			if (remove)
+			{
+				inv.setResult(new ItemStack(Material.AIR));
+				for (HumanEntity player: inv.getViewers())
+					if (player instanceof Player)
+					{
+						Player p = (Player) player;
+						p.updateInventory();
+					}
+			}
+
+
+		}
+	}
+
 	public static class SetInventoryItem implements Runnable
 	{
 		Inventory inv;
@@ -311,6 +522,7 @@ public class RPGEvents implements Runnable
 
 	public static class ApplyDamage implements Runnable
 	{
+		//DAMAGE APPLICATION
 		Entity damager;
 		LivingEntity damagee;
 		int damage;
@@ -324,16 +536,65 @@ public class RPGEvents implements Runnable
 		@Override
 		public void run()
 		{
-			if (damager != null)
-				if (damager instanceof Player)
+			if (damager instanceof Player)
+			{
+				Player p = (Player) damager;
+				RPlayer rp = RPGCore.playerManager.getRPlayer(p.getUniqueId());
+				if (rp != null)
 				{
-					Player p = (Player) damager;
-					EntityDamageHistory.ApplyDamage(damagee.getEntityId(), p.getUniqueId(), damage);
+					MonsterBar mb = MonsterBar.getMonsterBar(damagee);
+					if (mb != null)
+					{
+						if (!(!damagee.isDead() && rp.lastBarTicks > 25))
+						{
+							if (rp.monsterBar == mb)
+							{
+								mb.updateBarOneTickLater();
+								rp.lastBarTicks = 30;
+							} else if (rp.lastBarTicks <= 0)
+							{
+								mb.updateBarOneTickLater();
+								mb.showForPlayer(rp);
+								rp.lastBarTicks = 30;
+							}
+						}
+					}
+					if (critRandom.nextInt(100) <= rp.getStats().critChanceAdd)
+					{
+						damage += (int) (damage / 100.0F * (float) rp.getStats().critDamageAdd);
+						p.playSound(p.getLocation(), Sound.ENTITY_ARROW_HIT_PLAYER, 0.6F, 0.75F);
+					}
+					damage *= rp.getStats().totalDamageMultiplier;
 				}
+				EntityDamageHistory.ApplyDamage(damagee.getEntityId(), p.getUniqueId(), damage);
+
+				RPGMonster ce = RPGMonster.getRPGMob(damagee.getEntityId());
+				if (ce != null)
+				{
+					if (ce.isBoss)
+						damage *= rp.getStats().bossDamageMultiplier;
+					if (ce.target == null)
+					{
+						ce.target = p;
+						ce.entity.setTarget(p); 
+					}
+					if (ce instanceof CorruptedMage)
+					{
+						int phase = ((CorruptedMage) ce).phase;
+						if (phase == 1 || phase == 3)
+						{
+							ce.entity.setHealth(Math.min(ce.entity.getMaxHealth(), ce.entity.getHealth() + damage));
+							damage = 0;
+						}
+					}
+				}
+			}
 			if (damagee instanceof Player)
 			{
 				RPlayer rp = RPGCore.playerManager.getRPlayer(((Player) damagee).getUniqueId());
-				damage = (int) (damage - (damage / 100D * rp.calculateDamageReduction()));
+				if (rp.invulnerabilityTicks > 0)
+					return;
+				damage -= (int) (damage / 100.0F * (float) rp.getStats().damageReductionAdd);
 			}
 			damagee.setNoDamageTicks(0);
 			damagee.damage(damage);
@@ -533,13 +794,20 @@ public class RPGEvents implements Runnable
 			}
 			if (mid.getAmount() > 1)
 			{
-				RPGCore.msg(player, "You can only use this crystal on one item at a time.");
+				RPGCore.msg(player, "You can only use crystals on one item at a time.");
 				return;
 			}
 			RItem ri = new RItem(mid);
 			if (ri.bonusStat == null && type != BonusStatCrystal.STAT_ADDER)
 			{
 				RPGCore.msg(player, "This item does not have a bonus stat.");
+				return;
+			}
+			if (!(ri.accessory || ri.magicDamage != 0 || ri.bruteDamage != 0 || ri.attackSpeed != 0
+					|| ri.cooldownReduction != 0 || ri.critChance != 0 || ri.critDamage != 0
+					|| ri.damageReduction != 0 || ri.recoverySpeed != 0 || ri.xpMultiplier != 0))
+			{
+				RPGCore.msg(player, "Only equipments or accessories can have bonus stats.");
 				return;
 			}
 			boolean success = ri.applyCrystal(type);
@@ -696,6 +964,7 @@ public class RPGEvents implements Runnable
 		ArrayList<LivingEntity> hit;
 		double radius;
 		Location l;
+		Entity e;
 		LivingEntity damager;
 		Callable<Void> func;
 
@@ -708,9 +977,20 @@ public class RPGEvents implements Runnable
 			this.func = func;
 		}
 
+		public AOEDetectionCustom(ArrayList<LivingEntity> hit, Entity e, double radius, LivingEntity damager, Callable<Void> func)
+		{
+			this.hit = hit;
+			this.radius = radius;
+			this.e = e;
+			this.damager = damager;
+			this.func = func;
+		}
+
 		@Override
 		public void run()
 		{
+			if (this.e != null)
+				l = e.getLocation();
 			boolean player = damager instanceof Player;
 			boolean monster = damager instanceof Monster;
 			for (LivingEntity e: CakeLibrary.getNearbyLivingEntities(l, radius))

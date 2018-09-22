@@ -2,7 +2,6 @@ package rpgcore.entities.mobs;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -15,10 +14,10 @@ import org.bukkit.entity.Zombie;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
-import rpgcore.entities.bosses.Astrea;
-import rpgcore.entities.bosses.KingZombie;
-import rpgcore.entities.bosses.QueenSpider;
+import rpgcore.entities.bosses.CorruptedMage;
 import rpgcore.entities.bosses.UndeadEmperor;
+import rpgcore.entities.minibosses.DiamondZombie;
+import rpgcore.entities.minibosses.QueenSpider;
 import rpgcore.item.RItem;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
@@ -32,8 +31,8 @@ public class RPGMonsterSpawn
 	public String rpgMonsterName;
 	public Class<? extends Monster> monsterType;
 	public Class<? extends RPGMonster> rpgMonster;
-	public HashMap<RItem, Integer> drops = new HashMap<RItem, Integer>();
-	public int minSpawnDistance, maxSpawnDistance;
+	public ArrayList<RItem> drops = new ArrayList<RItem>();
+	public int minSpawnDistanceSquared, maxSpawnDistanceSquared;
 	public int spawnRoll;
 	Inventory dropsInventory;
 	
@@ -50,7 +49,10 @@ public class RPGMonsterSpawn
 			"&7&osubtract&7 it from there.",
 			"&f",
 			"&7&lShift-click&7 an item in the",
-			"&7drop list to receive its copy.");
+			"&7drop list to receive its copy.",
+			"&f",
+			"&7&lShift-click&7 an item in your",
+			"&7inventory to add the stack.");
 
 	
 	//ADDMOB
@@ -59,19 +61,27 @@ public class RPGMonsterSpawn
 		dropsFolder.mkdirs();
 		
 		spawns.clear();
-		spawns.add(new RPGMonsterSpawn(ReinforcedSkeleton.class, Skeleton.class, 300, 1000, 4));
-		spawns.add(new RPGMonsterSpawn(ReinforcedSpider.class, Spider.class, 300, 1000, 4));
-		spawns.add(new RPGMonsterSpawn(ReinforcedZombie.class, Zombie.class, 300, 1000, 4));
+		
+		//Mobs
+		spawns.add(new RPGMonsterSpawn(ReinforcedSkeleton.class, Skeleton.class, 300, 1200, 4));
+		spawns.add(new RPGMonsterSpawn(ReinforcedSpider.class, Spider.class, 300, 1200, 4));
+		spawns.add(new RPGMonsterSpawn(ReinforcedZombie.class, Zombie.class, 300, 1200, 4));
 		
 		spawns.add(new RPGMonsterSpawn(AssassinSpider.class, Spider.class, 800, 2000, 4));
 		spawns.add(new RPGMonsterSpawn(MageZombie.class, Zombie.class, 800, 2000, 4));
 		spawns.add(new RPGMonsterSpawn(WarriorZombie.class, Zombie.class, 800, 2000, 4));
+
+		spawns.add(new RPGMonsterSpawn(SorcererZombie.class, Zombie.class, 1400, 3000, 4));
+		spawns.add(new RPGMonsterSpawn(FighterZombie.class, Zombie.class, 1400, 3000, 4));
+		spawns.add(new RPGMonsterSpawn(RogueSpider.class, Spider.class, 1400, 3000, 4));
 		
-		spawns.add(new RPGMonsterSpawn(SorcererZombie.class, Zombie.class, 1500, 3000, 4));
+
+		//Mini-bosses
+		spawns.add(new RPGMonsterSpawn(QueenSpider.class, Spider.class, 1000, 5000, 64));
+		spawns.add(new RPGMonsterSpawn(DiamondZombie.class, Zombie.class, 1000, 5000, 128));
 		
-		spawns.add(new RPGMonsterSpawn(Astrea.class, Zombie.class));
-		spawns.add(new RPGMonsterSpawn(KingZombie.class, Zombie.class));
-		spawns.add(new RPGMonsterSpawn(QueenSpider.class, Spider.class));
+		//Bosses
+		spawns.add(new RPGMonsterSpawn(CorruptedMage.class, Zombie.class));
 		spawns.add(new RPGMonsterSpawn(UndeadEmperor.class, Zombie.class));
 		
 		readDrops();
@@ -100,8 +110,10 @@ public class RPGMonsterSpawn
 					RPGCore.msgConsole("&4Error reading drops file: " + file.getName() + "; RItem parsing");
 					continue;
 				}
+				if (split.length >= 3)
+					ri.dropRoll = Integer.parseInt(split[2]);
 				
-				spawn.drops.put(ri, Integer.parseInt(split[2]));
+				spawn.drops.add(ri);
 			} catch (Exception e) 
 			{
 				RPGCore.msgConsole("&4Error reading drops file: " + file.getName());
@@ -122,8 +134,8 @@ public class RPGMonsterSpawn
 		this.monsterType = monsterType;
 		this.rpgMonster = rpgMonster;
 		this.rpgMonsterName = rpgMonster.getSimpleName();
-		this.minSpawnDistance = minSpawnDistance;
-		this.maxSpawnDistance = maxSpawnDistance;
+		this.minSpawnDistanceSquared = minSpawnDistance * minSpawnDistance;
+		this.maxSpawnDistanceSquared = maxSpawnDistance * maxSpawnDistance;
 		this.spawnRoll = spawnRoll;
 	}
 	
@@ -145,11 +157,11 @@ public class RPGMonsterSpawn
 				file.delete();
 		}
 		int index = 0;
-		for (RItem key: drops.keySet())
+		for (RItem key: drops)
 		{
 			try
 			{
-				key.saveItemToFile(new File(dropsFolder.getPath() + "/" + rpgMonsterName + "_" + index++ + "_" + drops.get(key) + ".yml"));
+				key.saveItemToFile(new File(dropsFolder.getPath() + "/" + rpgMonsterName + "_" + index++ + ".yml"));
 			} catch (Exception e)
 			{
 				RPGCore.msgConsole("&4Error writing drops file: " + rpgMonsterName + " / " + CakeLibrary.getItemName(key.itemVanilla));
@@ -162,20 +174,21 @@ public class RPGMonsterSpawn
 	{
 		if (dropsInventory != null)
 			return dropsInventory;
-		dropsInventory = Bukkit.createInventory(null, 9, CakeLibrary.recodeColorCodes("&4Drops - " + rpgMonsterName));
-		for (RItem key: drops.keySet())
+		dropsInventory = Bukkit.createInventory(null, 27, CakeLibrary.recodeColorCodes("&4Drops - " + rpgMonsterName));
+		int index = 0;
+		for (RItem key: drops)
 		{
 			ItemStack item = key.createItem();
-			item.setAmount(drops.get(key));
-			dropsInventory.addItem(item);
+			item.setAmount(key.dropRoll);
+			dropsInventory.setItem(index++, item);
 		}
-		dropsInventory.setItem(8, itemDrop);
+		dropsInventory.setItem(dropsInventory.getSize() - 1, itemDrop);
 		return dropsInventory;
 	}
 	
 	public boolean isNaturalSpawn()
 	{
-		return this.minSpawnDistance > 0 && this.maxSpawnDistance > 0 && spawnRoll > 0;
+		return this.minSpawnDistanceSquared > 0 && this.maxSpawnDistanceSquared > 0 && spawnRoll > 0;
 	}
 
 	public RPGMonster spawnMonster(Location location)

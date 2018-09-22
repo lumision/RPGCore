@@ -1,7 +1,5 @@
 package rpgcore.entities.bosses;
 
-import java.util.ArrayList;
-
 import org.bukkit.Material;
 import org.bukkit.entity.Monster;
 import org.bukkit.inventory.EntityEquipment;
@@ -18,8 +16,7 @@ public class KingZombie extends RPGMonster
 	public static String name = CakeLibrary.recodeColorCodes("&2&lKing Zombie&7 Lv. ??");
 	public KingZombie(Monster m)
 	{
-		super(m);
-		this.reachDistance = 32.0D;
+		super(m, true);
 		entity.setRemoveWhenFarAway(false);
 		entity.setMaxHealth(maxHealth);
 		entity.setHealth(maxHealth);
@@ -39,19 +36,13 @@ public class KingZombie extends RPGMonster
 	}
 
 	@Override
-	public void tick()
+	public boolean tick()
 	{
 		super.tick();
 		if (isDead())
-			return;
+			return true;
 		if (castDelay > 0 || target == null)
-			return;
-		int r = random.nextInt(10) + 1;
-	}
-	
-	public ArrayList<ItemStack> getDrops()
-	{
-		ArrayList<ItemStack> drops = new ArrayList<ItemStack>();
-		return drops;
+			return false;
+		return false;
 	}
 }

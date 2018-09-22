@@ -11,7 +11,7 @@ public class ReinforcedSkeleton extends RPGMonster
 	
 	public ReinforcedSkeleton(Monster entity)
 	{
-		super(entity);
+		super(entity, false);
 		entity.setMaxHealth(maxHealth);
 		entity.setHealth(maxHealth);
 		entity.setCustomName(name);

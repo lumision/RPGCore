@@ -13,15 +13,18 @@ import rpgcore.main.CakeLibrary;
 public class BonusStat
 {
 	public static Random rand = new Random();
+	public static final float lowerStatMultiplier = 0.66F;
+	public static final int tierIncreaseRoll = 5;
 	public static enum BonusStatType
 	{
 		MAGIC_DAMAGE_PERCENTAGE("+::% Magic Damage ", 3.0D, 2),
 		BRUTE_DAMAGE_PERCENTAGE("+::% Brute Damage ", 3.0D, 2),
 		BOSS_DAMAGE_PERCENTAGE("+::% Boss Damage ", 5.0D, 2),
+		TOTAL_DAMAGE_PERCENTAGE("+::% Total Damage ", 3.0D, 2),
 		CAST_SPEED_PERCENTAGE("+::% Attack Speed ", 3.0D, 2),
 		
 		CRIT_CHANCE("+::% Crit Chance ", 2.0D, 2),
-		CRIT_DAMAGE("+::% Crit Damage ", 8.0D, 2),
+		CRIT_DAMAGE("+::% Crit Damage ", 4.0D, 2),
 		
 		MAGIC_DAMAGE("+:: Magic Damage ", 4.0D, 4),
 		BRUTE_DAMAGE("+:: Brute Damage ", 4.0D, 4);
@@ -55,9 +58,9 @@ public class BonusStat
 			return multiplier;
 		}
 
-		public String getDescriptionWithValueRoll(int tier)
+		public String getDescriptionWithValueRoll(int tier, boolean lower)
 		{
-			double m = rand.nextBoolean() ? multiplier : multiplier * 0.66D;
+			double m = lower ? multiplier * lowerStatMultiplier : multiplier;
 			return description.replaceAll("::", (int) Math.round(tier * m) + "");
 		}
 
@@ -78,10 +81,33 @@ public class BonusStat
 
 	public static enum BonusStatCrystal
 	{
-		ALL_LINES_REROLL(CakeLibrary.editNameAndLore(new ItemStack(Material.END_CRYSTAL), "&a&nGreen Crystal", "&aRerolls all bonus stat lines.", "&b", "&7&oHold and click to use.")),
-		TIER_REROLL(CakeLibrary.editNameAndLore(new ItemStack(Material.END_CRYSTAL), "&e&nYellow Crystal", "&eIncreases the tier of a bonus", "&estat at a small chance.", "&eMax Tier: 5", "&b", "&7&oHold and click to use.")),
-		LINE_AMOUNT_REROLL(CakeLibrary.editNameAndLore(new ItemStack(Material.END_CRYSTAL), "&b&nCyan Crystal", "&bAdds a random bonus stat line.", "&bMax Lines: 3", "&b", "&7&oHold and click to use.")),
-		STAT_ADDER(CakeLibrary.editNameAndLore(new ItemStack(Material.END_CRYSTAL), "&d&nPink Crystal", "&dAdds a bonus stat to an item.", "&b", "&7&oHold and click to use."));
+		ALL_LINES_REROLL(CakeLibrary.editNameAndLore(new ItemStack(Material.END_CRYSTAL), 
+				"&a&nShape Crystal", 
+				"&aRerolls all bonus stat lines.", 
+				"&b", 
+				"&7&oHold and click to use.")),
+		
+		TIER_REROLL(CakeLibrary.editNameAndLore(new ItemStack(Material.END_CRYSTAL), 
+				"&e&nRise Crystal", 
+				"&eIncreases the tier of a bonus", 
+				"&estat at a small chance.", 
+				"&eMax Tier: 5", 
+				"&b", 
+				"&7&oHold and click to use.")),
+		
+		LINE_AMOUNT_ADDER(CakeLibrary.editNameAndLore(new ItemStack(Material.END_CRYSTAL), 
+				"&b&nAugment Crystal", 
+				"&bAdds a random bonus stat line",
+				"&bto an item with bonus stats.", 
+				"&bMax Lines: 3", 
+				"&b", 
+				"&7&oHold and click to use.")),
+		
+		STAT_ADDER(CakeLibrary.editNameAndLore(new ItemStack(Material.END_CRYSTAL), 
+				"&d&nAffix Crystal", 
+				"&dAdds a bonus stat to an item.", 
+				"&b", 
+				"&7&oHold and click to use."));
 
 		private String itemName;
 		private ItemStack item;
@@ -122,15 +148,18 @@ public class BonusStat
 
 	public int tier;
 	public ArrayList<BonusStatType> statLines;
-	public BonusStat(int tier, ArrayList<BonusStatType> statTypeList)
+	public ArrayList<Boolean> statLower;
+	public BonusStat(int tier, ArrayList<BonusStatType> statTypeList, ArrayList<Boolean> statLower)
 	{
 		this.tier = tier;
 		this.statLines = statTypeList;
+		this.statLower = statLower;
 	}
 
 	public static BonusStat getItemStats(ItemStack is)
 	{
 		ArrayList<BonusStatType> stats = new ArrayList<BonusStatType>();
+		ArrayList<Boolean> statLower = new ArrayList<Boolean>();
 		int tier = 0;
 		if (is == null)
 			return null;
@@ -148,17 +177,19 @@ public class BonusStat
 				{
 					tier = Integer.parseInt(line.replaceAll("[^\\d]", ""));
 				} catch (Exception e) {}
+				continue;
 			}
 			for (BonusStatType type: BonusStatType.values())
 			{
 				if (!type.getDescription().replaceAll("::", "").equals(line.replaceAll("\\d", "")))
 					continue;
 				stats.add(type);
+				statLower.add(Integer.parseInt(line.replaceAll("[^\\d]", "")) < type.multiplier * tier);
 			}
 		}
 		if (stats.size() == 0)
 			return null;
-		return new BonusStat(tier, stats);
+		return new BonusStat(tier, stats, statLower);
 	}
 
 	public static String getTierColor(int tier)

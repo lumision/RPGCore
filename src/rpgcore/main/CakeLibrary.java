@@ -158,7 +158,7 @@ public class CakeLibrary
 			s++;
 		}
 		
-		return (h > 0 ? h + "h " : "") + (m > 0 ? m + "m " : "") + (s > 0 ? s + "s" : "");
+		return (h > 0 ? h + "h " : "") + (m > 0 ? m + "m " : "") + (s > 0 ? s + "s " : "");
 	}
 
 	/**
@@ -1571,6 +1571,35 @@ public class CakeLibrary
 			if (entity instanceof ArmorStand)
 				continue;
 			if (!(entity instanceof LivingEntity))
+				continue;
+			if (entity.isDead())
+				continue;
+			LivingEntity lEntity = (LivingEntity) entity;
+			if (lEntity.hasMetadata("NPC"))
+				continue;
+			Location eLoc = lEntity.getLocation().add(0, lEntity.getEyeHeight() / 2.0D, 0);
+
+			double distanceSq = Math.pow(eLoc.getX() - loc.getX(), 2) 
+					+ Math.pow(eLoc.getY() - loc.getY(), 2) 
+					+ Math.pow(eLoc.getZ() - loc.getZ(), 2);
+			if (distanceSq < radius)
+				nearbyEntities.add((LivingEntity) entity);
+		}
+		return nearbyEntities;
+	}
+	
+
+	public static ArrayList<LivingEntity> getNearbyLivingEntitiesExcludePlayers(Location loc, double radius)
+	{
+		radius = Math.pow(radius + 1, 2);
+		ArrayList<LivingEntity> nearbyEntities = new ArrayList<LivingEntity>();
+		for (Entity entity: loc.getWorld().getEntities())
+		{
+			if (entity instanceof ArmorStand)
+				continue;
+			if (!(entity instanceof LivingEntity))
+				continue;
+			if (entity instanceof Player)
 				continue;
 			if (entity.isDead())
 				continue;

@@ -2,7 +2,6 @@ package rpgcore.entities.mobs;
 
 import java.util.ArrayList;
 
-import org.bukkit.Color;
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -12,13 +11,11 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 import rpgcore.main.CakeLibrary;
-import rpgcore.main.RPGCore;
 import rpgcore.main.RPGEvents;
 
 public class MageZombie extends RPGMonster
@@ -28,7 +25,7 @@ public class MageZombie extends RPGMonster
 
 	public MageZombie(Monster entity)
 	{
-		super(entity);
+		super(entity, false);
 		entity.setMaxHealth(maxHealth);
 		entity.setHealth(maxHealth);
 		entity.setCustomName(name);
@@ -49,21 +46,20 @@ public class MageZombie extends RPGMonster
 	}
 
 	@Override
-	public void tick()
+	public boolean tick()
 	{
 		super.tick();
 		if (isDead())
-			return;
+			return true;
 		if (castDelay > 0 || target == null)
-			return;
+			return false;
 		castArcaneBolt();
 		castDelay = 60;
+		return false;
 	}
 
 	public void castArcaneBolt()
 	{
-		if (target.getLocation().distance(entity.getLocation()) > 15)
-			return;
 		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
 		Vector vector = entity.getLocation().getDirection().normalize().multiply(0.5F);
 		int multiplier = 0;

@@ -14,17 +14,20 @@ import org.bukkit.util.Vector;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGEvents;
 
-public class AssassinSpider extends RPGMonster
+public class RogueSpider extends RPGMonster
 {
-	public static double maxHealth = 150.0D;
-	public static String name = "§bAssassin Spider §7Lv. 12";
+	public static double maxHealth = 450.0D;
+	public static String name = "§3Rogue Spider §7Lv. 20";
 	
-	public static final int dashDelay = 12;
+	public static final int dashDelay = 8;
 
 	public static final int shadowStabDamage = 3;
-	public static final int shadowStabDelay = 24;
+	public static final int shadowStabDelay = 16;
 
-	public AssassinSpider(Monster entity)
+	public static final int kunaiDamage = 6;
+	public static final int kunaiDelay = 24;
+
+	public RogueSpider(Monster entity)
 	{
 		super(entity, false);
 		entity.setMaxHealth(maxHealth);
@@ -47,10 +50,12 @@ public class AssassinSpider extends RPGMonster
 			return false;
 
 		int i = rand.nextInt(10) + 1;
-		if (i <= 3)
+		if (i <= 3 && target.getLocation().distanceSquared(entity.getLocation()) > 25)
 			castDash();
-		else if (target.getLocation().distanceSquared(entity.getLocation()) < 25)
+		else if (i <= 7 && target.getLocation().distanceSquared(entity.getLocation()) <= 25)
 			castShadowStab();
+		else
+			castKunai();
 		return false;
 	}
 
@@ -111,6 +116,28 @@ public class AssassinSpider extends RPGMonster
 				RPGEvents.scheduleRunnable(new RPGEvents.ApplyDamage(entity, e, shadowStabDamage), 0);
 				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, e, 20), 0);
 			}
+		}
+	}
+
+	public void castKunai()
+	{
+		castDelay = kunaiDelay;
+		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
+		Vector vector = entity.getLocation().getDirection().normalize().multiply(0.5D);
+		int multiplier = 0;
+        entity.getWorld().playSound(entity.getEyeLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.2F, 1.0F);
+		while (multiplier < 24)
+		{
+			multiplier++;
+			Location point = entity.getEyeLocation().add(vector.clone().multiply(multiplier));
+			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
+			{
+				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()), multiplier);
+				break;
+			}
+			RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0, 1), multiplier / 3);
+			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.1F, 1.25F), multiplier/ 3);
+			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 0.75D, kunaiDamage, entity, 20), multiplier / 3);
 		}
 	}
 }

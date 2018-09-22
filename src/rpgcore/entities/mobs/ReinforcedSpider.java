@@ -11,7 +11,7 @@ public class ReinforcedSpider extends RPGMonster
 	
 	public ReinforcedSpider(Monster entity)
 	{
-		super(entity);
+		super(entity, false);
 		entity.setMaxHealth(maxHealth);
 		entity.setHealth(maxHealth);
 		entity.setCustomName(name);

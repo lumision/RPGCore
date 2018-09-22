@@ -8,20 +8,28 @@ import rpgcore.skills.ArcaneBeam;
 import rpgcore.skills.ArcaneBlast;
 import rpgcore.skills.ArcaneBolt;
 import rpgcore.skills.ArcaneSpears;
+import rpgcore.skills.Enrage;
 import rpgcore.skills.Heal1;
 import rpgcore.skills.HolyBolt;
 import rpgcore.skills.IceBolt;
+import rpgcore.skills.IceField;
 import rpgcore.skills.IronBody;
+import rpgcore.skills.Leap;
 import rpgcore.skills.Lightning;
 import rpgcore.skills.MagicMastery1;
 import rpgcore.skills.MagicMastery2;
+import rpgcore.skills.MagicMastery3;
 import rpgcore.skills.PoisonBolt;
 import rpgcore.skills.PowerPierce;
+import rpgcore.skills.PowerSlash1;
 import rpgcore.skills.RPGSkill;
-import rpgcore.skills.ShadowStab;
-import rpgcore.skills.Teleport;
+import rpgcore.skills.ShadowStab1;
+import rpgcore.skills.Teleport1;
+import rpgcore.skills.Teleport2;
+import rpgcore.skills.Vigor1;
 import rpgcore.skills.Vitality1;
 import rpgcore.skills.Vitality2;
+import rpgcore.skills.Vitality3;
 import rpgcore.skills.WindDrive;
 import rpgcore.skills.Wisdom;
 
@@ -122,7 +130,7 @@ public class RPGClass
 			player.skills.add(Heal1.skillName);
 			break;
 		case ASSASSIN:
-			player.skills.add(ShadowStab.skillName);
+			player.skills.add(ShadowStab1.skillName);
 			break;
 		case ALL:
 			break;
@@ -135,7 +143,22 @@ public class RPGClass
 		switch (player.currentClass)
 		{
 		case WARRIOR:
+			if (level >= 2)
+				player.learnSkill(RPGSkill.getSkill(Leap.skillName));
+			if (level >= 3)
+				player.learnSkill(RPGSkill.getSkill(Vitality1.skillName));
+			if (level >= 4)
+				player.learnSkill(RPGSkill.getSkill(PowerSlash1.skillName));
+			if (level >= 5)
+				player.learnSkill(RPGSkill.getSkill(Vigor1.skillName));
+			if (level >= 6)
+				player.learnSkill(RPGSkill.getSkill(Vitality2.skillName));
+			if (level >= 7)
+				player.learnSkill(RPGSkill.getSkill(Enrage.skillName));
 			
+			
+			if (level >= 11)
+				player.learnSkill(RPGSkill.getSkill(Vitality3.skillName));
 			break;
 		case MAGE:
 			if (level >= 2)
@@ -150,7 +173,7 @@ public class RPGClass
 				player.learnSkill(RPGSkill.getSkill(IceBolt.skillName));
 			
 			if (level >= 10)
-				player.learnSkill(RPGSkill.getSkill(Teleport.skillName));
+				player.learnSkill(RPGSkill.getSkill(Teleport1.skillName));
 			if (level >= 11)
 				player.learnSkill(RPGSkill.getSkill(PoisonBolt.skillName));
 			if (level >= 12)
@@ -160,12 +183,18 @@ public class RPGClass
 			if (level >= 14)
 				player.learnSkill(RPGSkill.getSkill(Wisdom.skillName));
 			if (level >= 15)
-				player.learnSkill(RPGSkill.getSkill(Vitality2.skillName));
+				player.learnSkill(RPGSkill.getSkill(Vigor1.skillName));
 			if (level >= 16)
 				player.learnSkill(RPGSkill.getSkill(ArcaneBeam.skillName));
-
-			if (level >= 22)
+			if (level >= 17)
 				player.learnSkill(RPGSkill.getSkill(MagicMastery2.skillName));
+			if (level >= 19)
+				player.learnSkill(RPGSkill.getSkill(IceField.skillName));
+
+			if (level >= 20)
+				player.learnSkill(RPGSkill.getSkill(MagicMastery3.skillName));
+			if (level >= 25)
+				player.learnSkill(RPGSkill.getSkill(Teleport2.skillName));
 			break;
 		case PRIEST:
 			break;

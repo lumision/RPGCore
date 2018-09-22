@@ -6,12 +6,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -20,7 +22,7 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 
 import rpgcore.buff.Buff;
-import rpgcore.buff.BuffStats;
+import rpgcore.buff.Stats;
 import rpgcore.item.BonusStat.BonusStatCrystal;
 import rpgcore.item.BonusStat.BonusStatType;
 import rpgcore.main.CakeLibrary;
@@ -31,8 +33,8 @@ public class RItem
 	public String databaseName;
 
 	// BASE STATS
-	public int levelRequirement, magicDamage, bruteDamage, cooldownReduction, critChance, critDamage, damageReduction;
-	public double attackSpeed;
+	public int levelRequirement, magicDamage, bruteDamage, cooldownReduction, critChance, critDamage, damageReduction, recoverySpeed;
+	public double attackSpeed, xpMultiplier;
 
 	//BONUS STATS
 	public BonusStat bonusStat;
@@ -51,8 +53,8 @@ public class RItem
 	//FOOD BUFF
 	public boolean consumable;
 	public int satiate, buffDuration, consumableCooldown;
-	public int magicDamageAdd, bruteDamageAdd, damageReductionAdd, cooldownReductionAdd, critChanceAdd, critDamageAdd;
-	public float magicDamageMultiplier, bruteDamageMultiplier, attackSpeedMultiplier, xpMultiplier;
+	public int magicDamageAdd, bruteDamageAdd, damageReductionAdd, cooldownReductionAdd, recoverySpeedAdd, critChanceAdd, critDamageAdd;
+	public float magicDamageMultiplier, bruteDamageMultiplier, attackSpeedMultiplier, xpMultiplierFood;
 
 	//ITEM
 	public ArrayList<String> itemLore; //All lore lines excluding stat and misc ones
@@ -63,6 +65,7 @@ public class RItem
 	public String owner;
 	public boolean isWeapon; //Used for equip-checking
 	public String headTexture;
+	public int dropRoll;
 
 	//MISC1
 	static Random rand = new Random();
@@ -111,13 +114,18 @@ public class RItem
 	public Buff getBuff()
 	{
 		String buffName = CakeLibrary.getItemName(itemVanilla);
-		BuffStats bs = BuffStats.getBuffStats(buffName);
+		Stats bs = Stats.getBuffStats(buffName);
 		if (bs == null)
-			bs = BuffStats.createBuffStats(buffName, itemVanilla).setAttackSpeedMultiplier(attackSpeedMultiplier).setBruteDamageAdd(bruteDamageAdd)
+			bs = Stats.createStats(buffName, itemVanilla).setAttackSpeedMultiplier(attackSpeedMultiplier).setBruteDamageAdd(bruteDamageAdd)
 			.setBruteDamageMultiplier(bruteDamageMultiplier).setCooldownReductionAdd(cooldownReductionAdd).setCritChanceAdd(critChanceAdd)
 			.setCritDamageAdd(critDamageAdd).setDamageReductionAdd(damageReductionAdd).setMagicDamageAdd(magicDamageAdd).setMagicDamageMultiplier(magicDamageMultiplier)
-			.setXPMultiplier(xpMultiplier).setBuffDuration(buffDuration);
+			.setXPMultiplier(xpMultiplierFood).setBuffDuration(buffDuration);
 		return Buff.createBuff(bs);
+	}
+	
+	public boolean compareBase(RItem other)
+	{
+		return (new RItem(createBaseItem())).compare(new RItem(other.createBaseItem()));
 	}
 
 	public boolean compare(RItem other)
@@ -126,19 +134,6 @@ public class RItem
 			return false;
 
 		if (itemVanilla.getDurability() != other.itemVanilla.getDurability())
-			return false;
-
-		if (levelRequirement != other.levelRequirement
-				|| magicDamage != other.magicDamage
-				|| bruteDamage != other.bruteDamage
-				|| cooldownReduction != other.cooldownReduction
-				|| critChance != other.critChance
-				|| critDamage != other.critDamage
-				|| damageReduction != other.damageReduction
-				|| attackSpeed != other.attackSpeed
-				|| tier != other.tier
-				|| addedMagicDamage != other.addedMagicDamage
-				|| addedBruteDamage != other.addedBruteDamage)
 			return false;
 
 		ItemMeta im = itemVanilla.getItemMeta();
@@ -157,40 +152,11 @@ public class RItem
 				return false;
 
 			for (int i = 0; i < im.getLore().size(); i++)
-				if (!im.getLore().get(i).equals(imOther.getLore().get(i)))
+				if (!CakeLibrary.removeColorCodes(im.getLore().get(i)).equals(CakeLibrary.removeColorCodes(imOther.getLore().get(i))))
 					return false;
 		}
 
 		return true;
-	}
-
-	public void cleanItemStats()
-	{
-		levelRequirement
-		= magicDamage = bruteDamage
-		= critChance = critDamage
-		= cooldownReduction = damageReduction
-		= addedMagicDamage = addedBruteDamage
-		= tier
-		= 0;
-
-		attackSpeed = 0.0D;
-
-		lifeDrain = lifeDrainChance = 
-				iceDamage = slowChance = slowLevel = slowDuration = 
-				fireDamage = burnChance = burnDPS = burnDuration = 
-				lightningDamage = stunChance = stunDuration =
-				poisonChance = poisonDPS = poisonDuration = 0.0D;
-
-		satiate = buffDuration = 0;
-		magicDamageAdd = bruteDamageAdd = damageReductionAdd = cooldownReductionAdd = critChanceAdd = critDamageAdd = 0;
-		magicDamageMultiplier = bruteDamageMultiplier = attackSpeedMultiplier = 0.0F;
-
-		bonusStat = null;
-		itemLore = null;
-		itemVanilla = null;
-		owner = null;
-		isWeapon = false;
 	}
 
 	public void setItemStats(ItemStack is)
@@ -220,11 +186,6 @@ public class RItem
 		{
 			String line = lore.get(i);
 			String line1 = line;
-			if (line.equals(""))
-			{
-				loreRemove.add(i);
-				continue;
-			}
 			if (!line.contains("§"))
 				continue;
 			line = CakeLibrary.removeColorCodes(line);
@@ -240,19 +201,6 @@ public class RItem
 				try
 				{
 					accessory = true;
-					loreRemove.add(i);
-				} catch (Exception e) {}
-			} else if (line.startsWith("  Magic Damage: +"))
-			{
-				try
-				{
-					String[] numbers = line.split(": +")[1].split(" ");
-					magicDamage = Integer.parseInt(numbers[0]);
-					if (numbers.length > 1)
-					{
-						addedMagicDamage = Integer.parseInt(numbers[1].substring(2, numbers[1].length() - 1));
-						magicDamage -= addedMagicDamage;
-					}
 					loreRemove.add(i);
 				} catch (Exception e) {}
 			} else if (line.startsWith("  Magic Damage: +"))
@@ -288,6 +236,13 @@ public class RItem
 					attackSpeed = Double.parseDouble(line.split(": x")[1]);
 					loreRemove.add(i);
 				} catch (Exception e) {}
+			} else if (line.startsWith("  Combat XP: x"))
+			{
+				try
+				{
+					xpMultiplier = Double.parseDouble(line.split(": x")[1]);
+					loreRemove.add(i);
+				} catch (Exception e) {}
 			} else if (line.startsWith("  Crit Chance: +"))
 			{
 				try
@@ -304,6 +259,15 @@ public class RItem
 					String percentage = line.split(": +")[1];
 					percentage = percentage.substring(0, percentage.length() - 1);
 					critDamage = Integer.parseInt(percentage);
+					loreRemove.add(i);
+				} catch (Exception e) {}
+			} else if (line.startsWith("  Recovery Speed: +"))
+			{
+				try
+				{
+					String percentage = line.split(": +")[1];
+					percentage = percentage.substring(0, percentage.length() - 1);
+					recoverySpeed = Integer.parseInt(percentage);
 					loreRemove.add(i);
 				} catch (Exception e) {}
 			} else if (line.startsWith("  Damage Reduction: +"))
@@ -442,18 +406,27 @@ public class RItem
 					cooldownReductionAdd = Integer.parseInt(num.substring(0, num.length() - 1));
 					loreRemove.add(-i);
 				} catch (Exception e) {}
+			} else if (line.startsWith(" * Recovery Speed: +"))
+			{
+				try
+				{
+					String num = line.split(": +")[1];
+					recoverySpeedAdd = Integer.parseInt(num.substring(0, num.length() - 1));
+					loreRemove.add(-i);
+				} catch (Exception e) {}
 			} else if (line.startsWith(" * Combat XP: +"))
 			{
 				try
 				{
 					String num = line.split(": +")[1];
-					xpMultiplier = CakeLibrary.convertAddedPercentageToMultiplier(
+					xpMultiplierFood = CakeLibrary.convertAddedPercentageToMultiplier(
 							Integer.parseInt(num.substring(0, num.length() - 1)));
 					loreRemove.add(-i);
 				} catch (Exception e) {}
 			} else if (line.startsWith("  --- Tier "))
 			{
 				bonusStatLines = true;
+				loreRemove.add(i - 1);
 				loreRemove.add(i);
 			} else if (line.equals("  ------------"))
 			{
@@ -527,16 +500,115 @@ public class RItem
 			if (bruteDamage != 0)
 				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Brute Damage:" + statColorSecondary + " +" + (bruteDamage + addedBruteDamage))
 						+ (addedBruteDamage > 0 ? " (+" + addedBruteDamage + ")" : ""));
-			if (attackSpeed != 0)
-				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Attack Speed:" + statColorSecondary +" x" + attackSpeed));
+			if (damageReduction != 0)
+				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Damage Reduction:" + statColorSecondary + " +" + damageReduction + "%"));
+			if (cooldownReduction != 0)
+				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Cooldown Reduction:" + statColorSecondary + " +" + cooldownReduction + "%"));
 			if (critChance != 0)
 				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Crit Chance:" + statColorSecondary + " +" + critChance + "%"));
 			if (critDamage != 0)
 				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Crit Damage:" + statColorSecondary + " +" + critDamage + "%"));
-			if (cooldownReduction != 0)
-				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Cooldown Reduction:" + statColorSecondary + " +" + cooldownReduction + "%"));
+			if (attackSpeed != 0)
+				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Attack Speed:" + statColorSecondary +" x" + attackSpeed));
+			if (recoverySpeed != 0)
+				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Recovery Speed:" + statColorSecondary + " +" + recoverySpeed + "%"));
+			if (xpMultiplier != 0)
+				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Combat XP:" + statColorSecondary +" x" + xpMultiplier));
+		} else
+		{
+			lore.add(CakeLibrary.recodeColorCodes("&7 * Consumable"));
+			if (satiate != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Satiate: -" + (satiate / 2.0F) + " hunger"));
+			if (buffDuration != 0)
+			{
+				lore.add(CakeLibrary.recodeColorCodes("&f"));
+				lore.add(CakeLibrary.recodeColorCodes("&7Buff:"));
+			}
+			if (magicDamageAdd != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Magic Damage: +" + magicDamageAdd));
+			if (magicDamageMultiplier != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Magic Damage: +" + CakeLibrary.convertMultiplierToAddedPercentage(magicDamageMultiplier) + "%"));
+			if (bruteDamageAdd != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Brute Damage: +" + bruteDamageAdd));
+			if (bruteDamageMultiplier != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Brute Damage: +" + CakeLibrary.convertMultiplierToAddedPercentage(bruteDamageMultiplier) + "%"));
+			if (damageReductionAdd != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Damage Reduction: +" + damageReductionAdd + "%"));
+			if (cooldownReductionAdd != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Cooldown Reduction: +" + cooldownReductionAdd + "%"));
+			if (critChanceAdd != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Crit Chance: +" + critChanceAdd + "%"));
+			if (critDamageAdd != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Crit Damage: +" + critDamageAdd + "%"));
+			if (attackSpeedMultiplier != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Attack Speed: +" + CakeLibrary.convertMultiplierToAddedPercentage(attackSpeedMultiplier) + "%"));
+			if (recoverySpeedAdd != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Recovery Speed: +" + recoverySpeedAdd + "%"));
+			if (xpMultiplierFood != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Combat XP: +" + CakeLibrary.convertMultiplierToAddedPercentage(xpMultiplierFood) + "%"));
+			if (buffDuration != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Buff Duration: " + CakeLibrary.convertTimeToString(buffDuration / 20)));
+			if (consumableCooldown != 0)
+			{
+				lore.add(CakeLibrary.recodeColorCodes("&f"));
+				lore.add(CakeLibrary.recodeColorCodes("&7Consumable Cooldown: " + CakeLibrary.convertTimeToString(consumableCooldown / 20)));
+			}
+		}
+
+		//BONUS STATS
+		if (bonusStat != null)
+		{
+			lore.add(CakeLibrary.recodeColorCodes("&f"));
+			String color = BonusStat.getTierColor(bonusStat.tier);
+			lore.add(color + "  --- Tier " + bonusStat.tier + " ---");
+			for (int i = 0; i < bonusStat.statLines.size(); i++)
+				lore.add(color + bonusStat.statLines.get(i).getDescriptionWithValueRoll(bonusStat.tier, bonusStat.statLower.get(i)));
+			lore.add(color + "  ------------");
+		}
+
+		//ITEM
+		lore.addAll(itemLore);
+
+		//MISC
+		if (owner != null)
+			if (!owner.equals(""))
+				lore.add(CakeLibrary.recodeColorCodes("&fOwner: " + owner));
+
+		is = CakeLibrary.setItemLore(is, lore);
+		return is;
+	}
+
+	public ItemStack createBaseItem()
+	{
+		ItemStack is = itemVanilla.clone();
+		ArrayList<String> lore = new ArrayList<String>();
+
+		if (accessory)
+			lore.add(CakeLibrary.recodeColorCodes("&eAccessory"));
+
+		//BASE STATS
+		if (!consumable)
+		{
+			if (levelRequirement != 0)
+				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Lv. Requirement:" + statColorSecondary + " " + levelRequirement));
+			if (magicDamage != 0)
+				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Magic Damage:" + statColorSecondary + " +" + magicDamage));
+			if (bruteDamage != 0)
+				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Brute Damage:" + statColorSecondary + " +" + bruteDamage));
 			if (damageReduction != 0)
 				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Damage Reduction:" + statColorSecondary + " +" + damageReduction + "%"));
+			if (cooldownReduction != 0)
+				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Cooldown Reduction:" + statColorSecondary + " +" + cooldownReduction + "%"));
+			if (critChance != 0)
+				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Crit Chance:" + statColorSecondary + " +" + critChance + "%"));
+			if (critDamage != 0)
+				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Crit Damage:" + statColorSecondary + " +" + critDamage + "%"));
+			if (attackSpeed != 0)
+				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Attack Speed:" + statColorSecondary +" x" + attackSpeed));
+			if (recoverySpeed != 0)
+				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Recovery Speed:" + statColorSecondary + " +" + recoverySpeed + "%"));
+			if (xpMultiplier != 0)
+				lore.add(CakeLibrary.recodeColorCodes(statColor + "  Combat XP:" + statColorSecondary +" x" + xpMultiplier));
 		} else
 		{
 			lore.add(CakeLibrary.recodeColorCodes("&7 * Consumable"));
@@ -561,12 +633,14 @@ public class RItem
 				lore.add(CakeLibrary.recodeColorCodes("&7 * Crit Chance: +" + critChanceAdd + "%"));
 			if (critDamageAdd != 0)
 				lore.add(CakeLibrary.recodeColorCodes("&7 * Crit Damage: +" + critDamageAdd + "%"));
+			if (recoverySpeedAdd != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Recovery Speed: +" + recoverySpeedAdd + "%"));
 			if (damageReductionAdd != 0)
 				lore.add(CakeLibrary.recodeColorCodes("&7 * Damage Reduction: +" + damageReductionAdd + "%"));
 			if (cooldownReductionAdd != 0)
 				lore.add(CakeLibrary.recodeColorCodes("&7 * Cooldown Reduction: +" + cooldownReductionAdd + "%"));
-			if (xpMultiplier != 0)
-				lore.add(CakeLibrary.recodeColorCodes("&7 * Combat XP: +" + CakeLibrary.convertMultiplierToAddedPercentage(xpMultiplier) + "%"));
+			if (xpMultiplierFood != 0)
+				lore.add(CakeLibrary.recodeColorCodes("&7 * Combat XP: +" + CakeLibrary.convertMultiplierToAddedPercentage(xpMultiplierFood) + "%"));
 			if (buffDuration != 0)
 				lore.add(CakeLibrary.recodeColorCodes("&7 * Buff Duration: " + CakeLibrary.convertTimeToString(buffDuration / 20)));
 			if (consumableCooldown != 0)
@@ -574,17 +648,6 @@ public class RItem
 				lore.add(CakeLibrary.recodeColorCodes("&f"));
 				lore.add(CakeLibrary.recodeColorCodes("&7Consumable Cooldown: " + CakeLibrary.convertTimeToString(consumableCooldown / 20)));
 			}
-		}
-
-		//BONUS STATS
-		if (bonusStat != null)
-		{
-			lore.add("");
-			String color = BonusStat.getTierColor(bonusStat.tier);
-			lore.add(color + "  --- Tier " + bonusStat.tier + " ---");
-			for (BonusStatType type: bonusStat.statLines)
-				lore.add(color + type.getDescriptionWithValueRoll(bonusStat.tier));
-			lore.add(color + "  ------------");
 		}
 
 		//ITEM
@@ -607,15 +670,18 @@ public class RItem
 	public void setTier(int num)
 	{
 		tier = num;
-		addedMagicDamage = magicDamage;
-		addedBruteDamage = bruteDamage;
+		
+		float m = magicDamage;
+		float b = bruteDamage;
+		
 		for (int i = 0; i < num; i++)
 		{
-			addedMagicDamage *= tierStatMultiplier;
-			addedBruteDamage *= tierStatMultiplier;
+			m *= tierStatMultiplier;
+			b *= tierStatMultiplier;
 		}
-		addedMagicDamage -= magicDamage;
-		addedBruteDamage -= bruteDamage;
+		
+		addedMagicDamage = (int) m - magicDamage;
+		addedBruteDamage = (int) b - bruteDamage;
 	}
 
 	public void saveItemToFile(String fileName)
@@ -631,6 +697,8 @@ public class RItem
 		lines.add("amount: " + itemVanilla.getAmount());
 		if (tier > 0)
 			lines.add("tier: " + tier);
+		if (dropRoll > 0)
+			lines.add("dropRoll: " + dropRoll);
 		if (headTexture != null && headTexture.length() > 0)
 			lines.add("headTexture: " + headTexture);
 
@@ -649,6 +717,11 @@ public class RItem
 				lines.add("lore: ");
 				for (String s: lore)
 					lines.add(" " + (CakeLibrary.removeColorCodes(s).length() <= 0 ? s + " " : s));
+			}
+			if (im instanceof LeatherArmorMeta)
+			{
+				Color c = ((LeatherArmorMeta) im).getColor();
+				lines.add("leatherArmorColor: " + c.getRed() + ", " + c.getGreen() + ", " + c.getBlue());
 			}
 		}
 
@@ -710,6 +783,10 @@ public class RItem
 			short durability = 0;
 			boolean unbreakable = false;
 			int tier = 0;
+			int dropRoll = 0;
+			int red = -1;
+			int green = -1;
+			int blue = -1;
 			String headTexture = null;
 
 			String name = null;
@@ -747,11 +824,19 @@ public class RItem
 						unbreakable = Boolean.valueOf(split[1]);
 					if (line.startsWith("tier: "))
 						tier = Integer.valueOf(split[1]);
+					if (line.startsWith("dropRoll: "))
+						dropRoll = Integer.valueOf(split[1]);
 					if (line.startsWith("headTexture: "))
 						headTexture = split[1];
-
 					if (line.startsWith("name: "))
 						name = split[1];
+					if (line.startsWith("leatherArmorColor: "))
+					{
+						String[] args = split[1].split(", ");
+						red = Integer.valueOf(args[0]);
+						green = Integer.valueOf(args[1]);
+						blue = Integer.valueOf(args[2]);
+					}
 				}
 			}
 
@@ -773,6 +858,13 @@ public class RItem
 			if (unbreakable)
 				im.spigot().setUnbreakable(unbreakable);
 			item.setItemMeta(im);
+			
+			if (red != -1 && green != -1 && blue != -1)
+			{
+				LeatherArmorMeta lim = (LeatherArmorMeta) im;
+				lim.setColor(Color.fromRGB(red, green, blue));
+				item.setItemMeta(lim);
+			}
 
 			for (int i = 0; i < enchs.size(); i++)
 				item.addUnsafeEnchantment(enchs.get(i), levels.get(i));
@@ -780,6 +872,7 @@ public class RItem
 			RItem ri = new RItem(item, file.getName().substring(0, file.getName().length() - 4));
 			ri.setTier(tier);
 			ri.headTexture = headTexture;
+			ri.dropRoll = dropRoll;
 			return ri;
 		} catch (Exception e) {
 			RPGCore.msgConsole("&4Unable to read item file: " + file.getName());
@@ -800,26 +893,34 @@ public class RItem
 			if (bonusStat != null)
 				return false;
 			ArrayList<BonusStatType> list = new ArrayList<BonusStatType>();
+			ArrayList<Boolean> listLower = new ArrayList<Boolean>();
 			list.add(BonusStatType.rollRandomStat());
 			list.add(BonusStatType.rollRandomStat());
-			bonusStat = new BonusStat(1, list);
+			listLower.add(BonusStat.rand.nextBoolean());
+			listLower.add(BonusStat.rand.nextBoolean());
+			bonusStat = new BonusStat(1, list, listLower);
 			return true;
 		}
 		case ALL_LINES_REROLL:
 		{
 			if (bonusStat == null)
 				return false;
+			bonusStat.statLower.clear();
 			for (int i = 0; i < bonusStat.statLines.size(); i++)
+			{
 				bonusStat.statLines.set(i, BonusStatType.rollRandomStat());
+				bonusStat.statLower.add(BonusStat.rand.nextBoolean());
+			}
 			return true;
 		}
-		case LINE_AMOUNT_REROLL:
+		case LINE_AMOUNT_ADDER:
 		{
 			if (bonusStat == null)
 				return false;
 			if (bonusStat.statLines.size() >= 3)
 				return false;
 			bonusStat.statLines.add(BonusStatType.rollRandomStat());
+			bonusStat.statLower.add(BonusStat.rand.nextBoolean());
 			return true;
 		}
 		case TIER_REROLL:
@@ -828,8 +929,7 @@ public class RItem
 				return false;
 			if (bonusStat.tier == 5)
 				return false;
-			int chance = 5;	
-			if (rand.nextInt(chance) != 0)
+			if (rand.nextInt(BonusStat.tierIncreaseRoll) != 0)
 				return true;
 			bonusStat.tier++;
 			return true;

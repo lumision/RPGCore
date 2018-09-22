@@ -17,7 +17,6 @@ import com.sk89q.worldedit.bukkit.BukkitWorld;
 import com.sk89q.worldedit.schematic.SchematicFormat;
 import com.sk89q.worldedit.world.DataException;
 
-import rpgcore.entities.mobs.RPGMonster;
 import rpgcore.entities.mobs.RPGMonsterSpawn;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
@@ -25,8 +24,9 @@ import rpgcore.main.RPGCore;
 public class ArenaInstance 
 {
 	static BukkitWorld arenaInstanceWorld;
-	static ArrayList<ArenaInstance> arenaInstanceList = new ArrayList<ArenaInstance>();
+	public static ArrayList<ArenaInstance> arenaInstanceList = new ArrayList<ArenaInstance>();
 	public static final File arenasFile = new File("plugins/RPGCore/ArenaInstances.yml");
+	public static int nextInstanceID = 0;
 
 	public Arena arena;
 	public boolean occupied;
@@ -35,13 +35,16 @@ public class ArenaInstance
 	public int arenaInstanceID;
 	public ArrayList<Monster> mobList = new ArrayList<Monster>();
 	
-	Location spawnLocation, exitLocation;
+	Location spawnLocation;
+	Location[] exitLocations;
 
 	public ArenaInstance(Arena arena, int arenaInstanceID, boolean pasted, boolean occupied)
 	{
 		for (ArenaInstance ai: arenaInstanceList)
 			if (ai.arenaInstanceID == arenaInstanceID)
 				return;
+		if (nextInstanceID <= arenaInstanceID)
+			nextInstanceID = arenaInstanceID + 1;
 		this.arena = arena;
 		this.arenaInstanceID = arenaInstanceID;
 		this.pasted = pasted;
@@ -79,14 +82,14 @@ public class ArenaInstance
 	public void spawnMobs()
 	{
 		mobsSpawned = true;
-		for (String mob: arena.mobSpawns.keySet())
+		for (int i = 0; i < arena.mobSpawns.size(); i++)
 		{
 			try
 			{
-				org.bukkit.util.Vector v = arena.mobSpawns.get(mob);
-				mobList.add(RPGMonsterSpawn.getRPGMonsterSpawn(mob).spawnMonster(getSpawnLocation().clone().add(v)).entity);
+				org.bukkit.util.Vector v = arena.mobSpawnOffsets.get(i);
+				mobList.add(RPGMonsterSpawn.getRPGMonsterSpawn(arena.mobSpawns.get(i)).spawnMonster(getSpawnLocation().clone().add(v)).entity);
 			} catch (Exception e) {
-				Bukkit.broadcastMessage("Error spawning arena mob - \"" + mob + "\" (maybe it does not exist?)");
+				Bukkit.broadcastMessage("Error spawning arena mob - \"" + arena.mobSpawns.get(i) + "\" (maybe it does not exist?)");
 			}
 		}
 	}
@@ -101,11 +104,15 @@ public class ArenaInstance
 		return spawnLocation.clone();
 	}
 	
-	public Location getExitLocation()
+	public Location[] getExitLocations()
 	{
-		if (exitLocation != null)
-			return exitLocation.clone();
-		return (exitLocation = new Location(Bukkit.getWorld(RPGCore.areaInstanceWorld), arenaInstanceID * 256, 64, 0).add(arena.exitInternal)).clone();
+		if (exitLocations != null)
+			return exitLocations.clone();
+		exitLocations = new Location[arena.exitInternals.size()];
+		for (int i = 0; i < exitLocations.length; i++)
+			exitLocations[i] = new Location(
+					Bukkit.getWorld(RPGCore.areaInstanceWorld), arenaInstanceID * 256, 64, 0).add(arena.exitInternals.get(i));
+		return exitLocations;
 	}
 
 	public static ArenaInstance getArenaInstance(Arena arena)
@@ -115,11 +122,12 @@ public class ArenaInstance
 			if (instance.arena.equals(arena) && !instance.occupied)
 				return instance;
 		}
-		int id = 0;
-		for (ArenaInstance ai: arenaInstanceList)
-			if (ai.arenaInstanceID > id)
-				id = ai.arenaInstanceID;
-		return new ArenaInstance(arena, id + 1, false, false);
+		return createArenaInstance(arena);
+	}
+
+	public static ArenaInstance createArenaInstance(Arena arena)
+	{
+		return new ArenaInstance(arena, nextInstanceID++, false, false);
 	}
 
 	public static BukkitWorld getArenaInstanceWorld()
@@ -134,16 +142,31 @@ public class ArenaInstance
 		ArrayList<String> lines = CakeLibrary.readFile(arenasFile);
 		for (String line: lines)
 		{
-			String[] split = line.split(", ");
-			if (split.length < 3)
-				continue;
-			new ArenaInstance(Arena.getArena(split[0]), Integer.valueOf(split[1]), true, Boolean.valueOf(split[2]));
+			try
+			{
+				if (line.startsWith("nextInstanceID: "))
+				{
+					nextInstanceID = Integer.parseInt(line.split(": ")[1]);
+					continue;
+				}
+				String[] split = line.split(", ");
+				if (split.length < 3)
+					continue;
+				Arena a = Arena.getArena(split[0]);
+				if (a == null)
+					continue;
+				new ArenaInstance(Arena.getArena(split[0]), Integer.valueOf(split[1]), true, Boolean.valueOf(split[2]));
+			} catch (Exception e)
+			{
+				RPGCore.msgConsole("Error reading arena instance data line: &4" + line);
+			}
 		}
 	}
 
 	public static void writeArenaInstanceData()
 	{
 		ArrayList<String> lines = new ArrayList<String>();
+		lines.add("nextInstanceID: " + nextInstanceID);
 		for (ArenaInstance ai: arenaInstanceList)
 			if (ai != null)
 				lines.add(ai.arena.schematicName + ", " + ai.arenaInstanceID + ", " + ai.occupied);

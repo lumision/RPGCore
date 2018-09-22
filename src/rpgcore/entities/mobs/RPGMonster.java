@@ -13,22 +13,27 @@ import rpgcore.main.CakeLibrary;
 public abstract class RPGMonster 
 {
 	public static ArrayList<RPGMonster> entities = new ArrayList<RPGMonster>();
-	public static ArrayList<RPGMonster> remove = new ArrayList<RPGMonster>();
 
-	public double reachDistance = 16.0D;
+	public boolean isBoss;
+	public int reachDistance;
+	public int reachDistanceLoseSquared;
 	public Monster entity;
 	public Player target;
 	public int castDelay;
 	public double aliveTicks;
-	public static Random random = new Random();
+	public boolean bound;
+	public static Random rand = new Random();
 	public static HashMap<String, Class<? extends RPGMonster>> mobList = new HashMap<String, Class<? extends RPGMonster>>();
 	
-	public RPGMonster(Monster entity)
+	public RPGMonster(Monster entity, boolean isBoss)
 	{
 		this.entity = entity;
+		this.isBoss = isBoss;
+		this.reachDistance = 16;
+		this.reachDistanceLoseSquared = isBoss ? 32 * 32 : 16 * 16;
 		entities.add(this);
 	}
-	
+
 	public static RPGMonster getRPGMob(int entityID)
 	{
 		for (RPGMonster ce: entities)
@@ -41,18 +46,24 @@ public abstract class RPGMonster
 	{
 		if (entity == null)
 			return true;
-		if (entity.isDead() || entity.getHealth() <= 0)
+		if (entity.isDead())
+			return true;
+		if (entity.getHealth() <= 0)
 			return true;
 		return false;
 	}
 
-	public void tick()
+	public boolean tick()
 	{
 		if (isDead())
+			return true;
+		if (bound)
 		{
-			remove.add(this);
-			return;
+			this.castDelay = 1;
+			return false;
 		}
+		if (aliveTicks % 10 == 0)
+			findTarget();
 		if (this.castDelay > 0)
 			this.castDelay--;
 		this.aliveTicks++;
@@ -61,20 +72,26 @@ public abstract class RPGMonster
 			if (target.getHealth() <= 0 || target.isDead())
 			{
 				target = null;
-				return;
+				return false;
 			}
-			if (target.getLocation().distance(entity.getLocation()) > reachDistance)
+			if (target.getWorld() != entity.getWorld())
 			{
 				target = null;
-				return;
+				return false;
+			}
+			if (target.getLocation().distanceSquared(entity.getLocation()) > reachDistanceLoseSquared)
+			{
+				target = null;
+				return false;
 			}
 			if (!target.getGameMode().equals(GameMode.SURVIVAL))
 			{
 				target = null;
-				return;
+				return false;
 			}
-			return;
+			entity.setTarget(target);
 		}
+		return false;
 	}
 
 	public void findTarget()

@@ -3,7 +3,6 @@ package rpgcore.entities.mobs;
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
 
-import org.bukkit.Color;
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -13,13 +12,11 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 import rpgcore.main.CakeLibrary;
-import rpgcore.main.RPGCore;
 import rpgcore.main.RPGEvents;
 import rpgcore.skills.IceBolt;
 import rpgcore.skills.PoisonBolt;
@@ -28,10 +25,19 @@ public class SorcererZombie extends RPGMonster
 {
 	public static double maxHealth = 400.0D;
 	public static String name = "§eSorcerer Zombie §7Lv. 21";
+	
+	public static final int arcaneBoltDamage = 4;
+	public static final int arcaneBoltDelay = 24;
+	
+	public static final int iceBoltDamage = 5;
+	public static final int iceBoltDelay = 24;
+	
+	public static final int poisonBoltDamage = 5;
+	public static final int poisonBoltDelay = 24;
 
 	public SorcererZombie(Monster entity)
 	{
-		super(entity);
+		super(entity, false);
 		entity.setMaxHealth(maxHealth);
 		entity.setHealth(maxHealth);
 		entity.setCustomName(name);
@@ -58,33 +64,27 @@ public class SorcererZombie extends RPGMonster
 	}
 
 	@Override
-	public void tick()
+	public boolean tick()
 	{
 		super.tick();
 		if (isDead())
-			return;
+			return true;
 		if (castDelay > 0 || target == null)
-			return;
-		int i = random.nextInt(10) + 1;
+			return false;
+		int i = rand.nextInt(10) + 1;
 		if (i <= 4)
-		{
 			castArcaneBolt();
-			castDelay = 30;
-		} else if (i <= 7)
-		{
+		else if (i <= 7)
 			castIceBolt();
-			castDelay = 30;
-		} else
-		{
+		else
 			castPoisonBolt();
-			castDelay = 30;
-		}
+		return false;
 	}
 
 	public void castArcaneBolt()
 	{
-		if (target.getLocation().distance(entity.getLocation()) > 15)
-			return;
+		castDelay = arcaneBoltDelay;
+		
 		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
 		Vector vector = entity.getLocation().getDirection().normalize().multiply(0.5F);
 		int multiplier = 0;
@@ -100,12 +100,14 @@ public class SorcererZombie extends RPGMonster
 			}
 			RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0, 1), multiplier);
 			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.1F, 1.25F), multiplier);
-			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, 4, entity, 20), multiplier);
+			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, arcaneBoltDamage, entity, 20), multiplier);
 		}
 	}
 
 	public void castIceBolt()
 	{
+		castDelay = iceBoltDelay;
+		
 		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
 		Vector vector = entity.getLocation().getDirection().normalize().multiply(0.5D);
 		int multiplier = 0;
@@ -126,7 +128,7 @@ public class SorcererZombie extends RPGMonster
 				@Override
 				public Void call() throws Exception {
 					LivingEntity e = RPGEvents.customHit;
-					new RPGEvents.ApplyDamage(entity, e, 5).run();
+					new RPGEvents.ApplyDamage(entity, e, iceBoltDamage).run();
 					new RPGEvents.PlayEffect(Effect.STEP_SOUND, e, 79).run();
 					CakeLibrary.addPotionEffectIfBetterOrEquivalent(e, new PotionEffect(PotionEffectType.SLOW, 
 							IceBolt.debuffLength, IceBolt.debuffLevel));
@@ -139,6 +141,8 @@ public class SorcererZombie extends RPGMonster
 
 	public void castPoisonBolt()
 	{
+		castDelay = poisonBoltDelay;
+		
 		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
 		Vector vector = entity.getLocation().getDirection().normalize().multiply(0.5D);
 		int multiplier = 0;
@@ -159,9 +163,9 @@ public class SorcererZombie extends RPGMonster
 				@Override
 				public Void call() throws Exception {
 					LivingEntity e = RPGEvents.customHit;
-					new RPGEvents.ApplyDamage(entity, e, 5).run();
+					new RPGEvents.ApplyDamage(entity, e, poisonBoltDamage).run();
 					new RPGEvents.PlayEffect(Effect.STEP_SOUND, e, 165).run();
-					new RPGEvents.DamageOverTime(PoisonBolt.debuffLength, 20, PoisonBolt.debuffDamage, entity, e);
+					new RPGEvents.DamageOverTime(PoisonBolt.debuffLength, 20, 1, entity, e);
 					return null;
 				}
 

@@ -39,13 +39,39 @@ public class EnhancementInventory
 			"&4If enhancement fails,",
 			"&4the item to the right", 
 			"&4will be destroyed.");
+	public static final ItemStack slotWarn = CakeLibrary.editNameAndLore(new ItemStack(Material.PAPER), 
+			"&4&nWarning", 
+			"&f",
+			"&cWhen enhancing items with bonus",
+			"&cstats, the &4item to the left&c will",
+			"&chave its bonus stats transferred",
+			"&cto the result.",
+			"&f",
+			"&cShould the enhancement &4fail&c,",
+			"&cthe &4item to the right&c will be", 
+			"&cdestroyed regardless.", 
+			"&f",
+			"&7Click again to proceed");
+	public static final ItemStack slotWarn1 = CakeLibrary.editNameAndLore(new ItemStack(Material.PAPER), 
+			"&4&nWarning", 
+			"&f",
+			"&cWhen enhancing items with bonus",
+			"&cstats, the &4item to the left&c will",
+			"&chave its bonus stats transferred",
+			"&cto the result.",
+			"&f",
+			"&cShould the enhancement &4fail&c,",
+			"&cthe &4item to the right&c will be", 
+			"&cdestroyed regardless.", 
+			"&f",
+			"&4&nClick again to proceed");
 
 	static final String inventoryName = CakeLibrary.recodeColorCodes("&1Equipment Enhancement");
 
 	public static final int maxState = 20;
 
 	static final Random rand = new Random();
-	
+
 	public static final int[] tierEnhanceRate = { 100, 70, 50, 40, 30 };
 
 	public static Inventory getNewInventory()
@@ -124,7 +150,9 @@ public class EnhancementInventory
 
 		return CakeLibrary.editNameAndLore(new ItemStack(Material.PAPER, (int) Math.max(1, state / maxState * 100.0F)), 
 				"&eEnhancing" + sDots,
-				bar);
+				bar,
+				"&f",
+				"&7&oClose inventory to cancel");
 	}
 
 	public static void updateMiddleItem(Inventory inv)
@@ -149,7 +177,11 @@ public class EnhancementInventory
 		if (CakeLibrary.isItemStackNull(is))
 			return false;
 		String itemName = CakeLibrary.getItemName(is);
+		if (itemName.startsWith(CakeLibrary.getItemName(getSlotEnhance(0))))
+			return true;
 		if (itemName.equals(CakeLibrary.getItemName(slotInstruct)))
+			return true;
+		if (itemName.equals(CakeLibrary.getItemName(slotWarn)))
 			return true;
 		if (itemName.equals(CakeLibrary.getItemName(slotEnhance)))
 			return true;
@@ -167,23 +199,24 @@ public class EnhancementInventory
 	public static void updateInventory(Inventory inv, int state)
 	{
 		HumanEntity he = null;
-		if (inv.getViewers().size() > 0)
-			he = inv.getViewers().get(0);
+		if (inv.getViewers().size() == 0)
+			return;
+		he = inv.getViewers().get(0);
 		if (he != null)
 			new RPGEvents.PlaySoundEffect(he, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.2F, (Float.valueOf(state) / Float.valueOf(maxState) / 2.0F) + 0.5F).run();
 		if (state == maxState)
 		{
-			RItem ri = new RItem(inv.getItem(10));
-			if (rand.nextInt(100) + 1 <= tierEnhanceRate[ri.getTier()]) //success
+			RItem ri1 = new RItem(inv.getItem(10));
+			if (rand.nextInt(100) + 1 <= tierEnhanceRate[ri1.getTier()]) //success
 			{
-				ri.setTier(ri.getTier() + 1);
-				inv.setItem(13, ri.createItem());
+				ri1.setTier(ri1.getTier() + 1);
+				inv.setItem(13, ri1.createItem());
 				inv.setItem(10, slotItem.clone());
 				inv.setItem(16, slotItem.clone());
 				if (he != null)
 				{
 					new RPGEvents.PlayEffect(Effect.STEP_SOUND, he, 20).run();
-					new RPGEvents.PlaySoundEffect(he, Sound.ENTITY_PLAYER_LEVELUP, 0.2F + (ri.getTier() / 10.0F), 0.8F + (ri.getTier() / 10.0F)).run();
+					new RPGEvents.PlaySoundEffect(he, Sound.ENTITY_PLAYER_LEVELUP, 0.2F + (ri1.getTier() / 10.0F), 0.8F + (ri1.getTier() / 10.0F)).run();
 					RPGCore.msg(he, "&2Enhancement success!");
 				}
 			} else //failure

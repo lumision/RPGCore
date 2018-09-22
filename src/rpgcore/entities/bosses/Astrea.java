@@ -19,8 +19,7 @@ public class Astrea extends RPGMonster
 
 	public Astrea(Monster m)
 	{
-		super(m);
-		this.reachDistance = 32.0D;
+		super(m, true);
 		entity.setRemoveWhenFarAway(false);
 		entity.setMaxHealth(maxHealth);
 		entity.setHealth(maxHealth);
@@ -40,13 +39,14 @@ public class Astrea extends RPGMonster
 	}
 
 	@Override
-	public void tick()
+	public boolean tick()
 	{
 		super.tick();
 		if (isDead())
-			return;
+			return true;
 		if (castDelay > 0 || target == null)
-			return;
+			return false;
+		return false;
 	}
 	
 	public ArrayList<ItemStack> getDrops()

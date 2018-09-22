@@ -12,18 +12,21 @@ import rpgcore.player.RPlayer;
 
 public class Buff 
 {
+	public static ArrayList<Buff> buffs = new ArrayList<Buff>();
 	public int duration;
-	public BuffStats buffStats;
+	public Stats buffStats;
 	
-	private Buff(BuffStats buffStats)
+	private Buff(Stats buffStats)
 	{
 		this.buffStats = buffStats;
 		this.duration = buffStats.buffDuration;
 	}
 	
-	public static Buff createBuff(BuffStats buffStats)
+	public static Buff createBuff(Stats buffStats)
 	{
-		return new Buff(buffStats);
+		Buff b = new Buff(buffStats);
+		buffs.add(b);
+		return b;
 	}
 	
 	public ItemStack getBuffIcon()
@@ -65,10 +68,11 @@ public class Buff
 		return icon;
 	}
 	
-	public void tick()
+	public boolean tick()
 	{
 		if (this.duration > 0)
 			this.duration--;
+		return duration == 0;
 	}
 	
 	public void applyBuff(RPlayer rp)
@@ -76,13 +80,16 @@ public class Buff
 		Player p = rp.getPlayer();
 		if (p == null)
 			return;
-		for (Buff b: rp.buffs)
+		for (int i = 0; i < rp.buffs.size(); i++)
+		{
+			Buff b = rp.buffs.get(i);
 			if (b.buffStats.buffStatsName.equals(buffStats.buffStatsName))
 			{
 				b.duration = duration;
 				RPGCore.msgNoTag(p, "&e--- Buff &6[ " + buffStats.buffStatsName + "&6 ] &eapplied ---");
 				return;
 			}
+		}
 		rp.buffs.add(this);
 		RPGCore.msgNoTag(p, "&e--- Buff &6[ " + buffStats.buffStatsName + "&6 ] &eapplied ---");
 		rp.updateScoreboard = true;
