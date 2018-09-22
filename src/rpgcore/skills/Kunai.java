@@ -19,18 +19,13 @@ public class Kunai extends RPGSkill
 {
 	public final static String skillName = "Kunai";
 	public final static boolean passiveSkill = false;
-	public final static int skillTier = 2;
+	public final static int skillTier = 1;
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.ASSASSIN;
 	public final static float damage = 2.4F;
 	public Kunai(RPlayer caster)
 	{
 		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
-	}
-	
-	public Kunai()
-	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -42,8 +37,8 @@ public class Kunai extends RPGSkill
 	@Override
 	public ItemStack getSkillItem()
 	{
-		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.CARROT_ITEM, 1), 
-				"&cKunai"),
+		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.GOLDEN_CARROT, 1), 
+				"&eKunai"),
 				"&7Damage: " + (int) (damage * 100) + "%",
 				"&7Cooldown: 2s",
 				"&f",
@@ -59,21 +54,23 @@ public class Kunai extends RPGSkill
 		super.applyCooldown(2);
 		
 		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
-		Vector vector = player.getLocation().getDirection().normalize().multiply(0.75D);
+		Vector vector = player.getLocation().getDirection().normalize();
 		int multiplier = 0;
         player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.2F, 1.0F);
-		while (multiplier < 24)
+        int delay = 0;
+		while (multiplier < 18)
 		{
 			multiplier++;
+			delay = multiplier / 3;
 			Location point = player.getEyeLocation().add(vector.clone().multiply(multiplier));
 			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
 			{
-				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()), multiplier);
+				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()), delay);
 				break;
 			}
 			RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0, 1), multiplier / 3);
-			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.1F, 1.25F), multiplier/ 3);
-			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 0.75D, getUnvariedDamage(), player, 20), multiplier / 3);
+			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.1F, 1.25F), delay);
+			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 0.75D, getUnvariedDamage(), player, 20), delay);
 		}
 	}
 }

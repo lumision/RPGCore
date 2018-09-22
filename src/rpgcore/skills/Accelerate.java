@@ -6,7 +6,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import rpgcore.buff.Buff;
-import rpgcore.buff.BuffStats;
+import rpgcore.buff.Stats;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
@@ -21,17 +21,12 @@ public class Accelerate extends RPGSkill
 	public final static int castDelay = 0;
 	public final static ClassType classType = ClassType.MAGE;
 	public final static int cooldown = 60;
-	public final static BuffStats buffStats = BuffStats.createBuffStats("&bAccelerate", new ItemStack(Material.FEATHER, 1))
+	public final static Stats buffStats = Stats.createStats("&bAccelerate", new ItemStack(Material.FEATHER, 1))
 			.setAttackSpeedMultiplier(1.2F)
-			.setBuffDuration(2 * 60 * 20);
+			.setBuffDuration(5 * 60 * 20);
 	public Accelerate(RPlayer caster)
 	{
 		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
-	}
-	
-	public Accelerate()
-	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override

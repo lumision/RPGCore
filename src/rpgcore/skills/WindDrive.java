@@ -27,11 +27,6 @@ public class WindDrive extends RPGSkill
 		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 	
-	public WindDrive()
-	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
-	}
-	
 	@Override
 	public void insantiate(RPlayer rp)
 	{

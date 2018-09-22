@@ -7,7 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import rpgcore.buff.Buff;
-import rpgcore.buff.BuffStats;
+import rpgcore.buff.Stats;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
@@ -22,17 +22,12 @@ public class CelestialBlessing extends RPGSkill
 	public final static int castDelay = 0;
 	public final static ClassType classType = ClassType.ALL;
 	public final static int cooldown = 10 * 60;
-	public final static BuffStats buffStats = BuffStats.createBuffStats("&fC&7e&fl&7e&fs&7t&fi&7a&fl &7B&fl&7e&fs&7s&fi&7n&fg", new ItemStack(Material.NETHER_STAR, 1))
+	public final static Stats buffStats = Stats.createStats("&fC&7e&fl&7e&fs&7t&fi&7a&fl &7B&fl&7e&fs&7s&fi&7n&fg", new ItemStack(Material.NETHER_STAR, 1))
 			.setXPMultiplier(1.3F)
 			.setBuffDuration(30 * 60 * 20);
 	public CelestialBlessing(RPlayer caster)
 	{
 		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
-	}
-
-	public CelestialBlessing()
-	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override

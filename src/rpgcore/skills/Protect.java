@@ -6,7 +6,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import rpgcore.buff.Buff;
-import rpgcore.buff.BuffStats;
+import rpgcore.buff.Stats;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
@@ -21,17 +21,12 @@ public class Protect extends RPGSkill
 	public final static int castDelay = 0;
 	public final static ClassType classType = ClassType.PRIEST;
 	public final static int cooldown = 60;
-	public final static BuffStats buffStats = BuffStats.createBuffStats("&dProtect", new ItemStack(Material.IRON_INGOT, 1))
+	public final static Stats buffStats = Stats.createStats("&bProtect", new ItemStack(Material.IRON_INGOT, 1))
 			.setDamageReductionAdd(20)
-			.setBuffDuration(120 * 20);
+			.setBuffDuration(5 * 60 * 20);
 	public Protect(RPlayer caster)
 	{
 		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
-	}
-	
-	public Protect()
-	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -44,13 +39,13 @@ public class Protect extends RPGSkill
 	public ItemStack getSkillItem()
 	{
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.IRON_INGOT, 1), 
-				"&dProtect"),
+				"&bProtect"),
 				"&7Buff:",
 				"&7 * Damage Reduction: +" + buffStats.damageReductionAdd + "%",
-				"&7 * Buff Duration: " + (buffStats.buffDuration / 20) + "s",
+				"&7 * Buff Duration: " + CakeLibrary.convertTimeToString(buffStats.buffDuration / 20) + "s",
 				"&7 * Party Buff",
 				"&f",
-				"&7Cooldown: " + CakeLibrary.convertTimeToString(buffStats.buffDuration / 20),
+				"&7Cooldown: " + CakeLibrary.convertTimeToString(cooldown),
 				"&f",
 				"&8&oApplies a holy protection to",
 				"&8&othe affected; decreasing",

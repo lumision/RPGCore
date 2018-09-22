@@ -3,6 +3,7 @@ package rpgcore.tutorial;
 import org.bukkit.entity.Player;
 
 import rpgcore.classes.ClassInventory;
+import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.external.Title;
 import rpgcore.item.RItem;
 import rpgcore.main.CakeLibrary;
@@ -19,10 +20,10 @@ public class Tutorial
 	public static Title titleWelcome = new Title("&b- Welcome -", "&bto CakeCraft", 20, 80, 20);
 	public static Title titleClass = new Title("", "&bYou will now pick a class...", 20, 60, 20);
 	public static Title titleWeapon = new Title("", "&eYou have been gifted an appropriate &nweapon&e.", 20, 60, 20);
-	public static Title titleEquip = new Title("", "&a&nPlace it in your &2&nSHIELD&a&n slot to equip it.", 20, 32767, 20);
+	public static Title titleEquip = new Title("", "&a&nPlace it in your &2&nOff-Hand&a&n (Shield) slot to equip it.", 20, 32767, 20);
 	public static Title titleEquipped = new Title("", "&aThe stats of that &nweapon&a have now been applied.", 20, 100, 20);
 	public static Title titleEquipment = new Title("", "&aOnly items in these equipment slots:", 20, 40, 20);
-	public static Title titleEquipment11 = new Title("&d&nShield&d", "", 10, 20, 10);
+	public static Title titleEquipment11 = new Title("&d&nOff-Hand&d", "", 10, 20, 10);
 	public static Title titleEquipment12 = new Title("&d&nHelmet&d", "", 10, 20, 10);
 	public static Title titleEquipment13 = new Title("&d&nChestplate&d", "", 10, 20, 10);
 	public static Title titleEquipment14 = new Title("&d&nLeggings&d", "", 10, 20, 10);
@@ -31,7 +32,7 @@ public class Tutorial
 	public static Title titleEquipment3 = new Title("", "&cWhat you hold in your &nmain hand&c...", 20, 60, 20);
 	public static Title titleEquipment4 = new Title("", "&c...has &nno effect&c on your stats.", 20, 60, 20);
 	public static Title titleEquipment5 = new Title("", "&cBe sure to keep that in mind.", 20, 60, 20);
-	public static Title titleSkills = new Title("&cType &n/skills", "&c...and click on some skills.", 20, 32767, 20);
+	public static Title titleSkills = new Title("&cInventory -> &b&nSkills&c", "&b(bottom right)&c ...click on some skill icons.", 20, 32767, 20);
 	public static Title titleSkills1 = new Title("&cLeft/Right Click", "&cwith the skill in your &nmain hand&c to cast it.", 20, 140, 20);
 	public static Title titleConclude = new Title("", "&fThat concludes this small tutorial.", 20, 80, 20);
 	public static Title titleConclude1 = new Title("", "&f&nWe hope you enjoy the game.", 20, 120, 20);
@@ -58,8 +59,7 @@ public class Tutorial
 			return;
 		}
 		ticks += 10;
-		double spawnDistance = p.getWorld().getSpawnLocation().distance(p.getLocation());
-		if (ticks > 20 && spawnDistance > 5 && !welcomeMessage)
+		if (ticks > 20 && !welcomeMessage)
 		{
 			titleWelcome.sendPlayer(p);
 			welcomeMessage = true;
@@ -71,11 +71,10 @@ public class Tutorial
 		{
 			p.openInventory(ClassInventory.getClassInventory1(player));
 			classSelect = true;
-		} else if (ticks >= 300 && !classResponse)
+		} else if (ticks >= 300 && !classResponse && !player.currentClass.equals(ClassType.ALL))
 		{
-			Title title = new Title("&c< " + player.currentClass.getClassName() + " >", "&e...is the class you have chosen.", 20, 60, 20);
+			Title title = new Title("&4<&c " + player.currentClass.getClassName() + " &4>", "&e...is the class you have chosen.", 20, 60, 20);
 			title.sendPlayer(p);
-			p.sendMessage(CakeLibrary.recodeColorCodes("&7&oPsst... you are able to change your class later on if you want to!"));
 			classResponse = true;
 		} else if (ticks >= 420 && !weaponGive)
 		{

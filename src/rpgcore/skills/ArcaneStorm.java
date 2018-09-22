@@ -25,15 +25,10 @@ public class ArcaneStorm extends RPGSkill
 	public final static ClassType classType = ClassType.MAGE;
 	public final static float damage = 1.2F;
 	public final static int hits = 24;
-	public final static int cooldown = 10;
+	public final static int cooldown = 6;
 	public ArcaneStorm(RPlayer caster)
 	{
 		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
-	}
-
-	public ArcaneStorm()
-	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override

@@ -24,15 +24,11 @@ public class Fireball extends RPGSkill
 	public final static int skillTier = 2;
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.MAGE;
-	public final static float damage = 2.6F;
+	public final static float damage = 2.4F;
+	public final static int debuffLength = 10 * 20;
 	public Fireball(RPlayer caster)
 	{
 		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
-	}
-
-	public Fireball()
-	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override
@@ -48,6 +44,10 @@ public class Fireball extends RPGSkill
 				"&cFireball"),
 				"&7Damage: " + (int) (damage * 100.0F) + "%",
 				"&7Interval: " + (castDelay / 20.0F) + "s",
+				"&f",
+				"&7Damage Over Time:",
+				"&7 * Fire",
+				"&7 * Duration: " + (debuffLength / 20) + "s",
 				"&f",
 				"&8&oFire a ball of flaming",
 				"&8&oarcane energy forward.",
@@ -81,7 +81,7 @@ public class Fireball extends RPGSkill
 					int damage = RPlayer.varyDamage(getUnvariedDamage());
 					new RPGEvents.ApplyDamage(player, e, damage).run();
 					new RPGEvents.PlayEffect(Effect.STEP_SOUND, e, 11).run();
-					e.setFireTicks(60);
+					e.setFireTicks(debuffLength);
 					return null;
 				}
 				

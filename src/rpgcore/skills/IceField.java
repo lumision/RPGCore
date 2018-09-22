@@ -23,18 +23,14 @@ public class IceField extends RPGSkill
 	public final static int skillTier = 2;
 	public final static int castDelay = 15;
 	public final static ClassType classType = ClassType.MAGE;
-	public final static float damage = 4.2F;
+	public final static float damage = 4.6F;
 	public final static int radius = 8;
 	public final static int debuffLevel = 1;
 	public final static int debuffLength = 10 * 20;
+	public final static int cooldown = 4;
 	public IceField(RPlayer caster)
 	{
 		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
-	}
-
-	public IceField()
-	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override
@@ -48,9 +44,9 @@ public class IceField extends RPGSkill
 	{
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.ICE), 
 				"&bIce Field"),
-				"&7Damage: " + (int) (damage * 100.0D) + "%",
+				"&7Damage: " + (int) (damage * 100) + "%",
 				"&7Radius: " + radius + " blocks",
-				"&7Interval: " + (castDelay / 20.0F) + "s",
+				"&7Cooldown: " + cooldown + "s",
 				"&f",
 				"&7Debuff:",
 				"&7 * Slow " + CakeLibrary.convertToRoman(debuffLevel + 1),
@@ -67,6 +63,7 @@ public class IceField extends RPGSkill
 	@Override
 	public void activate()
 	{
+		super.applyCooldown(cooldown);
 		Location target = player.getLocation();
 		
 		int x = -radius;

@@ -21,12 +21,7 @@ public class Heal3 extends RPGSkill
 	public final static float healAmount = 4;
 	public Heal3(RPlayer caster)
 	{
-		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
-	}
-	
-	public Heal3()
-	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
+		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier, "Heal");
 	}
 	
 	@Override

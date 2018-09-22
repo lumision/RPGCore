@@ -27,11 +27,6 @@ public class ArcaneBlast extends RPGSkill
 		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
-	public ArcaneBlast()
-	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
-	}
-
 	@Override
 	public void insantiate(RPlayer rp)
 	{

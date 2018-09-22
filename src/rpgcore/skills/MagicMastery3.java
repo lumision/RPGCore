@@ -9,7 +9,7 @@ public class MagicMastery3 extends RPGSkill
 {
 	public final static String skillName = "Magic Mastery III";
 	public final static boolean passiveSkill = true;
-	public final static int skillTier = 5;
+	public final static int skillTier = 3;
 	public final static int castDelay = 0;
 	public final static ClassType classType = ClassType.MAGE;
 	public final static int magicDamageAdd = 5;

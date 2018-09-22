@@ -23,16 +23,11 @@ public class PoisonBolt extends RPGSkill
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.MAGE;
 	public final static float damage = 1.7F;
-	public final static int debuffDamage = 3;
+	public final static int debuffDamage = 2;
 	public final static int debuffLength = 10 * 20;
 	public PoisonBolt(RPlayer caster)
 	{
 		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
-	}
-
-	public PoisonBolt()
-	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override
@@ -81,11 +76,10 @@ public class PoisonBolt extends RPGSkill
 					{
 						@Override
 						public Void call() throws Exception {
-							LivingEntity e = RPGEvents.customHit;
 							int damage = RPlayer.varyDamage(getUnvariedDamage());
-							new RPGEvents.ApplyDamage(player, e, damage).run();
-							new RPGEvents.PlayEffect(Effect.STEP_SOUND, e, 165).run();
-							new RPGEvents.DamageOverTime(debuffLength, 20, debuffDamage, player, e);
+							new RPGEvents.ApplyDamage(player, RPGEvents.customHit, damage).run();
+							new RPGEvents.PlayEffect(Effect.STEP_SOUND, RPGEvents.customHit, 165).run();
+							new RPGEvents.DamageOverTime(debuffLength, 20, debuffDamage, player, RPGEvents.customHit);
 							return null;
 						}
 						

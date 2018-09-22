@@ -5,7 +5,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import rpgcore.buff.Buff;
-import rpgcore.buff.BuffStats;
+import rpgcore.buff.Stats;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
@@ -20,18 +20,13 @@ public class Bless extends RPGSkill
 	public final static int castDelay = 0;
 	public final static ClassType classType = ClassType.PRIEST;
 	public final static int cooldown = 60;
-	public final static BuffStats buffStats = BuffStats.createBuffStats("&eBless", new ItemStack(38, 1, (short) 7))
+	public final static Stats buffStats = Stats.createStats("&eBless", new ItemStack(38, 1, (short) 7))
 			.setMagicDamageMultiplier(1.2F)
 			.setBruteDamageMultiplier(1.2F)
-			.setBuffDuration(120 * 20);
+			.setBuffDuration(5 * 60 * 20);
 	public Bless(RPlayer caster)
 	{
 		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
-	}
-
-	public Bless()
-	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override
@@ -51,7 +46,7 @@ public class Bless extends RPGSkill
 				"&7 * Buff Duration: " + CakeLibrary.convertTimeToString(buffStats.buffDuration / 20),
 				"&7 * Party Buff",
 				"&f",
-				"&7Cooldown: " + CakeLibrary.convertTimeToString(buffStats.buffDuration / 20),
+				"&7Cooldown: " + CakeLibrary.convertTimeToString(cooldown),
 				"&f",
 				"&8&oBestows holy power to the",
 				"&8&oaffected; increasing",

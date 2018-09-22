@@ -20,17 +20,12 @@ public class PowerPierce extends RPGSkill
 	public final static String skillName = "Power Pierce";
 	public final static boolean passiveSkill = false;
 	public final static int skillTier = 1;
-	public final static int castDelay = 20;
+	public final static int castDelay = 15;
 	public final static ClassType classType = ClassType.WARRIOR;
 	public final static float damage = 1.4F;
 	public PowerPierce(RPlayer caster)
 	{
 		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
-	}
-	
-	public PowerPierce()
-	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 	
 	@Override
@@ -42,10 +37,10 @@ public class PowerPierce extends RPGSkill
 	@Override
 	public ItemStack getSkillItem()
 	{
-		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.IRON_SWORD, 1), 
+		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.STONE_SWORD, 1), 
 				"&fPower Pierce"),
 				"&7Damage: " + (int) (damage * 100) + "%",
-				"&7Interval: 0.5s",
+				"&7Interval: " + (castDelay / 20.0F) + "s",
 				"&f",
 				"&8&oSends a short pierce forward.",
 				"&f",

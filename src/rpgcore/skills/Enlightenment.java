@@ -5,7 +5,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import rpgcore.buff.Buff;
-import rpgcore.buff.BuffStats;
+import rpgcore.buff.Stats;
 import rpgcore.classes.RPGClass.ClassType;
 import rpgcore.main.CakeLibrary;
 import rpgcore.main.RPGCore;
@@ -20,18 +20,13 @@ public class Enlightenment extends RPGSkill
 	public final static int castDelay = 0;
 	public final static ClassType classType = ClassType.PRIEST;
 	public final static int cooldown = 60;
-	public final static BuffStats buffStats = BuffStats.createBuffStats("&eEnlightenment", new ItemStack(38, 1, (short) 6))
-			.setMagicDamageMultiplier(1.4F)
-			.setBruteDamageMultiplier(1.4F)
-			.setBuffDuration(120 * 20);
+	public final static Stats buffStats = Stats.createStats("&eEnlightenment", new ItemStack(38, 1, (short) 6))
+			.setMagicDamageMultiplier(1.3F)
+			.setBruteDamageMultiplier(1.3F)
+			.setBuffDuration(5 * 60 * 20);
 	public Enlightenment(RPlayer caster)
 	{
 		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
-	}
-
-	public Enlightenment()
-	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override
@@ -51,7 +46,7 @@ public class Enlightenment extends RPGSkill
 				"&7 * Buff Duration: " + CakeLibrary.convertTimeToString(buffStats.buffDuration / 20),
 				"&7 * Party Buff",
 				"&f",
-				"&7Cooldown: " + CakeLibrary.convertTimeToString(buffStats.buffDuration / 20),
+				"&7Cooldown: " + CakeLibrary.convertTimeToString(cooldown),
 				"&f",
 				"&8&oGrants intellectual light to",
 				"&8&othe affected; increasing",

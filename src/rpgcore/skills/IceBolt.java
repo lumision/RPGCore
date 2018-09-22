@@ -33,11 +33,6 @@ public class IceBolt extends RPGSkill
 		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
-	public IceBolt()
-	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
-	}
-
 	@Override
 	public void insantiate(RPlayer rp)
 	{
@@ -50,7 +45,7 @@ public class IceBolt extends RPGSkill
 		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.SNOW_BALL, 1), 
 				"&bIce Bolt"),
 				"&7Damage: " + (int) (damage * 100.0F) + "%",
-				"&7Interval: 0.5s",
+				"&7Interval: " + (castDelay / 20.0F) + "s",
 				"&f",
 				"&7Debuff:",
 				"&7 * Slow " + CakeLibrary.convertToRoman(debuffLevel + 1),

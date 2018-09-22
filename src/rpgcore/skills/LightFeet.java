@@ -10,7 +10,7 @@ public class LightFeet extends RPGSkill
 {
 	public final static String skillName = "Light Feet";
 	public final static boolean passiveSkill = true;
-	public final static int skillTier = 2;
+	public final static int skillTier = 1;
 	public final static int castDelay = 0;
 	public final static ClassType classType = ClassType.ASSASSIN;
 	public final static int swiftness = 1;

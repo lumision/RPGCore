@@ -23,11 +23,6 @@ public class Leap extends RPGSkill
 		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 	
-	public Leap()
-	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
-	}
-	
 	@Override
 	public void insantiate(RPlayer rp)
 	{
@@ -54,8 +49,6 @@ public class Leap extends RPGSkill
 	{
 		Location location = player.getLocation();
 		Vector vector = location.getDirection();
-		if (player.isSneaking())
-			vector.multiply(-1f);
 		vector.setY(0.5f);
 		player.setVelocity(vector);
 		player.setFallDistance(0);

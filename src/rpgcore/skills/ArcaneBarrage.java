@@ -35,11 +35,6 @@ public class ArcaneBarrage extends RPGSkill
 		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 	
-	public ArcaneBarrage()
-	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
-	}
-	
 	@Override
 	public void insantiate(RPlayer rp)
 	{
