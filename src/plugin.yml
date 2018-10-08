@@ -4,6 +4,8 @@ name: RPGCore
 depend: [WorldEdit]
 
 commands:
+  rkit:
+    description: Manages kits
   eq:
     description: Peek into someone else's equipment
   colors:
@@ -68,3 +70,9 @@ commands:
     description: Checks your buffs
   enhance:
     description: Opens up the item enhancement UI
+  itemswap:
+    description: Creates a global item swap; dangerous command
+  globalgift:
+    description: Manages global gifts
+  setrgb:
+    description: Changes RGB color of a leather equipment
