@@ -43,7 +43,7 @@ public class RunningTrack
 				{
 					float pitch = CakeLibrary.getPitchFromNote(component, track.offset);
 					if (pitch != 0.0F)
-						player.playSound(player.getEyeLocation(), track.note, 0.2F, pitch);
+						player.playSound(player.getEyeLocation(), track.note, track.volume, pitch);
 				}
 				next++;
 			}
@@ -69,7 +69,7 @@ public class RunningTrack
 						RPGCore.msgConsole("Unreachable note: " + note + " @" + split[1] + " (" + track.note.toString() + ", " + i + ")");
 						continue;
 					}
-					player.playSound(player.getEyeLocation(), track.note, 0.2F, pitch);
+					player.playSound(player.getEyeLocation(), track.note, track.volume, pitch);
 				}
 			}
 			lastTimestamp = highestTimestamp;

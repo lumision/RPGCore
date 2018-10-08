@@ -42,6 +42,8 @@ public class RSongManager
 	public void readSongs()
 	{
 		songs.clear();
+		Track t;
+		RPGSong song;
 		for (File file: songsFolder.listFiles())
 		{
 			if (!file.getName().endsWith(".yml"))
@@ -54,13 +56,23 @@ public class RSongManager
 			int BPM = -1;
 			int version = 1;
 			int offset = 0;
+			int loop = 0;
 			for (String line: lines)
 			{
+				String[] args = line.toLowerCase().split(": ")[0].split(", ");
 				if (line.startsWith("bpm: "))
 				{
 					try
 					{
 						BPM = Integer.parseInt(line.split(": ")[1]);
+					} catch (Exception e) {}
+					continue;
+				}
+				if (line.startsWith("loop: "))
+				{
+					try
+					{
+						loop = Integer.parseInt(line.split(": ")[1]);
 					} catch (Exception e) {}
 					continue;
 				}
@@ -82,46 +94,49 @@ public class RSongManager
 				}
 				if (BPM == -1)
 					break;
-				String composition = line;
 				Sound note = null;
 				double spacing = RPGSong.getOneFourthSpacingInTicks(BPM);
-				if (line.startsWith("basedrum: "))
+				if (args[0].startsWith("basedrum"))
 					note = Sound.BLOCK_NOTE_BASEDRUM;
-				if (line.startsWith("bass: "))
+				else if (args[0].startsWith("bass"))
 					note = Sound.BLOCK_NOTE_BASS;
-				if (line.startsWith("bell: "))
+				else if (args[0].startsWith("bell"))
 					note = Sound.BLOCK_NOTE_BELL;
-				if (line.startsWith("chime: "))
+				else if (args[0].startsWith("chime"))
 					note = Sound.BLOCK_NOTE_CHIME;
-				if (line.startsWith("flute: "))
+				else if (args[0].startsWith("flute"))
 					note = Sound.BLOCK_NOTE_FLUTE;
-				if (line.startsWith("guitar: "))
+				else if (args[0].startsWith("guitar"))
 					note = Sound.BLOCK_NOTE_GUITAR;
-				if (line.startsWith("harp: "))
+				else if (args[0].startsWith("harp"))
 					note = Sound.BLOCK_NOTE_HARP;
-				if (line.startsWith("hat: "))
+				else if (args[0].startsWith("hat"))
 					note = Sound.BLOCK_NOTE_HAT;
-				if (line.startsWith("pling: "))
+				else if (args[0].startsWith("pling"))
 					note = Sound.BLOCK_NOTE_PLING;
-				if (line.startsWith("snare: "))
+				else if (args[0].startsWith("snare"))
 					note = Sound.BLOCK_NOTE_SNARE;
-				if (line.startsWith("xylophone: "))
+				else if (args[0].startsWith("xylophone"))
 					note = Sound.BLOCK_NOTE_XYLOPHONE;
-				if (line.startsWith("hit: "))
+				else if (args[0].startsWith("hit"))
 					note = Sound.ENTITY_ARROW_HIT_PLAYER;
 				try
 				{
-					note = Sound.valueOf(line.split(": ")[0].toUpperCase());
+					note = Sound.valueOf(args[0].toUpperCase());
 				} catch (Exception e) {}
 				if (note == null)
 					continue;
-				Track t = new Track(composition, note, spacing, version);
+				t = new Track(line.split(": ")[1], note, spacing, version);
 				t.offset = offset;
+				if (args.length > 1)
+					t.volume = Float.valueOf(args[1]);
 				tracks.add(t);
 			}
 			if (BPM == -1)
 				continue;
-			songs.add(new RPGSong(name, tracks, BPM));
+			song = new RPGSong(name, tracks, BPM);
+			song.loop = loop;
+			songs.add(song);
 		}
 	}
 }

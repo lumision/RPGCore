@@ -20,7 +20,7 @@ public class ShadowStab2 extends RPGSkill
 {
 	public final static String skillName = "Shadow Stab II";
 	public final static boolean passiveSkill = false;
-	public final static int skillTier = 2;
+	public final static int skillTier = 3;
 	public final static int castDelay = 8;
 	public final static ClassType classType = ClassType.ASSASSIN;
 	public final static float damage = 2.0F;
@@ -28,11 +28,21 @@ public class ShadowStab2 extends RPGSkill
 	{
 		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
 	}
-	
+
 	@Override
-	public void insantiate(RPlayer rp)
+	public void instantiate(RPlayer rp)
 	{
-		new ShadowStab2(rp);
+		for (RPGSkill skill: rp.skillCasts)
+			if (skill.skillName.equals(skillName))
+			{
+				skill.casterDamage = rp.getDamageOfClass();
+				skill.caster.lastSkill = skillName;
+				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
+				skill.caster.globalCastDelay = 1;
+				skill.activate();
+				return;
+			}
+		rp.skillCasts.add(new ShadowStab2(rp));
 	}
 
 	@Override

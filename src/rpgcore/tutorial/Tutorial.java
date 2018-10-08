@@ -17,7 +17,7 @@ public class Tutorial
 	weaponGive, weaponEquip, weaponExplain, equipmentExplain, 
 	equipmentExplain11, equipmentExplain12, equipmentExplain13, equipmentExplain14, equipmentExplain15, equipmentExplain2, equipmentExplain3, equipmentExplain4, equipmentExplain5,
 	skillsExplain, skillsExplain1, conclusion, conclusion1;
-	public static Title titleWelcome = new Title("&b- Welcome -", "&bto CakeCraft", 20, 80, 20);
+	public static Title titleWelcome = new Title("&bWelcome", "", 20, 80, 20);
 	public static Title titleClass = new Title("", "&bYou will now pick a class...", 20, 60, 20);
 	public static Title titleWeapon = new Title("", "&eYou have been gifted an appropriate &nweapon&e.", 20, 60, 20);
 	public static Title titleEquip = new Title("", "&a&nPlace it in your &2&nOff-Hand&a&n (Shield) slot to equip it.", 20, 32767, 20);
@@ -80,7 +80,7 @@ public class Tutorial
 		{
 			titleWeapon.sendPlayer(p);
 			RItem ri = RPGCore.getItemFromDatabase(player.currentClass.getDamageType() == 1 ? "BeginnerWand" : "BeginnerSword");
-			p.getInventory().addItem(ri.createItem());
+			player.giveItem(ri);
 			weaponGive = true;
 		} else if (ticks >= 540 && !weaponEquip)
 		{

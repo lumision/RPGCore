@@ -29,9 +29,19 @@ public class ArcaneBeam extends RPGSkill
 	}
 
 	@Override
-	public void insantiate(RPlayer rp)
+	public void instantiate(RPlayer rp)
 	{
-		new ArcaneBeam(rp);
+		for (RPGSkill skill: rp.skillCasts)
+			if (skill.skillName.equals(skillName))
+			{
+				skill.casterDamage = rp.getDamageOfClass();
+				skill.caster.lastSkill = skillName;
+				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
+				skill.caster.globalCastDelay = 1;
+				skill.activate();
+				return;
+			}
+		rp.skillCasts.add(new ArcaneBeam(rp));
 	}
 
 	@Override
@@ -51,22 +61,53 @@ public class ArcaneBeam extends RPGSkill
 	
 	public void activate()
 	{
-		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
-		Vector vector = player.getLocation().getDirection().normalize().multiply(0.75D);
-		int multiplier = 0;
-        player.getWorld().playSound(player.getEyeLocation(), Sound.BLOCK_ANVIL_LAND, 0.05F, 1.0F);
-		while (multiplier < 20)
+		new ArcaneBeamE(this);
+	}
+	
+	public static class ArcaneBeamE extends SkillEffect
+	{
+		Location origin;
+		Vector vector;
+		ArrayList<LivingEntity> hit;
+		public ArcaneBeamE(RPGSkill skill)
 		{
-			multiplier++;
-			Location point = player.getEyeLocation().add(vector.clone().multiply(multiplier));
-			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
+			super(skill);
+			
+			origin = skill.player.getEyeLocation();
+			vector = skill.player.getLocation().getDirection().normalize().multiply(0.75F).clone();
+			hit = new ArrayList<LivingEntity>();
+			
+			skill.player.getWorld().playSound(skill.player.getEyeLocation(), Sound.BLOCK_ANVIL_LAND, 0.05F, 1.0F);
+		}
+
+		@Override
+		public boolean tick() 
+		{
+			if (tick < 24)
 			{
-				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()), multiplier);
-				break;
-			}
-			RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0.1F, 3), multiplier);
-			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.05F, 1.25F), multiplier);
-			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, getUnvariedDamage(), player, 20), multiplier);
+				tick++;
+				Location point = origin.clone().add(vector.clone().multiply(tick));
+				if (hit.size() > 0 || !CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
+				{
+					new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()).run();
+					return true;
+				}
+				new RPGEvents.FireworkTrail(point, 0.1F, 3).run();
+				new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.05F, 1.25F).run();
+				ArrayList<LivingEntity> splash = CakeLibrary.getNearbyLivingEntitiesExcludePlayers(point, 1.25D);
+				if (splash.size() > 0)
+				{
+					for (LivingEntity entity: splash)
+					{
+						new RPGEvents.ApplyDamage(skill.player, entity, RPlayer.varyDamage(skill.getUnvariedDamage())).run();
+						new RPGEvents.PlayEffect(Effect.STEP_SOUND, entity, 20).run();
+					}
+					return true;
+				}
+			} else
+				return true;
+			tick++;
+			return false;
 		}
 	}
 }

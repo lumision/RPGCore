@@ -31,9 +31,19 @@ public class PoisonBolt extends RPGSkill
 	}
 
 	@Override
-	public void insantiate(RPlayer rp)
+	public void instantiate(RPlayer rp)
 	{
-		new PoisonBolt(rp);
+		for (RPGSkill skill: rp.skillCasts)
+			if (skill.skillName.equals(skillName))
+			{
+				skill.casterDamage = rp.getDamageOfClass();
+				skill.caster.lastSkill = skillName;
+				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
+				skill.caster.globalCastDelay = 1;
+				skill.activate();
+				return;
+			}
+		rp.skillCasts.add(new PoisonBolt(rp));
 	}
 
 	@Override
@@ -84,6 +94,54 @@ public class PoisonBolt extends RPGSkill
 						}
 						
 					}), multiplier);
+		}
+	}
+	
+	public static class PoisonBoltE extends SkillEffect
+	{
+		Location origin;
+		Vector vector;
+		ArrayList<LivingEntity> hit;
+		public PoisonBoltE(RPGSkill skill)
+		{
+			super(skill);
+			
+			origin = skill.player.getEyeLocation();
+			vector = skill.player.getLocation().getDirection().normalize().multiply(0.75F).clone();
+			hit = new ArrayList<LivingEntity>();
+			
+			skill.player.getWorld().playSound(skill.player.getEyeLocation(), Sound.BLOCK_ANVIL_LAND, 0.05F, 1.0F);
+		}
+
+		@Override
+		public boolean tick() 
+		{
+			if (tick < 24)
+			{
+				tick++;
+				Location point = origin.clone().add(vector.clone().multiply(tick));
+				if (hit.size() > 0 || !CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
+				{
+					new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()).run();
+					return true;
+				}
+				new RPGEvents.FireworkTrail(point, 0, 1).run();
+				new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.05F, 1.25F).run();
+				ArrayList<LivingEntity> splash = CakeLibrary.getNearbyLivingEntitiesExcludePlayers(point, 1.25D);
+				if (splash.size() > 0)
+				{
+					for (LivingEntity entity: splash)
+					{
+						new RPGEvents.ApplyDamage(skill.player, entity, RPlayer.varyDamage(skill.getUnvariedDamage())).run();
+						new RPGEvents.PlayEffect(Effect.STEP_SOUND, entity, 165).run();
+						new RPGEvents.DamageOverTime(debuffLength, 20, debuffDamage, skill.player, entity);
+					}
+					return true;
+				}
+			} else
+				return true;
+			tick++;
+			return false;
 		}
 	}
 }

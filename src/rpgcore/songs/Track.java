@@ -15,6 +15,7 @@ public class Track
 	public double divisor;
 	public int version = 1;
 	public int offset = 0;
+	public float volume = 0.2F;
 	public Track(String composition, Sound note, double spacing, int version)
 	{
 		this.composition = composition;
@@ -23,6 +24,7 @@ public class Track
 		this.components = new ArrayList<String>();
 		this.timings = new ArrayList<Integer>();
 		this.version = version;
+		this.volume = 0.2F;
 		breakDownIntoComponents();
 		applyComponentTimings();
 	}

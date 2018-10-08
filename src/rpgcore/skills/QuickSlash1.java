@@ -19,7 +19,7 @@ public class QuickSlash1 extends RPGSkill
 	public final static String skillName = "Quick Slash I";
 	public final static boolean passiveSkill = false;
 	public final static int skillTier = 1;
-	public final static int castDelay = 20;
+	public final static int castDelay = 5;
 	public final static ClassType classType = ClassType.ASSASSIN;
 	public final static float damage = 2.6F;
 	public final static int cooldown = 2;
@@ -28,11 +28,21 @@ public class QuickSlash1 extends RPGSkill
 	{
 		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
 	}
-	
+
 	@Override
-	public void insantiate(RPlayer rp)
+	public void instantiate(RPlayer rp)
 	{
-		new QuickSlash1(rp);
+		for (RPGSkill skill: rp.skillCasts)
+			if (skill.skillName.equals(skillName))
+			{
+				skill.casterDamage = rp.getDamageOfClass();
+				skill.caster.lastSkill = skillName;
+				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
+				skill.caster.globalCastDelay = 1;
+				skill.activate();
+				return;
+			}
+		rp.skillCasts.add(new QuickSlash1(rp));
 	}
 
 	@Override

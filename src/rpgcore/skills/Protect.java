@@ -28,11 +28,21 @@ public class Protect extends RPGSkill
 	{
 		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
 	}
-	
+
 	@Override
-	public void insantiate(RPlayer rp)
+	public void instantiate(RPlayer rp)
 	{
-		new Protect(rp);
+		for (RPGSkill skill: rp.skillCasts)
+			if (skill.skillName.equals(skillName))
+			{
+				skill.casterDamage = rp.getDamageOfClass();
+				skill.caster.lastSkill = skillName;
+				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
+				skill.caster.globalCastDelay = 1;
+				skill.activate();
+				return;
+			}
+		rp.skillCasts.add(new Protect(rp));
 	}
 
 	@Override

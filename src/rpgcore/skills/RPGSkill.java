@@ -262,7 +262,7 @@ public class RPGSkill
 	public void activate() {}
 	public ItemStack getSkillItem() { return null; }
 
-	public void insantiate(RPlayer rp) {}
+	public void instantiate(RPlayer rp) {}
 	
 	public static abstract class SkillEffect 
 	{

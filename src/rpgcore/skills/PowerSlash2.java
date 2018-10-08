@@ -29,11 +29,21 @@ public class PowerSlash2 extends RPGSkill
 	{
 		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
 	}
-	
+
 	@Override
-	public void insantiate(RPlayer rp)
+	public void instantiate(RPlayer rp)
 	{
-		new PowerSlash2(rp);
+		for (RPGSkill skill: rp.skillCasts)
+			if (skill.skillName.equals(skillName))
+			{
+				skill.casterDamage = rp.getDamageOfClass();
+				skill.caster.lastSkill = skillName;
+				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
+				skill.caster.globalCastDelay = 1;
+				skill.activate();
+				return;
+			}
+		rp.skillCasts.add(new PowerSlash2(rp));
 	}
 
 	@Override

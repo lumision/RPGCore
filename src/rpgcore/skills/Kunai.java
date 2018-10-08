@@ -27,11 +27,21 @@ public class Kunai extends RPGSkill
 	{
 		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
 	}
-	
+
 	@Override
-	public void insantiate(RPlayer rp)
+	public void instantiate(RPlayer rp)
 	{
-		new Kunai(rp);
+		for (RPGSkill skill: rp.skillCasts)
+			if (skill.skillName.equals(skillName))
+			{
+				skill.casterDamage = rp.getDamageOfClass();
+				skill.caster.lastSkill = skillName;
+				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
+				skill.caster.globalCastDelay = 1;
+				skill.activate();
+				return;
+			}
+		rp.skillCasts.add(new Kunai(rp));
 	}
 
 	@Override
@@ -52,25 +62,54 @@ public class Kunai extends RPGSkill
 	public void activate()
 	{
 		super.applyCooldown(2);
-		
-		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
-		Vector vector = player.getLocation().getDirection().normalize();
-		int multiplier = 0;
-        player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.2F, 1.0F);
-        int delay = 0;
-		while (multiplier < 18)
+		new KunaiE(this);
+	}
+	
+	public static class KunaiE extends SkillEffect
+	{
+		Location origin;
+		Vector vector;
+		ArrayList<LivingEntity> hit;
+		public KunaiE(RPGSkill skill)
 		{
-			multiplier++;
-			delay = multiplier / 3;
-			Location point = player.getEyeLocation().add(vector.clone().multiply(multiplier));
-			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
+			super(skill);
+			
+			origin = skill.player.getEyeLocation();
+			vector = skill.player.getLocation().getDirection().normalize().multiply(0.75F).clone();
+			hit = new ArrayList<LivingEntity>();
+
+	        skill.player.getWorld().playSound(skill.player.getEyeLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.2F, 1.0F);
+		}
+
+		@Override
+		public boolean tick() 
+		{
+			if (tick < 32)
 			{
-				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()), delay);
-				break;
-			}
-			RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0, 1), multiplier / 3);
-			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.1F, 1.25F), delay);
-			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 0.75D, getUnvariedDamage(), player, 20), delay);
+				tick++;
+				Location point = origin.clone().add(vector.clone().multiply(tick));
+				if (hit.size() > 0 || !CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
+				{
+					new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()).run();
+					return true;
+				}
+				new RPGEvents.FireworkTrail(point, 0, 1).run();
+				new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.05F, 1.25F).run();
+				ArrayList<LivingEntity> splash = CakeLibrary.getNearbyLivingEntitiesExcludePlayers(point, 1.25D);
+				if (splash.size() > 0)
+				{
+					for (LivingEntity entity: splash)
+					{
+						new RPGEvents.ApplyDamage(skill.player, entity, RPlayer.varyDamage(skill.getUnvariedDamage())).run();
+						new RPGEvents.PlayEffect(Effect.STEP_SOUND, entity, 20).run();
+					}
+					return true;
+				}
+			} else
+				return true;
+			tick++;
+			return false;
 		}
 	}
+	
 }

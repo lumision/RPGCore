@@ -1,7 +1,6 @@
 package rpgcore.skills;
 
 import java.util.ArrayList;
-import java.util.concurrent.Callable;
 
 import org.bukkit.Effect;
 import org.bukkit.Location;
@@ -32,9 +31,19 @@ public class Fireball extends RPGSkill
 	}
 
 	@Override
-	public void insantiate(RPlayer rp)
+	public void instantiate(RPlayer rp)
 	{
-		new Fireball(rp);
+		for (RPGSkill skill: rp.skillCasts)
+			if (skill.skillName.equals(skillName))
+			{
+				skill.casterDamage = rp.getDamageOfClass();
+				skill.caster.lastSkill = skillName;
+				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
+				skill.caster.globalCastDelay = 1;
+				skill.activate();
+				return;
+			}
+		rp.skillCasts.add(new Fireball(rp));
 	}
 
 	@Override
@@ -58,34 +67,56 @@ public class Fireball extends RPGSkill
 	
 	public void activate()
 	{
-		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
-		Vector vector = player.getLocation().getDirection().normalize().multiply(0.75D);
-		int multiplier = 0;
-        player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_GHAST_SHOOT, 0.2F, 0.8F);
-		while (multiplier < 20)
+		new FireballE(this);
+	}
+	
+	public static class FireballE extends SkillEffect
+	{
+		Location origin;
+		Vector vector;
+		ArrayList<LivingEntity> hit;
+		public FireballE(RPGSkill skill)
 		{
-			multiplier++;
-			Location point = player.getEyeLocation().add(vector.clone().multiply(multiplier));
-			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
+			super(skill);
+			
+			origin = skill.player.getEyeLocation();
+			vector = skill.player.getLocation().getDirection().normalize().multiply(0.75F).clone();
+			hit = new ArrayList<LivingEntity>();
+			
+			skill.player.getWorld().playSound(skill.player.getEyeLocation(), Sound.ENTITY_GHAST_SHOOT, 0.2F, 0.8F);
+		}
+
+		@Override
+		public boolean tick() 
+		{
+			if (tick < 24)
 			{
-				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()), multiplier);
-				break;
-			}
-			RPGEvents.scheduleRunnable(new RPGEvents.ParticleEffect(EnumParticle.FLAME, point, 0.1F, 4), multiplier);
-			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_FURNACE_FIRE_CRACKLE, 0.4F, 1.2F), multiplier);
-			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionCustom(hit, point, 1.25D, player, new Callable<Void>()
-			{
-				@Override
-				public Void call() throws Exception {
-					LivingEntity e = RPGEvents.customHit;
-					int damage = RPlayer.varyDamage(getUnvariedDamage());
-					new RPGEvents.ApplyDamage(player, e, damage).run();
-					new RPGEvents.PlayEffect(Effect.STEP_SOUND, e, 11).run();
-					e.setFireTicks(debuffLength);
-					return null;
+				tick++;
+				Location point = origin.clone().add(vector.clone().multiply(tick));
+				if (hit.size() > 0 || !CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
+				{
+					new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()).run();
+					return true;
 				}
-				
-			}), multiplier);
+				new RPGEvents.ParticleEffect(EnumParticle.FLAME, point, 0.1F, 4).run();
+				new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_FURNACE_FIRE_CRACKLE, 0.4F, 1.2F).run();
+				ArrayList<LivingEntity> splash = CakeLibrary.getNearbyLivingEntitiesExcludePlayers(point, 1.25D);
+				if (splash.size() > 0)
+				{
+					splash = CakeLibrary.getNearbyLivingEntitiesExcludePlayers(point, 2.0D);
+					new RPGEvents.ParticleEffect(EnumParticle.FLAME, point, 0.5F, 32).run();
+					for (LivingEntity entity: splash)
+					{
+						new RPGEvents.ApplyDamage(skill.player, entity, RPlayer.varyDamage(skill.getUnvariedDamage())).run();
+						new RPGEvents.PlayEffect(Effect.STEP_SOUND, entity, 11).run();
+						entity.setFireTicks(debuffLength);
+					}
+					return true;
+				}
+			} else
+				return true;
+			tick++;
+			return false;
 		}
 	}
 }

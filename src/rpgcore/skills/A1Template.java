@@ -25,7 +25,7 @@ public class A1Template extends RPGSkill
 	}
 	
 	@Override
-	public void insantiate(RPlayer rp)
+	public void instantiate(RPlayer rp)
 	{
 		new A1Template(rp); //Change
 	}
