@@ -165,7 +165,7 @@ public class NPCManager
 									{
 										rp.selectedNPC = npc;
 										RPGCore.msg(p, "NPC Selected: " + npc.getName() + "&e (&6" + npc.databaseName + "&e)");
-									} else
+									} else if (rp.tutorialCompleted)
 									{
 										if (npc.getConversationData() != null && npc.getConversationData().masters.size() > 0)
 										{

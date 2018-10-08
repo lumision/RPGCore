@@ -7,6 +7,7 @@ import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.HumanEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
@@ -68,7 +69,7 @@ public class EnhancementInventory
 
 	static final String inventoryName = CakeLibrary.recodeColorCodes("&1Equipment Enhancement");
 
-	public static final int maxState = 20;
+	public static final int maxState = 10;
 
 	static final Random rand = new Random();
 
@@ -203,7 +204,8 @@ public class EnhancementInventory
 			return;
 		he = inv.getViewers().get(0);
 		if (he != null)
-			new RPGEvents.PlaySoundEffect(he, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.2F, (Float.valueOf(state) / Float.valueOf(maxState) / 2.0F) + 0.5F).run();
+			if (he instanceof Player)
+				((Player) he).playSound(he.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.2F, (Float.valueOf(state) / Float.valueOf(maxState) / 2.0F) + 0.5F);
 		if (state == maxState)
 		{
 			RItem ri1 = new RItem(inv.getItem(10));

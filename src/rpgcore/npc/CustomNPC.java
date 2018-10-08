@@ -34,7 +34,7 @@ import rpgcore.player.RPlayer;
 
 public class CustomNPC extends EntityPlayer 
 {
-	public static double visibleDistance = 32.0D * 32.0D;
+	public static double visibleDistance = 48.0D * 48.0D;
 	public float chatRangeDistance = 5.0F;
 	public static int globalID;
 	public String name;
@@ -285,7 +285,13 @@ public class CustomNPC extends EntityPlayer
 		for (Player p: Bukkit.getOnlinePlayers())
 		{
 			if (p.getWorld() != (org.bukkit.World) this.getWorld().getWorld())
+			{
+				if (inRangePlayers.contains(p.getUniqueId()))
+					inRangePlayers.remove(p.getUniqueId());
+				if (visiblePlayers.contains(p.getUniqueId()))
+					visiblePlayers.remove(p.getUniqueId());
 				continue;
+			}
 			RPlayer rp = RPGCore.playerManager.getRPlayer(p.getUniqueId());
 			double distance = p.getLocation().distanceSquared(getBukkitLocation());
 			if (visiblePlayers.contains(p.getUniqueId()) && distance > visibleDistance)
@@ -301,7 +307,7 @@ public class CustomNPC extends EntityPlayer
 			if (!inRangePlayers.contains(p.getUniqueId()) && distance < chatRangeDistance * chatRangeDistance)
 			{
 				inRangePlayers.add(p.getUniqueId());
-				if (getConversationData() != null && getConversationData().conversationLines != null)
+				if (rp.tutorialCompleted && getConversationData() != null && getConversationData().conversationLines != null)
 				{
 					ConversationLine chat = null;
 					for (ConversationLine cl: getConversationData().conversationLines)
@@ -322,7 +328,7 @@ public class CustomNPC extends EntityPlayer
 			} else if (inRangePlayers.contains(p.getUniqueId()) && distance > chatRangeDistance * chatRangeDistance)
 			{
 				inRangePlayers.remove(p.getUniqueId());
-				if (getConversationData() != null && getConversationData().conversationLines != null && rp.npcClosure == this)
+				if (rp.tutorialCompleted && getConversationData() != null && getConversationData().conversationLines != null && rp.npcClosure == this)
 				{
 					rp.npcClosure = null;
 					ConversationLine chat = null;
@@ -380,7 +386,7 @@ public class CustomNPC extends EntityPlayer
 		co.sendPacket(rotation);
 
 		PacketPlayOutPlayerInfo po = new PacketPlayOutPlayerInfo(EnumPlayerInfoAction.REMOVE_PLAYER, this);
-		RPGEvents.scheduleRunnable(new RPGEvents.SendDespawnPacket(po, co), 5 * 20);
+		RPGEvents.scheduleRunnable(new RPGEvents.SendDespawnPacket(po, co), 3 * 20);
 	}
 
 	public void despawnFor(Player p)

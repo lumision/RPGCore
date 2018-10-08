@@ -43,7 +43,9 @@ public class RPGRecipe
 	public static ArrayList<RPGRecipe> recipes = new ArrayList<RPGRecipe>();
 	public static final File recipesFolder = new File("plugins/RPGCore/recipes");
 
+	public boolean requiresUnlock;
 	public RItem result;
+	public int resultAmount;
 	public String[] shape;
 	public HashMap<RItem, Character> ingredients;
 
@@ -55,6 +57,7 @@ public class RPGRecipe
 	public RPGRecipe(RItem result, String[] shape, HashMap<RItem, Character> ingredients, Sound sound, float volume, float pitch)
 	{
 		this.result = result;
+		this.resultAmount = 1;
 		this.shape = shape;
 		this.ingredients = ingredients;
 
@@ -94,6 +97,8 @@ public class RPGRecipe
 				Sound sound = null;
 				float volume = 0;
 				float pitch = 0;
+				boolean requiresUnlock = false;
+				int resultAmount = 1;
 
 				for (String line: lines)
 				{
@@ -126,14 +131,29 @@ public class RPGRecipe
 						volume = Float.valueOf(split[1]);
 					else if (split[0].equalsIgnoreCase("pitch"))
 						pitch = Float.valueOf(split[1]);
+					else if (split[0].equalsIgnoreCase("requiresUnlock"))
+						requiresUnlock = Boolean.valueOf(split[1]);
+					else if (split[0].equalsIgnoreCase("amount"))
+						resultAmount = Integer.valueOf(split[1]);
 				}
 
 				if (result != null && shape != null && ingredients.size() > 0)
-					new RPGRecipe(result, shape, ingredients, sound, volume, pitch);
+				{
+					RPGRecipe recipe = new RPGRecipe(result, shape, ingredients, sound, volume, pitch);
+					recipe.requiresUnlock = requiresUnlock;
+					recipe.resultAmount = resultAmount;
+				}
 				else
 					RPGCore.msgConsole("&4Error reading recipe data: " + file.getName() + "; result, shape, or ingredients is null.");
 			} catch (Exception e) {}
 		}
+	}
+	
+	public ItemStack getResult()
+	{
+		ItemStack item = result.createItem();
+		item.setAmount(resultAmount);
+		return item;
 	}
 
 	public boolean crafted(ItemStack[] craftingMatrix)

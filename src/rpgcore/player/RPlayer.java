@@ -17,6 +17,7 @@ import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EntityEquipment;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -24,6 +25,7 @@ import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 
+import rpgcore.areas.Area;
 import rpgcore.areas.Arena;
 import rpgcore.areas.ArenaInstance;
 import rpgcore.buff.Buff;
@@ -40,6 +42,7 @@ import rpgcore.main.RPGCore;
 import rpgcore.main.RPGEvents;
 import rpgcore.monsterbar.MonsterBar;
 import rpgcore.npc.CustomNPC;
+import rpgcore.recipes.RPGRecipe;
 import rpgcore.sideclasses.RPGSideClass;
 import rpgcore.sideclasses.RPGSideClass.SideClassType;
 import rpgcore.skills.BladeMastery1;
@@ -52,6 +55,9 @@ import rpgcore.skills.PriestsBlessing;
 import rpgcore.skills.RPGSkill;
 import rpgcore.skills.Vigor1;
 import rpgcore.skills.Wisdom;
+import rpgcore.songs.RPGSong;
+import rpgcore.songs.RSongManager;
+import rpgcore.songs.RunningTrack;
 import rpgcore.tutorial.Tutorial;
 
 public class RPlayer 
@@ -83,7 +89,7 @@ public class RPlayer
 	private int gold;
 	private int tokens;
 	public int lastSkillbookTier = 1;
-	public int skillbookTierSwitchTicks;
+	public int pageSwitchTicks;
 	public Location pos1, pos2;
 	public int arenaInstanceID;
 	public Location leftForArenaLocation;
@@ -98,7 +104,7 @@ public class RPlayer
 	public AccessoryInventory accessoryInventory;
 	public MonsterBar monsterBar;
 	public int lastBarTicks;
-	public HashMap<BossBar, Integer> cooldownBars = new HashMap<BossBar, Integer>();
+	public HashMap<BossBar, Integer> cooldownBars;
 	public int cooldownDisplayMode = 0; //0 = bossbar, 1 = title, 2 = chat
 	public int recoverMaxTicks = 60;
 	private static final int recoverMaxTicksDefault = 60;
@@ -107,10 +113,18 @@ public class RPlayer
 	public boolean updateStats;
 	public int invulnerabilityTicks;
 	public int uiClickDelay;
+	public int globalGiftIndex;
+	public Mailbox mailbox;
+	public ArrayList<RPGSkill> skillCasts;
+	public Area lastArea;
+	public ArrayList<String> recipes;
+	public ArrayList<RPGRecipe> viewableRecipes;
+	public int lastRecipeBookPage = 1;
 
 	public int sneakTicks;
 	public int heartspanTicks;
 
+	public static ItemStack invMailbox = CakeLibrary.renameItem(new ItemStack(Material.CHEST), "&a&nMailbox");
 	public static ItemStack invAccessories = CakeLibrary.renameItem(new ItemStack(Material.TOTEM), "&d&nAccessories");
 	public static ItemStack invBuffsStats = CakeLibrary.renameItem(new ItemStack(Material.PAPER), "&c&nBuffs / Stats");
 	public static ItemStack invSkills = CakeLibrary.renameItem(new ItemStack(Material.BOOK), "&b&nSkills");
@@ -127,6 +141,8 @@ public class RPlayer
 		this.skills = new ArrayList<String>();
 		//this.skillLevels = new ArrayList<Integer>();
 		this.cooldowns = new HashMap<String, Integer>();
+		this.cooldownBars = new HashMap<BossBar, Integer>();
+		this.skillCasts = new ArrayList<RPGSkill>();
 		this.castDelays = new HashMap<String, Integer>();
 		this.buffs = new ArrayList<Buff>();
 		this.titleQueue = new ArrayList<Title>();
@@ -140,6 +156,8 @@ public class RPlayer
 		this.tutorial = new Tutorial(this);
 		this.buffInventory = new BuffInventory(this);
 		this.accessoryInventory = new AccessoryInventory(this);
+		this.mailbox = new Mailbox(this);
+		this.recipes = new ArrayList<String>();
 		setInvButtons();
 	}
 
@@ -182,6 +200,8 @@ public class RPlayer
 		}
 		this.castDelays = new HashMap<String, Integer>();
 		this.cooldowns = new HashMap<String, Integer>();
+		this.cooldownBars = new HashMap<BossBar, Integer>();
+		this.skillCasts = new ArrayList<RPGSkill>();
 		this.buffs = new ArrayList<Buff>();
 		this.titleQueue = new ArrayList<Title>();
 		this.lastSkill = "";
@@ -191,16 +211,69 @@ public class RPlayer
 		this.tutorial = new Tutorial(this);
 		this.buffInventory = new BuffInventory(this);
 		this.accessoryInventory = new AccessoryInventory(this);
+		this.mailbox = new Mailbox(this);
+		this.recipes = new ArrayList<String>();
 		setInvButtons();
+	}
+
+	public void giveItem(ItemStack item)
+	{
+		if (getPlayer() == null)
+		{
+			mailbox.items.add(new RItem(item));
+			RPGCore.playerManager.writeData(this);
+			return;
+		}
+		if (!CakeLibrary.playerHasVacantSlots(getPlayer()))
+		{
+			mailbox.items.add(new RItem(item));
+			RPGCore.playerManager.writeData(this);
+			RPGCore.msg(getPlayer(), "An item was sent to your mailbox because your inventory was full");
+			return;
+		}
+		getPlayer().getInventory().addItem(item.clone());
+	}
+
+	public void giveItem(RItem item)
+	{
+		if (getPlayer() == null)
+		{
+			mailbox.items.add(item);
+			RPGCore.playerManager.writeData(this);
+			return;
+		}
+		if (!CakeLibrary.playerHasVacantSlots(getPlayer()))
+		{
+			mailbox.items.add(item);
+			RPGCore.playerManager.writeData(this);
+			RPGCore.msg(getPlayer(), "An item was sent to your mailbox because your inventory was full");
+			return;
+		}
+		getPlayer().getInventory().addItem(item.createItem());
 	}
 
 	public void setInvButtons()
 	{
 		if (getPlayer() == null || !RPGCore.inventoryButtons)
 			return;
-		getPlayer().getInventory().setItem(17, invAccessories.clone());
-		getPlayer().getInventory().setItem(26, invBuffsStats.clone());
-		getPlayer().getInventory().setItem(35, invSkills.clone());
+		Inventory inv = getPlayer().getInventory();
+		for (int i = 0; i < 4; i++)
+		{
+			int slot = i == 0 ? 9 : i == 1 ? 17 : i == 2 ? 26 : 35;
+			ItemStack item = inv.getItem(slot);
+			if (CakeLibrary.isItemStackNull(item))
+				continue;
+			String name = CakeLibrary.removeColorCodes(CakeLibrary.getItemName(item));
+			if (!name.equals("Mailbox") && !name.equals("Accessories") && !name.equals("Buffs / Stats") && !name.equals("Skills"))
+				mailbox.items.add(new RItem(item.clone()));
+		}
+		int items = mailbox.items.size();
+		ItemStack mailboxItem = invMailbox.clone();
+		mailboxItem = CakeLibrary.addLore(mailboxItem, "&7 * " + (items == 0 ? "Empty" : items == 1 ? "1 item" : items + " items"));
+		inv.setItem(9, mailboxItem);
+		inv.setItem(17, invAccessories.clone());
+		inv.setItem(26, invBuffsStats.clone());
+		inv.setItem(35, invSkills.clone());
 	}
 
 	public void enterArena(Arena arena)
@@ -334,6 +407,45 @@ public class RPlayer
 	{
 		if (getPlayer() == null)
 			return;
+		if (lastArea != null)
+		{
+			if (!lastArea.isInArea(getPlayer().getLocation()))
+			{
+				for (RunningTrack rt: RSongManager.runningTracks)
+					if (rt.player.getName().equalsIgnoreCase(getPlayer().getName()))
+						rt.stop();
+				lastArea = null;
+			} else if (lastArea.bgm != null)
+			{
+				boolean playing = false;
+				for (RunningTrack rt: RSongManager.runningTracks)
+					if (rt.player.getName().equalsIgnoreCase(getPlayer().getName()))
+					{
+						playing = true;
+						break;
+					}
+				if (!playing)
+				{
+					RPGSong song = RPGCore.songManager.getSong(lastArea.bgm);
+					if (song != null)
+						song.play(getPlayer(), song.loop);
+				}
+			}
+		} else
+			for (Area a: Area.areas)
+			{
+				if (a.isInArea(getPlayer().getLocation()))
+				{
+					if (a.bgm != null)
+					{
+						RPGSong song = RPGCore.songManager.getSong(a.bgm);
+						if (song != null)
+							song.play(getPlayer(), song.loop);
+					}
+					lastArea = a;
+					break;
+				}
+			}
 		updatePlayerREquips();
 		if (updateStats)
 		{
@@ -358,9 +470,13 @@ public class RPlayer
 						|| pe.getType().equals(PotionEffectType.WEAKNESS)
 						|| pe.getType().equals(PotionEffectType.WITHER))
 				{
-					PotionEffect n = new PotionEffect(pe.getType(), pe.getDuration() - debuffTick, pe.getAmplifier());
+					int newDuration = pe.getDuration() - debuffTick;
 					getPlayer().removePotionEffect(pe.getType());
-					getPlayer().addPotionEffect(n);
+					if (newDuration > 0)
+					{
+						PotionEffect n = new PotionEffect(pe.getType(), newDuration, pe.getAmplifier());
+						getPlayer().addPotionEffect(n);
+					}
 				}
 			}
 	}
@@ -416,8 +532,8 @@ public class RPlayer
 			updateScoreboard();
 		if (lastInteractTicks > 0)
 			lastInteractTicks--;
-		if (skillbookTierSwitchTicks > 0)
-			skillbookTierSwitchTicks--;
+		if (pageSwitchTicks > 0)
+			pageSwitchTicks--;
 		if (heartspanTicks > 0) //Heartspan functionality
 		{
 			heartspanTicks--;
@@ -573,6 +689,8 @@ public class RPlayer
 	public void addXP(int xp)
 	{
 		getCurrentClass().xp += xp;
+		if (getCurrentClass().xp < 0)
+			getCurrentClass().xp = 0;
 		Player p = getPlayer();
 		if (p != null)
 			titleQueue.add(new Title("", CakeLibrary.recodeColorCodes("&7+" + xp + " XP (" + getPercentageToNextLevel() + "%)"), 4, 0, 16));
@@ -592,8 +710,8 @@ public class RPlayer
 	public int getPercentageToNextLevel()
 	{
 		RPGClass c = getCurrentClass();
-		float xpRaw = c.xp - RPGClass.getXPRequiredForLevel(c.lastCheckedLevel);
-		float nextXpRaw = RPGClass.getXPRequiredForLevel(c.lastCheckedLevel + 1) - RPGClass.getXPRequiredForLevel(c.lastCheckedLevel);
+		double xpRaw = c.xp - RPGClass.getXPRequiredForLevel(c.lastCheckedLevel);
+		double nextXpRaw = RPGClass.getXPRequiredForLevel(c.lastCheckedLevel + 1) - RPGClass.getXPRequiredForLevel(c.lastCheckedLevel);
 		int percentage = (int) ((xpRaw / nextXpRaw) * 100.0F);
 		return percentage < 0 ? 0 : percentage;
 	}
@@ -690,8 +808,7 @@ public class RPlayer
 
 		postStatsMultipliers.bruteDamageAdd = 0;
 		postStatsMultipliers.magicDamageAdd = 0;
-		postStatsMultipliers.critChanceAdd = 0;
-		postStatsMultipliers.critDamageAdd = 0;
+		postStatsMultipliers.xpMultiplier = 0;
 
 		for (RItem eq: rEquips)
 			if (eq != null)
@@ -750,7 +867,7 @@ public class RPlayer
 				lastCalculatedStats.magicDamageAdd += MagicMastery2.magicDamageAdd;
 			if(skill.equals(MagicMastery3.skillName))
 				lastCalculatedStats.magicDamageAdd += MagicMastery3.magicDamageAdd;
-			
+
 			if(skill.equals(BladeMastery1.skillName))
 				lastCalculatedStats.bruteDamageAdd += BladeMastery1.bruteDamageAdd;
 
@@ -773,8 +890,7 @@ public class RPlayer
 
 		lastCalculatedStats.bruteDamageAdd *= CakeLibrary.convertAddedPercentageToMultiplier(postStatsMultipliers.bruteDamageAdd);
 		lastCalculatedStats.magicDamageAdd *= CakeLibrary.convertAddedPercentageToMultiplier(postStatsMultipliers.magicDamageAdd);
-		lastCalculatedStats.critChanceAdd *= CakeLibrary.convertAddedPercentageToMultiplier(postStatsMultipliers.critChanceAdd);
-		lastCalculatedStats.critDamageAdd *= CakeLibrary.convertAddedPercentageToMultiplier(postStatsMultipliers.critDamageAdd);
+		lastCalculatedStats.attackSpeedMultiplier *= CakeLibrary.convertAddedPercentageToMultiplier((int) postStatsMultipliers.attackSpeedMultiplier);
 
 		if (lastCalculatedStats.bruteDamageAdd < 0)
 			lastCalculatedStats.bruteDamageAdd = 2147483647;
@@ -809,38 +925,32 @@ public class RPlayer
 		if (item.xpMultiplier != 0)
 			lastCalculatedStats.xpMultiplier *= item.xpMultiplier;
 
-		if (item.bonusStat != null)
+		if (item.bonusStat != null && RPGCore.bonusStatEnabled)
 			for (int i = 0; i < item.bonusStat.statLines.size(); i++)
 			{
 				BonusStatType type = item.bonusStat.statLines.get(i);
 				float multiplier = item.bonusStat.statLower.get(i) ? BonusStat.lowerStatMultiplier : 1.0F;
+				int value = (int) (type.getMultiplier() * (float) item.bonusStat.tier * multiplier);
 				if (type.equals(BonusStatType.BRUTE_DAMAGE))
-					lastCalculatedStats.bruteDamageAdd += 
-					(int) (type.getMultiplier() * (float) item.bonusStat.tier * multiplier);
+					lastCalculatedStats.bruteDamageAdd += value;
 				else if (type.equals(BonusStatType.CAST_SPEED_PERCENTAGE))
-					lastCalculatedStats.attackSpeedMultiplier *= 
-					CakeLibrary.convertAddedPercentageToMultiplier((int) (type.getMultiplier() * (float) item.bonusStat.tier * multiplier));
+					postStatsMultipliers.attackSpeedMultiplier += value;
 				else if (type.equals(BonusStatType.BRUTE_DAMAGE_PERCENTAGE))
-					postStatsMultipliers.bruteDamageAdd += 
-					(int) (type.getMultiplier() * (float) item.bonusStat.tier * multiplier);
+					postStatsMultipliers.bruteDamageAdd += value;
 				else if (type.equals(BonusStatType.CRIT_CHANCE))
-					postStatsMultipliers.critChanceAdd += 
-					(int) (type.getMultiplier() * (float) item.bonusStat.tier * multiplier);
+					lastCalculatedStats.critChanceAdd += value;
 				else if (type.equals(BonusStatType.CRIT_DAMAGE))
-					postStatsMultipliers.critDamageAdd += 
-					(int) (type.getMultiplier() * (float) item.bonusStat.tier * multiplier);
+					lastCalculatedStats.critDamageAdd += value;
 				else if (type.equals(BonusStatType.MAGIC_DAMAGE))
-					lastCalculatedStats.magicDamageAdd += 
-					(int) (type.getMultiplier() * (float) item.bonusStat.tier * multiplier);
+					lastCalculatedStats.magicDamageAdd += value;
 				else if (type.equals(BonusStatType.MAGIC_DAMAGE_PERCENTAGE))
-					postStatsMultipliers.magicDamageAdd += 
-					(int) (type.getMultiplier() * (float) item.bonusStat.tier * multiplier);
+					postStatsMultipliers.magicDamageAdd += value;
 				else if (type.equals(BonusStatType.TOTAL_DAMAGE_PERCENTAGE))
 					lastCalculatedStats.totalDamageMultiplier *= 
-					CakeLibrary.convertAddedPercentageToMultiplier((int) (type.getMultiplier() * (float) item.bonusStat.tier * multiplier));
+					CakeLibrary.convertAddedPercentageToMultiplier(value);
 				else if (type.equals(BonusStatType.BOSS_DAMAGE_PERCENTAGE))
 					lastCalculatedStats.bossDamageMultiplier *= 
-					CakeLibrary.convertAddedPercentageToMultiplier((int) (type.getMultiplier() * (float) item.bonusStat.tier * multiplier));
+					CakeLibrary.convertAddedPercentageToMultiplier(value);
 			}
 	}
 

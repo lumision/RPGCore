@@ -3,11 +3,13 @@ package rpgcore.main;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Random;
 import java.util.Timer;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -25,6 +27,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.sk89q.worldedit.CuboidClipboard;
@@ -47,7 +50,10 @@ import rpgcore.entities.mobs.RPGMonster;
 import rpgcore.entities.mobs.RPGMonsterSpawn;
 import rpgcore.item.BonusStat.BonusStatCrystal;
 import rpgcore.item.EnhancementInventory;
+import rpgcore.item.GlobalGift;
+import rpgcore.item.ItemSwap;
 import rpgcore.item.RItem;
+import rpgcore.kits.RPGKit;
 import rpgcore.npc.ConversationData;
 import rpgcore.npc.CustomNPC;
 import rpgcore.npc.NPCManager;
@@ -84,7 +90,9 @@ public class RPGCore extends JavaPlugin
 	public static NPCManager npcManager;
 	public static long serverAliveTicks;
 	public static int arenaSpawnTestIndex = 0;
+	public static int maxMobsPer64Radius = 48;
 	public static boolean inventoryButtons = true;
+	public static boolean bonusStatEnabled = true;
 
 	public File configFile = new File("plugins/RPGCore/config.yml");
 	public static String areaInstanceWorld;
@@ -138,6 +146,8 @@ public class RPGCore extends JavaPlugin
 			"&4===[&c /area Help &4]===",  
 			"&4/area pos1/pos2: &cSets the pos1 or pos2 of a creating area",
 			"&4/area create <name>: &cCreates an area",
+			"&4/area del <areaName>: &cDeletes an area",
+			"&4/area setpos <areaName>: &cSets the new position of an area",
 			"&4/area list: &cLists all areas",
 			"&4/area editable <areaName>: &cToggles the editability of an area",
 			"&4/area bgm <areaName> <bgmName>: &cSets the BGM of an area"
@@ -162,9 +172,9 @@ public class RPGCore extends JavaPlugin
 			"&6/npc skin <skinName>: &eSets the skin of an NPC (tab-completable)",
 			"&6/npc rename <npcName>: &eRenames an NPC",
 			"&6/npc del: &eDeletes an NPC",
-			"&6/npc lockrotation: &eToggles head rotation lock on an NPC",
-			"&6/npc chatrange <blocks>: &eSets the chat range for an NPC",
-			"&6/npc databasename <databaseName>: &eSets the databaseName for an NPC",
+			"&6/npc lockRotation: &eToggles head rotation lock on an NPC",
+			"&6/npc chatRange <blocks>: &eSets the chat range for an NPC",
+			"&6/npc databaseName <databaseName>: &eSets the databaseName for an NPC",
 			"&6Tip: You can use TAB to auto-complete"
 	};
 
@@ -198,10 +208,17 @@ public class RPGCore extends JavaPlugin
 		Arena.readArenaData();
 		ArenaInstance.readArenaInstanceData();
 		GuildShop.readItemPrices();
+		ItemSwap.readData();
+		GlobalGift.readData();
+		RPGKit.readData();
+		Area.readData();
+
+		if (heads.containsKey("mailbox"))
+			RPlayer.invMailbox = CakeLibrary.renameItem(CakeLibrary.getSkullWithTexture(heads.get("mailbox")), "&a&nMailbox");
 
 		if (areaInstanceWorld != null && areaInstanceWorld.length() > 0)
 			Bukkit.getServer().createWorld(new WorldCreator(areaInstanceWorld));
-		
+
 		for (File file: new File(".").listFiles())
 		{
 			String name = file.getName();
@@ -222,6 +239,7 @@ public class RPGCore extends JavaPlugin
 			world.setGameRuleValue("doWeatherCycle", "true");
 			world.setGameRuleValue("mobGriefing", "false");
 			world.setGameRuleValue("sendCommandFeedback", "false");
+			world.setGameRuleValue("maxEntityCramming", "0");
 		}
 
 		if (Bukkit.getMonsterSpawnLimit() < 512)
@@ -330,6 +348,10 @@ public class RPGCore extends JavaPlugin
 					arenaSpawnTestIndex = Integer.valueOf(split[1]);
 				if (split[0].equalsIgnoreCase("inventoryButtons"))
 					inventoryButtons = Boolean.valueOf(split[1]);
+				if (split[0].equalsIgnoreCase("maxMobsPer64Radius"))
+					maxMobsPer64Radius = Integer.valueOf(split[1]);
+				if (split[0].equalsIgnoreCase("bonusStatEnabled"))
+					bonusStatEnabled = Boolean.valueOf(split[1]);
 			}
 		} catch (Exception e) 
 		{
@@ -343,6 +365,8 @@ public class RPGCore extends JavaPlugin
 		lines.add("areaInstanceWorld: world_flat");
 		lines.add("arenaSpawnTestIndex: " + arenaSpawnTestIndex);
 		lines.add("inventoryButtons: " + inventoryButtons);
+		lines.add("maxMobsPer64Radius: " + maxMobsPer64Radius);
+		lines.add("bonusStatEnabled: " + bonusStatEnabled);
 		CakeLibrary.writeFile(lines, configFile);
 		readConfig();
 	}
@@ -362,7 +386,7 @@ public class RPGCore extends JavaPlugin
 			}
 			if (!file.getName().endsWith(".yml"))
 				continue;
-			itemDatabase.add(RItem.readRItemFile(file));
+			itemDatabase.add(RItem.readFromFile(file));
 		}
 	}
 
@@ -507,7 +531,7 @@ public class RPGCore extends JavaPlugin
 				inv.setItem(2, target.getPlayer().getEquipment().getChestplate());
 				inv.setItem(3, target.getPlayer().getEquipment().getLeggings());
 				inv.setItem(4, target.getPlayer().getEquipment().getBoots());
-				
+
 				for (int i = 0; i < 3; i++)
 					if (target.accessoryInventory.slots[i] != null)
 						inv.setItem(8 - i, target.accessoryInventory.slots[i].createItem());
@@ -603,10 +627,17 @@ public class RPGCore extends JavaPlugin
 						msg(p, "Usage: /area create <areaName>");
 						return true;
 					}
-					new Area(args[1], (int) Math.min(rp.pos1.getX(), rp.pos2.getX()),
+					if (rp.pos1 == null || rp.pos2 == null)
+					{
+						msg(p, "Set pos1 and pos2 with \"/area pos1/pos2\" first");
+						return true;
+					}
+					Area.areas.add(new Area(args[1], p.getWorld().getName(), 
+							(int) Math.min(rp.pos1.getX(), rp.pos2.getX()),
 							(int) Math.max(rp.pos1.getX(), rp.pos2.getX()),
 							(int) Math.min(rp.pos1.getZ(), rp.pos2.getZ()),
-							(int) Math.max(rp.pos1.getZ(), rp.pos2.getZ()));
+							(int) Math.max(rp.pos1.getZ(), rp.pos2.getZ())));
+					Area.writeData();
 					msg(p, "Area \"" + args[1] + "\" created.");
 					return true;
 				}
@@ -628,6 +659,68 @@ public class RPGCore extends JavaPlugin
 					}
 					area.editable = !area.editable;
 					msg(p, "Area editability: " + area.editable);
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("bgm"))
+				{
+					if (args.length <  3)
+					{
+						msg(p, "Usage: /area bgm <areaName> <bgmName>");
+						return true;
+					}
+					Area area = null;
+					for (Area check: Area.areas)
+						if (check.name.equalsIgnoreCase(args[1]))
+							area = check;
+					if (area == null)
+					{
+						msg(p, "Area \"" + args[1] + "\" does not exist.");
+						return true;
+					}
+					area.bgm = args[2];
+					msg(p, "Area BGM set to: " + area.bgm);
+					Area.writeData();
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("setpos"))
+				{
+					if (args.length <  2)
+					{
+						msg(p, "Usage: /area setpos <areaName>");
+						return true;
+					}
+					if (rp.pos1 == null || rp.pos2 == null)
+					{
+						msg(p, "Set pos1 and pos2 with \"/area pos1/pos2\" first");
+						return true;
+					}
+					Area area = null;
+					for (Area check: Area.areas)
+						if (check.name.equalsIgnoreCase(args[1]))
+							area = check;
+					area.world = p.getWorld().getName();
+					area.minX = (int) Math.min(rp.pos1.getX(), rp.pos2.getX());
+					area.maxX = (int) Math.max(rp.pos1.getX(), rp.pos2.getX());
+					area.minZ = (int) Math.min(rp.pos1.getZ(), rp.pos2.getZ());
+					area.maxZ = (int) Math.max(rp.pos1.getZ(), rp.pos2.getZ());
+					Area.writeData();
+					msg(p, "New area position set.");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("del"))
+				{
+					if (args.length <  2)
+					{
+						msg(p, "Usage: /area del <areaName>");
+						return true;
+					}
+					Area area = null;
+					for (Area check: Area.areas)
+						if (check.name.equalsIgnoreCase(args[1]))
+							area = check;
+					Area.areas.remove(area);
+					Area.writeData();
+					msg(p, "Area deleted.");
 					return true;
 				}
 				if (args[0].equalsIgnoreCase("list"))
@@ -866,7 +959,7 @@ public class RPGCore extends JavaPlugin
 					return true;
 				}
 				ItemStack is = p.getItemInHand();
-				if (is == null)
+				if (CakeLibrary.isItemStackNull(is))
 				{
 					msg(p, "Hold an item to save.");
 					return true;
@@ -876,8 +969,17 @@ public class RPGCore extends JavaPlugin
 					msg(p, "Usage: /saveitem <filename>");
 					return true;
 				}
+				if (args[0].equalsIgnoreCase("retardlumi"))
+				{
+					for (RItem item: itemDatabase)
+						if (item != null)
+							if (item.file != null)
+								item.saveToFile(item.file);
+					msg(p, "All items fixed, retarded lumi.");
+					return true;
+				}
 				RItem ri = new RItem(is, args[0]);
-				ri.saveItemToFile(args[0]);
+				ri.saveToFile(args[0]);
 				RItem get = getItemFromDatabase(args[0]);
 				if (get != null)
 					itemDatabase.remove(get);
@@ -1063,7 +1165,7 @@ public class RPGCore extends JavaPlugin
 						msg(p, "That is not a number");
 						return true;
 					}
-					if (distance > 10)
+					if (distance > 32)
 					{
 						msg (p, "That chat distance is too great!");
 						return true;
@@ -1453,7 +1555,7 @@ public class RPGCore extends JavaPlugin
 				for (RItem key: GuildShop.itemPrices.keySet())
 					if (key.compare(ri))
 						check = key;
-				
+
 				if (args[0].equalsIgnoreCase("delete") || args[0].equalsIgnoreCase("del") || args[0].equalsIgnoreCase("d"))
 				{
 					if (check == null)
@@ -1466,7 +1568,7 @@ public class RPGCore extends JavaPlugin
 					msg(p, "Item cost of &6" + CakeLibrary.getItemName(is) + "&e removed.");
 					return true;
 				}
-				
+
 				if (args[0].equalsIgnoreCase("check") || args[0].equalsIgnoreCase("c"))
 				{
 					if (check == null)
@@ -1479,14 +1581,14 @@ public class RPGCore extends JavaPlugin
 				}
 
 				int cost = 0;
-					try
-					{
-						cost = Integer.parseInt(args[0]);
-					} catch (Exception e)
-					{
-						msg(p, "That is not a number.");
-						return true;
-					}
+				try
+				{
+					cost = Integer.parseInt(args[0]);
+				} catch (Exception e)
+				{
+					msg(p, "That is not a number.");
+					return true;
+				}
 
 				GuildShop.itemPrices.put(check == null ? ri : check, cost);
 				GuildShop.saveItemPrices();
@@ -1757,6 +1859,44 @@ public class RPGCore extends JavaPlugin
 				}
 
 				msg(p, "Unrecognized argument. Use tab maybe?");
+				return true;
+			}
+			if (command.getName().equalsIgnoreCase("setrgb"))
+			{
+				if (!p.hasPermission("rpgcore.item"))
+				{
+					msg(p, "You do not have permissions to use this command.");
+					return true;
+				}
+				if (args.length < 3)
+				{
+					msg(p, "Usage: /setrgb <red> <green> <blue>");
+					msg(p, "Values range from 0 to 255");
+					return true;
+				}
+				ItemStack is = p.getItemInHand();
+				if (CakeLibrary.isItemStackNull(is))
+				{
+					msg(p, "Hold the item you want to edit.");
+					return true;
+				}
+				if (!(is.getItemMeta() instanceof LeatherArmorMeta))
+				{
+					msg(p, "That is not a piece of leather equipment");
+					return true;
+				}
+				LeatherArmorMeta lim = (LeatherArmorMeta) is.getItemMeta();
+				try
+				{
+					lim.setColor(Color.fromRGB(Integer.valueOf(args[0]), Integer.valueOf(args[1]), Integer.valueOf(args[2])));
+				} catch (Exception e)
+				{
+					msg(p, "Error; did you enter values between 0 to 255?");
+					return true;
+				}
+				is.setItemMeta(lim);
+				p.setItemInHand(is);
+				msg(p, "RGB color set.");
 				return true;
 			}
 			if (command.getName().equalsIgnoreCase("item"))
@@ -2138,6 +2278,247 @@ public class RPGCore extends JavaPlugin
 				msg(p, "Spawned.");
 				return true;
 			}
+			if (command.getName().equalsIgnoreCase("itemswap"))
+			{
+				if (!p.isOp())
+				{
+					msg(p, "Op is required for this command.");
+					return true;
+				}
+				if (args.length < 1)
+				{
+					msg(p, "Usage: /itemswap <list/add/del/+version> <from> [to]");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("+version"))
+				{
+					ItemSwap.itemSwapVersion++;
+					msg(p, "Item swap version increased by 1; now " + ItemSwap.itemSwapVersion + ".");
+					ItemSwap.writeData();
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("add"))
+				{
+					if (args.length < 3)
+					{
+						msg(p, "Usage: /itemswap add <from> <to>");
+						return true;
+					}
+					RItem from = getItemFromDatabase(args[1]);
+					RItem to = getItemFromDatabase(args[2]);
+					if (from == null)
+					{
+						msg(p, "\"" + args[1] + "\" does not exist as an item");
+						return true;
+					}
+					if (to == null)
+					{
+						msg(p, "\"" + args[2] + "\" does not exist as an item");
+						return true;
+					}
+					ItemSwap.addItemSwap(from, to);
+					msg(p, "Item swap added.");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("del"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /itemswap del <from>");
+						return true;
+					}
+					int index = -1;
+					for (int i = 0; i < ItemSwap.itemSwaps.size(); i++)
+						if (ItemSwap.itemSwaps.get(i).from.databaseName.equalsIgnoreCase(args[1]))
+							index = i;
+					if (index == -1)
+					{
+						msg(p, "That item swap with \"" + args[1] + "\" (from) does not exist");
+						return true;
+					}
+					ItemSwap.itemSwaps.remove(index);
+					ItemSwap.writeData();
+					msg(p, "Item swap from \"" + args[1] + "\" deleted.");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("list"))
+				{
+					msgNoTag(p, "&6ItemSwap List:");
+					for (ItemSwap swap: ItemSwap.itemSwaps)
+						msgNoTag(p, "&eFrom \"" + swap.from.databaseName + "\" to \"" + swap.to.databaseName + "\"");
+					return true;
+				}
+				msg(p, "Usage: /itemswap <list/add/del/+version> <from> [to]");
+				return true;
+			}
+			if (command.getName().equalsIgnoreCase("globalgift"))
+			{
+				if (!p.isOp())
+				{
+					msg(p, "This command requires op");
+					return true;
+				}
+				if (args.length < 1)
+				{
+					msg(p, "Usage: /globalgift <list/add/del> <itemName/delIndex> [expiryInDays]");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("list"))
+				{
+					msgNoTag(p, "&6GlobalGift List; Current day: " + Calendar.getInstance().get(Calendar.DAY_OF_YEAR));
+					for (GlobalGift gift: GlobalGift.gifts)
+						msgNoTag(p, "&e#" + gift.giftIndex + ", \"" + gift.item.databaseName + "\", expire: " + gift.expireDay + "D " + gift.expireYear + "Y");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("add"))
+				{
+					if (args.length < 3)
+					{
+						msg(p, "Usage: /globalgift add <itemName> <expiryInDays>");
+						return true;
+					}
+					RItem item = getItemFromDatabase(args[1]);
+					if (item == null)
+					{
+						msg(p, "This item does not exist in the database");
+						return true;
+					}
+					try
+					{
+						Calendar calendar = Calendar.getInstance();
+						int day = calendar.get(Calendar.DAY_OF_YEAR) + Integer.valueOf(args[2]);
+						int year = calendar.get(Calendar.YEAR);
+						while (day > 365)
+						{
+							year++;
+							day -= 365;
+						}
+						GlobalGift.createGlobalGift(item, day, year);
+						GlobalGift.writeData();
+						msg(p, "Global gift \"" + item.databaseName + "\" created; expires on " + day + "D " + year + "Y");
+					} catch (Exception e)
+					{
+						msg(p, "Usage: /globalgift add <itemName> <expiryInDays>");
+						return true;
+					}
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("del"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /globalgift del <delIndex>");
+						return true;
+					}
+					try
+					{
+						GlobalGift gift = GlobalGift.getGiftByIndex(Integer.valueOf(args[1]));
+						if (gift == null)
+						{
+							msg(p, "That gift index does not exist.");
+							return true;
+						}
+						GlobalGift.gifts.remove(gift);
+						GlobalGift.writeData();
+						msg(p, "Global gift \"" + gift.item.databaseName + "\" removed.");
+					} catch (Exception e)
+					{
+						msg(p, "Usage: /globalgift del <delIndex>");
+						return true;
+					}
+					return true;
+				}
+				msg(p, "Usage: /globalgift <list/add/del> <itemName/delIndex> [expiryInDays]");
+				return true;
+			}
+			if (command.getName().equalsIgnoreCase("rkit"))
+			{
+				if (!p.hasPermission("rpgcore.kit"))
+				{
+					msg(p, "You do not have permissions to use this command.");
+					return true;
+				}
+				if (args.length < 1)
+				{
+					msg(p, "Usage: /rkit <get/create/edit/del/reload> <kitName> [intervalDays] [intervalHours] [intervalMinutes]");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("reload"))
+				{
+					RPGKit.readData();
+					msg(p, "Data successfully reloaded.");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("get"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /rkit get <kitName>");
+						return true;
+					}
+					RPGKit kit = RPGKit.getKit(args[1]);
+					if (kit == null)
+					{
+						msg(p, "That kit does not exist; try using tab");
+						return true;
+					}
+					kit.sendToPlayer(rp);
+					msg(p, "Kit obtained.");
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("create"))
+				{
+					if (RPGKit.getKit(args[1]) != null)
+					{
+						msg(p, "A kit by that name already exists");
+						return true;
+					}
+					try
+					{
+						p.openInventory(RPGKit.createKit(args[1], Integer.valueOf(args[2]), Integer.valueOf(args[3]), Integer.valueOf(args[4])).getKitInventory());
+						msg(p, "Kit successfully created.");
+						return true;
+					} catch (Exception e)
+					{
+						msg(p, "Usage: /rkit create <kitName> <intervalDays> <intervalHours> <intervalMinutes>");
+						return true;
+					}
+				}
+				if (args[0].equalsIgnoreCase("edit"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /rkit edit <kitName>");
+						return true;
+					}
+					RPGKit kit = RPGKit.getKit(args[1]);
+					if (kit == null)
+					{
+						msg(p, "That kit does not exist; try using tab");
+						return true;
+					}
+					p.openInventory(kit.getKitInventory());
+					return true;
+				}
+				if (args[0].equalsIgnoreCase("del"))
+				{
+					if (args.length < 2)
+					{
+						msg(p, "Usage: /rkit edit <kitName>");
+						return true;
+					}
+					RPGKit kit = RPGKit.getKit(args[1]);
+					if (kit == null)
+					{
+						msg(p, "That kit does not exist; try using tab");
+						return true;
+					}
+					kit.delete();
+					msg(p, "Kit successfully deleted.");
+					return true;
+				}
+				return true;
+			}
 			if (command.getName().equalsIgnoreCase("arena"))
 			{
 				if (!p.hasPermission("rpgcore.arena"))
@@ -2162,6 +2543,11 @@ public class RPGCore extends JavaPlugin
 					if (args.length < 2)
 					{
 						msg(p, "Usage: /arena create <schematicName>");
+						return true;
+					}
+					if (Arena.getArena(args[1]) != null)
+					{
+						msg(p, "An arena by that name already exists");
 						return true;
 					}
 					File file = new File("plugins/WorldEdit/schematics/" + args[1] + ".schematic");

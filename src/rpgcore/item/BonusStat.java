@@ -15,6 +15,7 @@ public class BonusStat
 	public static Random rand = new Random();
 	public static final float lowerStatMultiplier = 0.66F;
 	public static final int tierIncreaseRoll = 5;
+	public static final int tierIncreaseRollGreater = 3;
 	public static enum BonusStatType
 	{
 		MAGIC_DAMAGE_PERCENTAGE("+::% Magic Damage ", 3.0D, 2),
@@ -24,7 +25,7 @@ public class BonusStat
 		CAST_SPEED_PERCENTAGE("+::% Attack Speed ", 3.0D, 2),
 		
 		CRIT_CHANCE("+::% Crit Chance ", 2.0D, 2),
-		CRIT_DAMAGE("+::% Crit Damage ", 4.0D, 2),
+		CRIT_DAMAGE("+::% Crit Damage ", 5.0D, 2),
 		
 		MAGIC_DAMAGE("+:: Magic Damage ", 4.0D, 4),
 		BRUTE_DAMAGE("+:: Brute Damage ", 4.0D, 4);
@@ -91,7 +92,15 @@ public class BonusStat
 				"&e&nRise Crystal", 
 				"&eIncreases the tier of a bonus", 
 				"&estat at a small chance.", 
-				"&eMax Tier: 5", 
+				"&eMax Tier: 3", 
+				"&b", 
+				"&7&oHold and click to use.")),
+		
+		TIER_REROLL_GREATER(CakeLibrary.editNameAndLore(new ItemStack(Material.END_CRYSTAL), 
+				"&e&nRise Crystal+", 
+				"&eIncreases the tier of a bonus", 
+				"&estat at a moderate chance.", 
+				"&eMax Tier: 5",
 				"&b", 
 				"&7&oHold and click to use.")),
 		
@@ -99,13 +108,16 @@ public class BonusStat
 				"&b&nAugment Crystal", 
 				"&bAdds a random bonus stat line",
 				"&bto an item with bonus stats.", 
-				"&bMax Lines: 3", 
+				"&b", 
+				"&bRequires &e4✮ §bEnhancement for",
+				"&b2 lines, and §e5✮§b for 3 lines", 
 				"&b", 
 				"&7&oHold and click to use.")),
 		
 		STAT_ADDER(CakeLibrary.editNameAndLore(new ItemStack(Material.END_CRYSTAL), 
 				"&d&nAffix Crystal", 
 				"&dAdds a bonus stat to an item.", 
+				"&dRequires &e3✮&d Enhancement", 
 				"&b", 
 				"&7&oHold and click to use."));
 

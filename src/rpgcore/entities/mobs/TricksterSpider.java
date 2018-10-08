@@ -4,12 +4,12 @@ import org.bukkit.entity.Monster;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
-public class RogueSpider extends RPGMonster
+public class TricksterSpider extends RPGMonster
 {
-	public static double maxHealth = 450.0D;
-	public static String name = "§2Rogue Spider §7Lv. 20";
+	public static double maxHealth = 840.0D;
+	public static String name = "§aTrickster Spider §7Lv. 29";
 
-	public RogueSpider(Monster entity)
+	public TricksterSpider(Monster entity)
 	{
 		super(entity, false);
 		entity.setMaxHealth(maxHealth);
@@ -30,15 +30,16 @@ public class RogueSpider extends RPGMonster
 			return true;
 		if (castDelay > 0 || target == null)
 			return false;
+		
 		double distanceSq = target.getLocation().distanceSquared(entity.getLocation());
 
 		int i = rand.nextInt(10) + 1;
 		if (i <= 5 && distanceSq <= 25)
-			castShadowStab(3, 16);
+			castShadowStab(4, 12);
 		else if (i <= 8 && distanceSq > 25)
-			castDash(8);
+			castDash(6);
 		else
-			castKunai(6, 24);
+			castKunai(7, 20);
 		return false;
 	}
 }

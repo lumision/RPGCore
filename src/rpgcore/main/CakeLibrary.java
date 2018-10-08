@@ -142,6 +142,7 @@ public class CakeLibrary
 		int h = 0;
 		int m = 0;
 		int s = 0;
+		
 		while (seconds >= 3600)
 		{
 			seconds -= 3600;
@@ -160,7 +161,7 @@ public class CakeLibrary
 		
 		return (h > 0 ? h + "h " : "") + (m > 0 ? m + "m " : "") + (s > 0 ? s + "s " : "");
 	}
-
+	
 	/**
 	 * Takes an item and returns the name of the item
 	 * @param is - The item's name to check

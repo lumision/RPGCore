@@ -25,7 +25,7 @@ import rpgcore.main.RPGEvents;
 
 public class DiamondZombie extends RPGMonster
 {
-	public static double maxHealth = 1500.0D;
+	public static double maxHealth = 3600.0D;
 	public static final String name = CakeLibrary.recodeColorCodes("&b&lDiamond Zombie&7 Lv. 24");
 
 	public static final int powerPierceDamage = 4;

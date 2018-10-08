@@ -22,7 +22,7 @@ public class GuildShop
 	public static ItemStack slotInfo = CakeLibrary.editNameAndLore(new ItemStack(Material.PAPER, 1, (short) 0),
 			"§e§nInfo",
 			"§7Left-click to transfer",
-			"§7the entire stack.",
+			"§7an entire stack.",
 			"§f",
 			"§7Right-click to add or",
 			"§7subtract one by one.");
@@ -39,7 +39,7 @@ public class GuildShop
 		{
 			try
 			{
-				itemPrices.put(RItem.readRItemFile(file), 
+				itemPrices.put(RItem.readFromFile(file), 
 						Integer.valueOf(file.getName().substring(0, file.getName().length() - 4).split("_")[1]));
 			} catch (Exception e)
 			{
@@ -57,7 +57,7 @@ public class GuildShop
 
 		for (RItem key: itemPrices.keySet())
 		{
-			key.saveItemToFile(new File(pricesFolder.getPath() + "/" 
+			key.saveToFile(new File(pricesFolder.getPath() + "/" 
 					+ CakeLibrary.removeColorCodes(CakeLibrary.getItemName(key.itemVanilla)) + "_" + itemPrices.get(key) + ".yml"));
 		}
 	}

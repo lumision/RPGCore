@@ -63,28 +63,56 @@ public class RPGMonsterSpawn
 		spawns.clear();
 		
 		//Mobs
-		spawns.add(new RPGMonsterSpawn(ReinforcedSkeleton.class, Skeleton.class, 300, 1200, 4));
-		spawns.add(new RPGMonsterSpawn(ReinforcedSpider.class, Spider.class, 300, 1200, 4));
-		spawns.add(new RPGMonsterSpawn(ReinforcedZombie.class, Zombie.class, 300, 1200, 4));
+		spawns.add(new RPGMonsterSpawn(ReinforcedSkeleton.class, Skeleton.class, 0, 1000, 4));
+		spawns.add(new RPGMonsterSpawn(ReinforcedSpider.class, Spider.class, 0, 1000, 4));
+		spawns.add(new RPGMonsterSpawn(ReinforcedZombie.class, Zombie.class, 0, 1000, 4));
 		
-		spawns.add(new RPGMonsterSpawn(AssassinSpider.class, Spider.class, 800, 2000, 4));
-		spawns.add(new RPGMonsterSpawn(MageZombie.class, Zombie.class, 800, 2000, 4));
-		spawns.add(new RPGMonsterSpawn(WarriorZombie.class, Zombie.class, 800, 2000, 4));
+		spawns.add(new RPGMonsterSpawn(AssassinSpider.class, Spider.class, 500, 1500, 4));
+		spawns.add(new RPGMonsterSpawn(MageZombie.class, Zombie.class, 500, 1500, 4));
+		spawns.add(new RPGMonsterSpawn(WarriorZombie.class, Zombie.class, 500, 1500, 4));
 
-		spawns.add(new RPGMonsterSpawn(SorcererZombie.class, Zombie.class, 1400, 3000, 4));
-		spawns.add(new RPGMonsterSpawn(FighterZombie.class, Zombie.class, 1400, 3000, 4));
-		spawns.add(new RPGMonsterSpawn(RogueSpider.class, Spider.class, 1400, 3000, 4));
+		spawns.add(new RPGMonsterSpawn(SorcererZombie.class, Zombie.class, 1200, 2200, 4));
+		spawns.add(new RPGMonsterSpawn(FighterZombie.class, Zombie.class, 1200, 2200, 4));
+		spawns.add(new RPGMonsterSpawn(RogueSpider.class, Spider.class, 1200, 2200, 4));
+
+		spawns.add(new RPGMonsterSpawn(TricksterSpider.class, Spider.class, 2000, 3000, 4));
+		spawns.add(new RPGMonsterSpawn(SageSkeleton.class, Skeleton.class, 2000, 3000, 4));
+		spawns.add(new RPGMonsterSpawn(BrawlerZombie.class, Zombie.class, 2000, 3000, 4));
 		
 
 		//Mini-bosses
-		spawns.add(new RPGMonsterSpawn(QueenSpider.class, Spider.class, 1000, 5000, 64));
-		spawns.add(new RPGMonsterSpawn(DiamondZombie.class, Zombie.class, 1000, 5000, 128));
+		spawns.add(new RPGMonsterSpawn(QueenSpider.class, Spider.class, 1000, 10000, 64));
+		spawns.add(new RPGMonsterSpawn(DiamondZombie.class, Zombie.class, 1000, 10000, 128));
 		
 		//Bosses
 		spawns.add(new RPGMonsterSpawn(CorruptedMage.class, Zombie.class));
 		spawns.add(new RPGMonsterSpawn(UndeadEmperor.class, Zombie.class));
 		
 		readDrops();
+	}
+	
+	/**
+	 * HP GUIDELINES:
+	 *  -> Warrior-type mobs have ~1.4x more HP
+	 * 
+	 *  -> Normal Mob: 
+	 *      -> HP: Distance ^ 2 / 10000
+	 *      
+	 *  -> Custom Mob: 
+	 *      -> HP: Level ^ 2
+	 *      
+	 *  -> Miniboss: 
+	 *      -> HP: Level ^ 2.5
+	 *  
+	 *  -> Boss:
+	 *      -> HP: Level ^ 3
+	 */
+	public static int getHPFromSquaredSpawnDistance(double distanceSquared)
+	{
+		if (distanceSquared <= 40000)
+			return 20;
+		int calc = (int) (distanceSquared / 10000.0F);
+		return calc < 0 ? 2147483647 : calc;
 	}
 	
 	public static void readDrops()
@@ -104,7 +132,7 @@ public class RPGMonsterSpawn
 					continue;
 				}
 				
-				RItem ri = RItem.readRItemFile(file);
+				RItem ri = RItem.readFromFile(file);
 				if (ri == null)
 				{
 					RPGCore.msgConsole("&4Error reading drops file: " + file.getName() + "; RItem parsing");
@@ -161,7 +189,7 @@ public class RPGMonsterSpawn
 		{
 			try
 			{
-				key.saveItemToFile(new File(dropsFolder.getPath() + "/" + rpgMonsterName + "_" + index++ + ".yml"));
+				key.saveToFile(new File(dropsFolder.getPath() + "/" + rpgMonsterName + "_" + index++ + ".yml"));
 			} catch (Exception e)
 			{
 				RPGCore.msgConsole("&4Error writing drops file: " + rpgMonsterName + " / " + CakeLibrary.getItemName(key.itemVanilla));
@@ -194,6 +222,8 @@ public class RPGMonsterSpawn
 	public RPGMonster spawnMonster(Location location)
 	{
 		Monster m = location.getWorld().spawn(location, monsterType);
+		if (m instanceof Zombie)
+			((Zombie) m).setBaby(false);
 		try {
 			return rpgMonster.getConstructor(Monster.class).newInstance(m);
 		} catch (Exception e) {

@@ -25,6 +25,7 @@ public class RPlayerManager
 	public ArrayList<RPlayer> players = new ArrayList<RPlayer>();
 	public static final File playersFolder = new File("plugins/RPGCore/players");
 	public static final File accessoriesFolder = new File("plugins/RPGCore/players/accessories");
+	public static final File mailboxFolder = new File("plugins/RPGCore/players/mailbox");
 	public RPlayerManager(RPGCore instance)
 	{
 		this.instance = instance;
@@ -103,8 +104,11 @@ public class RPlayerManager
 		ArrayList<RPGSideClass> sideClasses = new ArrayList<RPGSideClass>();
 		ArrayList<String> skills = new ArrayList<String>();
 		Map<String, String> npcFlags = new HashMap<String, String>();
+		ArrayList<String> recipes = new ArrayList<String>();
 		boolean tutorialCompleted = false;
 		int lastSkillbookTier = 1;
+		int lastRecipeBookPage = 1;
+		int globalGiftIndex = 0;
 		int gold = 0;
 		int tokens = 0;
 		int arenaInstanceID = -1;
@@ -166,6 +170,22 @@ public class RPlayerManager
 							} catch (Exception e) {}
 							continue;
 						}
+						if (s.startsWith("lastRecipeBookPage: "))
+						{
+							try
+							{
+								lastRecipeBookPage = Integer.parseInt(s.split(": ")[1]);
+							} catch (Exception e) {}
+							continue;
+						}
+						if (s.startsWith("globalGiftIndex: "))
+						{
+							try
+							{
+								globalGiftIndex = Integer.parseInt(s.split(": ")[1]);
+							} catch (Exception e) {}
+							continue;
+						}
 						if (s.startsWith("cooldownDisplayMode: "))
 						{
 							try
@@ -204,11 +224,11 @@ public class RPlayerManager
 						if (split.length < 2)
 							continue;
 						ClassType classType = null;
-						int xp = 0;
+						double xp = 0;
 						try
 						{
 							classType = ClassType.valueOf(split[0]);
-							xp = Integer.parseInt(split[1]);
+							xp = Double.parseDouble(split[1]);
 						} catch (Exception e) {
 							continue;
 						}
@@ -240,7 +260,8 @@ public class RPlayerManager
 						if (split.length < 2)
 							continue;
 						npcFlags.put(split[0], split[1]);
-					}
+					} else if (header.equals("recipes"))
+						recipes.add(s);
 				}
 
 				for (ClassType classType: ClassType.values())
@@ -268,6 +289,8 @@ public class RPlayerManager
 				rp.arenaInstanceID = arenaInstanceID;
 				rp.leftForArenaLocation = leftForArenaLocation;
 				rp.cooldownDisplayMode = cooldownDisplayMode;
+				rp.globalGiftIndex = globalGiftIndex;
+				rp.lastRecipeBookPage = lastRecipeBookPage;
 			} catch (Exception e)
 			{
 				RPGCore.msgConsole("&4Error reading RPlayer file: " + file.getName());
@@ -281,8 +304,23 @@ public class RPlayerManager
 						File riFile = new File(accessoriesFolder.getPath() + "/" + i + "_" + uuidString + ".yml");
 						if (!riFile.exists())
 							continue;
-						rp.accessoryInventory.slots[i] = RItem.readRItemFile(riFile);
+						rp.accessoryInventory.slots[i] = RItem.readFromFile(riFile);
 					}
+			} catch (Exception e)
+			{
+				RPGCore.msgConsole("&4Error reading RPlayer accessories: " + file.getName());
+				e.printStackTrace();
+			}
+			try
+			{
+				if (rp != null)
+				{
+					File mailbox = new File(mailboxFolder.getPath() + "/" + rp.getUniqueID());
+					if (mailbox.exists())
+						for (File mailItem: mailbox.listFiles())
+							if (mailItem.getName().endsWith(".yml"))
+								rp.mailbox.items.add(RItem.readFromFile(mailItem));
+				}
 			} catch (Exception e)
 			{
 				RPGCore.msgConsole("&4Error reading RPlayer accessories: " + file.getName());
@@ -295,8 +333,10 @@ public class RPlayerManager
 			sideClasses = new ArrayList<RPGSideClass>();
 			skills = new ArrayList<String>();
 			npcFlags = new HashMap<String, String>();
+			recipes = new ArrayList<String>();
 			tutorialCompleted = false;
 			lastSkillbookTier = 1;
+			globalGiftIndex = 0;
 			gold = 0;
 			tokens = 0;
 			arenaInstanceID = -1;
@@ -316,10 +356,11 @@ public class RPlayerManager
 			lines.add("gold: " + rp.getGold());
 			lines.add("tutorialCompleted: " + rp.tutorialCompleted);
 			lines.add("lastSkillbookTier: " + rp.lastSkillbookTier);
+			lines.add("globalGiftIndex: " + rp.globalGiftIndex);
 			if (rp.arenaInstanceID != -1)
 				lines.add("arenaInstanceID: " + rp.arenaInstanceID);
 			if (rp.cooldownDisplayMode != 0)
-			lines.add("cooldownDisplayMode: " + rp.cooldownDisplayMode);
+				lines.add("cooldownDisplayMode: " + rp.cooldownDisplayMode);
 			lines.add("classes:");
 			for (RPGClass rc: rp.classes)
 				lines.add(" " + rc.classType.toString() + ", " + rc.xp); 
@@ -329,6 +370,9 @@ public class RPlayerManager
 			lines.add("skills:");
 			for (int i = 0; i < rp.skills.size(); i++)
 				lines.add(" " + rp.skills.get(i));
+			lines.add("recipes:");
+			for (int i = 0; i < rp.recipes.size(); i++)
+				lines.add(" " + rp.recipes.get(i));
 			lines.add("npcflags:");
 			ArrayList<String> keys = new ArrayList<String>();
 			keys.addAll(rp.npcFlags.keySet());
@@ -356,19 +400,37 @@ public class RPlayerManager
 				if (riFile.exists())
 					riFile.delete();
 			}
-			if (rp.accessoryInventory != null)
-				if (rp.accessoryInventory.slots != null)
-					for (int i = 0; i < rp.accessoryInventory.slots.length; i++)
-					{
-						RItem ri = rp.accessoryInventory.slots[i];
-						if (ri == null)
-							continue;
-						File riFile = new File(accessoriesFolder.getPath() + "/" + i + "_" + rp.getUniqueID() + ".yml");
-						ri.saveItemToFile(riFile);
-					}
+			for (int i = 0; i < rp.accessoryInventory.slots.length; i++)
+			{
+				RItem ri = rp.accessoryInventory.slots[i];
+				if (ri == null)
+					continue;
+				File riFile = new File(accessoriesFolder.getPath() + "/" + i + "_" + rp.getUniqueID() + ".yml");
+				ri.saveToFile(riFile);
+			}
 		} catch (Exception e)
 		{
 			RPGCore.msgConsole("&4Error writing RPlayer accessories: " + file.getName());
+			e.printStackTrace();
+		}
+		try
+		{
+			File mailbox = new File(mailboxFolder.getPath() + "/" + rp.getUniqueID());
+			if (mailbox.exists())
+				for (File m: mailbox.listFiles())
+					m.delete();
+			mailbox.mkdirs();
+			for (int i = 0; i < rp.mailbox.items.size(); i++)
+			{
+				RItem ri = rp.mailbox.items.get(i);
+				if (ri == null)
+					continue;
+				File mailItem = new File(mailboxFolder.getPath() + "/" + rp.getUniqueID() + "/" + i + ".yml");
+				ri.saveToFile(mailItem);
+			}
+		} catch (Exception e)
+		{
+			RPGCore.msgConsole("&4Error writing RPlayer mailbox: " + file.getName());
 			e.printStackTrace();
 		}
 	}

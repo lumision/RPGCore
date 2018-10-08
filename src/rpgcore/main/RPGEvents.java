@@ -17,8 +17,10 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.CreatureSpawner;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
@@ -40,7 +42,9 @@ import rpgcore.entities.bosses.CorruptedMage;
 import rpgcore.entities.mobs.RPGMonster;
 import rpgcore.external.InstantFirework;
 import rpgcore.item.BonusStat.BonusStatCrystal;
+import rpgcore.kits.RPGKit;
 import rpgcore.item.EnhancementInventory;
+import rpgcore.item.GlobalGift;
 import rpgcore.item.RItem;
 import rpgcore.monsterbar.MonsterBar;
 import rpgcore.npc.NPCManager;
@@ -63,7 +67,8 @@ public class RPGEvents implements Runnable
 		RPGEvents.instance = instance;
 		Bukkit.getScheduler().scheduleSyncRepeatingTask(instance, this, 0L, 0L);
 		Bukkit.getScheduler().scheduleSyncRepeatingTask(instance, new RunTimer10(), 0L, 10L);
-		Bukkit.getScheduler().scheduleSyncRepeatingTask(instance, new RunTimer20(), 0L, 10L);
+		Bukkit.getScheduler().scheduleSyncRepeatingTask(instance, new RunTimer20(), 0L, 20L);
+		Bukkit.getScheduler().scheduleSyncRepeatingTask(instance, new RunTimerMinute(), 0L, 1200L);
 		new MusicRuntime();
 	}
 
@@ -135,7 +140,7 @@ public class RPGEvents implements Runnable
 		{
 			victim.removePotionEffect(PotionEffectType.SLOW);
 			victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, bindDuration, 32767));
-			
+
 			if (showEffects)
 			{
 				new RPGEvents.PlayEffect(Effect.STEP_SOUND, victim, 30).run();
@@ -303,6 +308,18 @@ public class RPGEvents implements Runnable
 
 	}
 
+	public class RunTimerMinute implements Runnable
+	{
+		@Override
+		public void run()
+		{
+			RPGKit.globalCheck();
+			GlobalGift.checkExpiries();
+			for (Player p: Bukkit.getOnlinePlayers())
+				GlobalGift.checkForPlayer(RPGCore.playerManager.getRPlayer(p.getUniqueId()));
+		}
+	}
+
 	public class RunTimer20 implements Runnable
 	{
 		@Override
@@ -429,6 +446,24 @@ public class RPGEvents implements Runnable
 		}
 	}
 
+	public static class SetSpawnerType implements Runnable
+	{
+		CreatureSpawner b;
+		EntityType type;
+		public SetSpawnerType(CreatureSpawner b, EntityType type)
+		{
+			this.b = b;
+			this.type = type;
+		}
+
+		@Override
+		public void run()
+		{
+			b.setSpawnedType(type);
+			b.update();
+		}
+	}
+
 	public static class CheckForRecipe implements Runnable
 	{
 		CraftingInventory inv;
@@ -442,17 +477,14 @@ public class RPGEvents implements Runnable
 		{
 			ItemStack[] matrix = inv.getMatrix();
 			ItemStack result = inv.getResult();
-			RItem ri = null;
-			if (!CakeLibrary.isItemStackNull(result))
-				ri = new RItem(result);
 			boolean remove = false;
 
 			for (RPGRecipe recipe: RPGRecipe.recipes)
 				if (recipe.crafted(matrix))
 				{
-					if (ri != null && recipe.result.compare(ri))
+					if (!CakeLibrary.isItemStackNull(result) && RItem.compare(result, recipe.result.createItem()))
 						return;
-					inv.setItem(0, recipe.result.createItem());
+					inv.setItem(0, recipe.getResult());
 					for (HumanEntity player: inv.getViewers())
 						if (player instanceof Player)
 						{
@@ -462,7 +494,7 @@ public class RPGEvents implements Runnable
 							p.updateInventory();
 						}
 					return;
-				} else if (ri != null && recipe.result.compare(ri))
+				} else if (!CakeLibrary.isItemStackNull(result) && RItem.compare(result, recipe.result.createItem()))
 					remove = true;
 
 			if (remove)
@@ -771,10 +803,10 @@ public class RPGEvents implements Runnable
 
 	public static class CrystalInvCheck implements Runnable
 	{
-		Player player;
+		RPlayer player;
 		Inventory inv;
 		BonusStatCrystal type;
-		public CrystalInvCheck(Player player, Inventory inv, BonusStatCrystal type)
+		public CrystalInvCheck(RPlayer player, Inventory inv, BonusStatCrystal type)
 		{
 			this.player = player;
 			this.inv = inv;
@@ -787,41 +819,38 @@ public class RPGEvents implements Runnable
 			ItemStack mid = inv.getItem(4);
 			if (CakeLibrary.isItemStackNull(mid))
 				return;
-			if (!CakeLibrary.playerHasVacantSlots(player))
-			{
-				RPGCore.msg(player, "You do not have inventory space.");
+			if (player.getPlayer() == null)
 				return;
-			}
 			if (mid.getAmount() > 1)
 			{
-				RPGCore.msg(player, "You can only use crystals on one item at a time.");
+				RPGCore.msg(player.getPlayer(), "You can only use crystals on one item at a time.");
 				return;
 			}
 			RItem ri = new RItem(mid);
 			if (ri.bonusStat == null && type != BonusStatCrystal.STAT_ADDER)
 			{
-				RPGCore.msg(player, "This item does not have a bonus stat.");
+				RPGCore.msg(player.getPlayer(), "This item does not have a bonus stat.");
 				return;
 			}
 			if (!(ri.accessory || ri.magicDamage != 0 || ri.bruteDamage != 0 || ri.attackSpeed != 0
 					|| ri.cooldownReduction != 0 || ri.critChance != 0 || ri.critDamage != 0
 					|| ri.damageReduction != 0 || ri.recoverySpeed != 0 || ri.xpMultiplier != 0))
 			{
-				RPGCore.msg(player, "Only equipments or accessories can have bonus stats.");
+				RPGCore.msg(player.getPlayer(), "Only equipments or accessories can have bonus stats.");
 				return;
 			}
 			boolean success = ri.applyCrystal(type);
 			if (success)
 			{
 				inv.setItem(4, new ItemStack(Material.AIR));
-				player.getInventory().addItem(ri.createItem());
-				new RPGEvents.PlayEffect(Effect.STEP_SOUND, player, 20).run();
+				player.giveItem(ri);
+				new RPGEvents.PlayEffect(Effect.STEP_SOUND, player.getPlayer(), 20).run();
 
 				ItemStack crystal = inv.getItem(0);
 				if (crystal.getAmount() == 1)
 				{
 					inv.setItem(0, new ItemStack(Material.AIR));
-					player.closeInventory();
+					player.getPlayer().closeInventory();
 				} else {
 					ItemStack change = crystal.clone();
 					change.setAmount(crystal.getAmount() - 1);

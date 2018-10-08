@@ -3,6 +3,7 @@ package rpgcore.npc;
 import java.util.ArrayList;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -28,6 +29,7 @@ public class NPCConversation
 	public Inventory conversationUI;
 	public boolean closed;
 	public int lastClickedSlot = 4;
+	public int previewIndex = 0;
 	public static boolean useChat = false;
 	public static ArrayList<NPCConversation> conversations = new ArrayList<NPCConversation>();
 	public static ItemStack right = CakeLibrary.renameItem(new ItemStack(Material.STAINED_GLASS_PANE, 1, (short) 15), "&7<---");
@@ -71,6 +73,17 @@ public class NPCConversation
 		return lastClickedSlot >= 4 ? lastClickedSlot - 1 - index : lastClickedSlot + 1 + index;
 	}
 
+	public int getPreviewSlot()
+	{
+		/**
+		if (index % 2 == 0)
+			return 3 - (index / 2);
+		else
+			return 5 + (index / 2);
+		 */
+		return lastClickedSlot >= 4 ? lastClickedSlot + 1 + previewIndex++ : lastClickedSlot - 1 - previewIndex++;
+	}
+
 	public int checkCommands()
 	{
 		if (part == null)
@@ -86,18 +99,12 @@ public class NPCConversation
 		{
 			Shop shop = ShopManager.getShopWithDB(part.string.split(": ")[1]);
 			RPGEvents.scheduleRunnable(new RPGEvents.InventoryOpen(p, shop.getShopInventory()), 1);
-			if (part.next.size() <= 0)
-				part = null;
-			else
-				part = part.next.get(0);
+			part = part.next.size() <= 0 ? null : part.next.get(0);
 			return -1;
 		} else if (part.string.toLowerCase().startsWith("@ui: receptionist"))
 		{
 			RPGEvents.scheduleRunnable(new RPGEvents.InventoryOpen(p, GuildShop.getGuildShopInventory()), 1);
-			if (part.next.size() <= 0)
-				part = null;
-			else
-				part = part.next.get(0);
+			part = part.next.size() <= 0 ? null : part.next.get(0);
 			return -1;
 		} else if (part.string.toLowerCase().startsWith("@giveitem: "))
 		{
@@ -108,36 +115,33 @@ public class NPCConversation
 				RPGCore.msgConsole("&4Error while executing @giveitem in " + conversationData.npcName + "'s conversation data: &c" + vars[1] + " &4is not an existing RItem.");
 				return -1;
 			}
-			if (!CakeLibrary.playerHasVacantSlots(p))
-			{
-				RPGCore.msg(p, "Please clear up an inventory slot to receive an item!");
-				return -1;
-			}
-			p.getInventory().addItem(item.createItem());
-			if (part.next.size() <= 0)
-				part = null;
-			else
-				part = part.next.get(0);
+			player.giveItem(item);
+			part = part.next.size() <= 0 ? null : part.next.get(0);
 			return 0;
 		} else if (part.string.toLowerCase().startsWith("@setflag: "))
 		{
 			String[] vars = part.string.split(": ");
 			String[] vars1 = vars[1].split(", ");
 			player.npcFlags.put(vars1[0], vars1[1]);
-			if (part.next.size() <= 0)
-				part = null;
-			else
-				part = part.next.get(0);
+			part = part.next.size() <= 0 ? null : part.next.get(0);
 			RPGCore.playerManager.writeData(player);
 			return 0;
+		} else if (part.string.toLowerCase().startsWith("@preview: "))
+		{
+			part = part.next.size() <= 0 ? null : part.next.get(0);
+			return 0;
+		} else if (part.string.toLowerCase().startsWith("@teleport: "))
+		{
+			String[] vars = part.string.split(": ")[1].split(", ");
+			player.getPlayer().teleport(vars.length > 5 ? 
+					new Location(Bukkit.getWorld(vars[0]), Double.valueOf(vars[1]), Double.valueOf(vars[2]), Double.valueOf(vars[3]), Float.valueOf(vars[4]), Float.valueOf(vars[5]))
+					: new Location(player.getPlayer().getWorld(), Double.valueOf(vars[0]), Double.valueOf(vars[1]), Double.valueOf(vars[2]), Float.valueOf(vars[3]), Float.valueOf(vars[4])));
+			return -1;
 		} else if (part.string.toLowerCase().startsWith("@delflag: "))
 		{
 			String[] vars = part.string.split(": ");
 			player.npcFlags.remove(vars[1]);
-			if (part.next.size() <= 0)
-				part = null;
-			else
-				part = part.next.get(0);
+			part = part.next.size() <= 0 ? null : part.next.get(0);
 			RPGCore.playerManager.writeData(player);
 			return 0;
 		}
@@ -183,39 +187,43 @@ public class NPCConversation
 			conversationUI.setItem(i, left);
 		for (int i = lastClickedSlot + 1; i < 9; i++)
 			conversationUI.setItem(i, right);
+		previewIndex = 0;
 
 		ItemStack npc = new ItemStack(Material.SIGN);
 		String[] quotes = part.string.split("###");
 
-		String name = CakeLibrary.recodeColorCodes("&7\"&f" + quotes[0] + "&7\"&f");
+		boolean q = quotes[0].startsWith("\\");
+		String name = q ? 
+				CakeLibrary.recodeColorCodes(quotes[0].substring(1))
+				: CakeLibrary.recodeColorCodes("&7\"&f" + quotes[0] + "&7\"&f");
 		ArrayList<String> lines = new ArrayList<String>();
 		if (quotes.length > 1)
 		{
 			String[] split1 = quotes[0].split("##");
 			if (split1.length > 1)
 			{
-				name = CakeLibrary.recodeColorCodes("&7\"&f" + split1[0]);
+				name = q ? 
+						CakeLibrary.recodeColorCodes(split1[0].substring(1))
+						: CakeLibrary.recodeColorCodes("&7\"&f" + split1[0]);
 				for (int i = 1; i < split1.length; i++)
 				{
 					String s = "&f" + split1[i];
-					if (i == 0)
-						s = "&7\"" + s;
-					if (i == split1.length - 1)
+					if (i == split1.length - 1 && !q)
 						s += "&7\"&f";
 					lines.add(CakeLibrary.recodeColorCodes(s));
 				}
 			}
 			for (int index = 1; index < quotes.length; index++)
 			{
-				lines.add(CakeLibrary.recodeColorCodes("&f "));	
+				lines.add("§f ");	
 				String quote = quotes[index];
 				String[] split = quote.split("##");
 				for (int i = 0; i < split.length; i++)
 				{
 					String s = "&f" + split[i];
 					if (i == 0)
-						s = "&7\"" + s;
-					if (i == split.length - 1)
+						s = (q ? "" : "&7\"") + s;
+					if (i == split.length - 1 && !q)
 						s += "&7\"&f";
 					lines.add(CakeLibrary.recodeColorCodes(s));
 				}
@@ -225,20 +233,21 @@ public class NPCConversation
 			String[] split1 = quotes[0].split("##");
 			if (split1.length > 1)
 			{
-				name = CakeLibrary.recodeColorCodes("&7\"&f" + split1[0]);
+				name = q ? 
+						CakeLibrary.recodeColorCodes(split1[0].substring(1))
+						: CakeLibrary.recodeColorCodes("&7\"&f" + split1[0]);
 				for (int i = 1; i < split1.length; i++)
 				{
 					String s = "&f" + split1[i];
-					if (i == 0)
-						s = "&7\"" + s;
-					if (i == split1.length - 1)
+					if (i == split1.length - 1 && !q)
 						s += "&7\"&f";
 					lines.add(CakeLibrary.recodeColorCodes(s));
 				}
 			}
 		}
 
-		String suffix = CakeLibrary.recodeColorCodes("&c --> Exit <--");
+		String suffix = CakeLibrary.recodeColorCodes("&c --> &nExit&c <--");
+		String previewSuffix = "";
 		if (part.next.size() > 0 && part.next.get(0).type == ConversationPartType.PLAYER)
 			suffix = lastClickedSlot >= 4 ? CakeLibrary.recodeColorCodes("&e <-- Choose <-- ") : CakeLibrary.recodeColorCodes("&e --> Choose --> ");
 			else if (part.next.size() > 0)
@@ -247,18 +256,24 @@ public class NPCConversation
 				ConversationPart next = part.next.get(0);
 				try
 				{
-					while (next.string.startsWith("@setflag") || 
-							next.string.startsWith("@delflag") || 
-							next.string.startsWith("@giveitem") || 
-							next.string.startsWith("@exit"))
+					while (next.string.startsWith("@"))
+					{
+						if (next.string.startsWith("@preview: "))
+						{
+							conversationUI.setItem(getPreviewSlot(), RPGCore.getItemFromDatabase(next.string.split(": ")[1]).createItem());
+							previewSuffix = lastClickedSlot >= 4 ? CakeLibrary.recodeColorCodes("&b --> Preview --> ") : CakeLibrary.recodeColorCodes("&b <-- Preview <-- ");
+						}
 						next = next.next.get(0);
+					}
 					more = true;
 				} catch (Exception e) {}
 				if (more)
-					suffix = CakeLibrary.recodeColorCodes("&a --> Next -->");
+					suffix = CakeLibrary.recodeColorCodes("&a --> &nNext&a -->");
 			}
 
-		lines.add(CakeLibrary.recodeColorCodes("&f "));
+		lines.add("§f ");
+		if (previewSuffix.length() > 0)
+			lines.add(previewSuffix);
 		lines.add(suffix);
 
 		if (part.next.size() > 1)
@@ -268,62 +283,77 @@ public class NPCConversation
 				ArrayList<String> lines1 = new ArrayList<String>();
 				ConversationPart n = part.next.get(i);
 				ItemStack decision = new ItemStack(Material.PAPER);
-
-				String[] quotes1 = n.string.split("###");
-
-				String name1 = CakeLibrary.recodeColorCodes("&6\"&e" + quotes1[0] + "&6\"&e");
-				if (quotes1.length > 1)
+				
+				if (n.string.startsWith("!itemdecision: "))
 				{
-					String[] split1 = quotes1[0].split("##");
-					if (split1.length > 1)
+					try
 					{
-						name1 = CakeLibrary.recodeColorCodes("&6\"&e" + split1[0]);
-						for (int i2 = 1; i2 < split1.length; i2++)
-						{
-							String s = "&e" + split1[i2];
-							if (i2 == 0)
-								s = "&6\"" + s;
-							if (i2 == split1.length - 1)
-								s += "&6\"&e";
-							lines1.add(CakeLibrary.recodeColorCodes(s));
-						}
-					}
-					for (int index = 1; index < quotes1.length; index++)
+						decision = RPGCore.getItemFromDatabase(n.string.split(": ")[1]).createItem();
+					} catch (Exception e) 
 					{
-						lines1.add(CakeLibrary.recodeColorCodes("&e "));	
-						String quote = quotes1[index];
-						String[] split = quote.split("##");
-						for (int i2 = 0; i2 < split.length; i2++)
-						{
-							String s = "&e" + split[i2];
-							if (i2 == 0)
-								s = "&6\"" + s;
-							if (i2 == split.length - 1)
-								s += "&6\"&e";
-							lines1.add(CakeLibrary.recodeColorCodes(s));
-						}
+						RPGCore.msgConsole("Error while executing &4" + n.string + "&e, maybe the item does not exist?");
 					}
 				} else
 				{
-					String[] split1 = quotes1[0].split("##");
-					if (split1.length > 1)
+					String[] quotes1 = n.string.split("###");
+
+					boolean q1 = quotes1[0].startsWith("\\");
+					String name1 = q1 ? 
+							CakeLibrary.recodeColorCodes("&e" + quotes1[0])
+							: CakeLibrary.recodeColorCodes("&6\"&e" + quotes1[0] + "&6\"&e");
+					if (quotes1.length > 1)
 					{
-						name1 = CakeLibrary.recodeColorCodes("&6\"&e" + split1[0]);
-						for (int i2 = 1; i2 < split1.length; i2++)
+						String[] split1 = quotes1[0].split("##");
+						if (split1.length > 1)
 						{
-							String s = "&e" + split1[i2];
-							if (i2 == 0)
-								s = "&6\"" + s;
-							if (i2 == split1.length - 1)
-								s += "&6\"&e";
-							lines1.add(CakeLibrary.recodeColorCodes(s));
+							name1 = q1 ? 
+									CakeLibrary.recodeColorCodes(split1[0].substring(1))
+									: CakeLibrary.recodeColorCodes("&6\"&e" + split1[0]);
+							for (int i2 = 1; i2 < split1.length; i2++)
+							{
+								String s = "&e" + split1[i2];
+								if (i2 == split1.length - 1 && !q1)
+									s += "&6\"&e";
+								lines1.add(CakeLibrary.recodeColorCodes(s));
+							}
+						}
+						for (int index = 1; index < quotes1.length; index++)
+						{
+							lines1.add("§e ");	
+							String quote = quotes1[index];
+							String[] split = quote.split("##");
+							for (int i2 = 0; i2 < split.length; i2++)
+							{
+								String s = "&e" + split[i2];
+								if (i2 == 0)
+									s = (q1 ? "" : "&6\"") + s;
+								if (i2 == split.length - 1 && !q1)
+									s += "&6\"&e";
+								lines1.add(CakeLibrary.recodeColorCodes(s));
+							}
+						}
+					} else
+					{
+						String[] split1 = quotes1[0].split("##");
+						if (split1.length > 1)
+						{
+							name1 = q1 ? 
+									CakeLibrary.recodeColorCodes("&e" + split1[0].substring(1))
+									: CakeLibrary.recodeColorCodes("&6\"&e" + split1[0]);
+							for (int i2 = 1; i2 < split1.length; i2++)
+							{
+								String s = "&e" + split1[i2];
+								if (i2 == split1.length - 1 && !q1)
+									s += "&6\"&e";
+								lines1.add(CakeLibrary.recodeColorCodes(s));
+							}
 						}
 					}
-				}
 
-				decision = CakeLibrary.renameItem(decision, name1);
-				if (lines1.size() > 0)
-					decision = CakeLibrary.setItemLore(decision, lines1);
+					decision = CakeLibrary.renameItem(decision, name1);
+					if (lines1.size() > 0)
+						decision = CakeLibrary.setItemLore(decision, lines1);
+				}
 				conversationUI.setItem(getDecisionSlot(i), decision);
 			}
 		}

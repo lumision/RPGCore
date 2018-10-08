@@ -1,18 +1,12 @@
 package rpgcore.entities.minibosses;
 
-import java.util.ArrayList;
-
 import org.bukkit.Effect;
-import org.bukkit.Location;
-import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.util.Vector;
 
 import net.minecraft.server.v1_12_R1.EnumParticle;
 import rpgcore.entities.mobs.RPGMonster;
@@ -22,7 +16,7 @@ import rpgcore.main.RPGEvents;
 
 public class QueenSpider extends RPGMonster
 {
-	public static double maxHealth = 1200.0D;
+	public static double maxHealth = 3400.0D;
 	public static String name = CakeLibrary.recodeColorCodes("&d&lQueen Spider&7 Lv. 26");
 	
 	public static final int arcaneBeamDamage = 4;
@@ -66,7 +60,7 @@ public class QueenSpider extends RPGMonster
 
 		int r = rand.nextInt(10) + 1;
 		if (r <= 7)
-			castArcaneBeam();
+			castArcaneBeam(4, 16);
 		else if (r <= 8)
 			castSlow();
 		else
@@ -92,29 +86,6 @@ public class QueenSpider extends RPGMonster
 		{
 			Entity e = entity.getWorld().spawnEntity(entity.getLocation().add(rand.nextInt(5) - rand.nextInt(5), 2, rand.nextInt(5) - rand.nextInt(5)), EntityType.CAVE_SPIDER);
 			new RPGEvents.ParticleEffect(EnumParticle.FLAME, e, 0.5F, 16).run();
-		}
-	}
-
-	public void castArcaneBeam()
-	{
-		castDelay = arcaneBeamDelay;
-		
-		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
-		Vector vector = entity.getLocation().getDirection().normalize().multiply(0.75D);
-		int multiplier = 0;
-        entity.getWorld().playSound(entity.getEyeLocation(), Sound.BLOCK_ANVIL_LAND, 0.05F, 1.0F);
-		while (multiplier < 20)
-		{
-			multiplier++;
-			Location point = entity.getEyeLocation().add(vector.clone().multiply(multiplier));
-			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
-			{
-				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()), multiplier);
-				break;
-			}
-			RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0.1F, 3), multiplier);
-			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.05F, 1.25F), multiplier);
-			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, arcaneBeamDamage, entity, 20), multiplier);
 		}
 	}
 }

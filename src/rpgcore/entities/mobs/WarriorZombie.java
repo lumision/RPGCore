@@ -1,22 +1,12 @@
 package rpgcore.entities.mobs;
 
-import java.util.ArrayList;
-
-import org.bukkit.Effect;
-import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.Sound;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.util.Vector;
-
-import rpgcore.main.CakeLibrary;
-import rpgcore.main.RPGEvents;
 
 public class WarriorZombie extends RPGMonster
 {
@@ -57,27 +47,7 @@ public class WarriorZombie extends RPGMonster
 			return true;
 		if (castDelay > 0 || target == null)
 			return false;
-		castPowerPierce();
-		castDelay = 40;
+		castPowerPierce(4, 40);
 		return false;
-	}
-
-	public void castPowerPierce()
-	{
-		if (target.getLocation().distance(entity.getLocation()) > 4)
-			return;
-		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
-		Vector vector = entity.getLocation().getDirection().normalize();
-		int multiplier = 1;
-        entity.getWorld().playSound(entity.getEyeLocation(), Sound.ENTITY_GHAST_SHOOT, 0.2F, 1.5F);
-		while (multiplier < 7)
-		{
-			multiplier++;
-			Location point = entity.getEyeLocation().add(vector.clone().multiply(multiplier));
-			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
-				break;
-			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, 20), multiplier);
-			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, 4, entity, 20), multiplier);
-		}
 	}
 }

@@ -35,9 +35,9 @@ import rpgcore.skills.Wisdom;
 
 public class RPGClass 
 {
-	public static ArrayList<Integer> xpTable = new ArrayList<Integer>();
+	public static ArrayList<Double> xpTable = new ArrayList<Double>();
 	public ClassType classType;
-	public int xp;
+	public double xp;
 	public int lastCheckedLevel;
 	private boolean unlocked;
 	public static enum ClassType
@@ -70,8 +70,8 @@ public class RPGClass
 	public static void setXPTable()
 	{
 		xpTable.clear();
-		for (int i = 0; i < 100; i++)
-			xpTable.add((int) (Math.pow(i, 3) * 20));
+		for (int i = 0; i < 501; i++)
+			xpTable.add((Math.pow(i, 3) * 20));
 	}
 
 	public RPGClass(ClassType classType)
@@ -81,7 +81,7 @@ public class RPGClass
 
 	}
 
-	public RPGClass(ClassType classType, int xp)
+	public RPGClass(ClassType classType, double xp)
 	{
 		this.classType = classType;
 		this.xp = xp;
@@ -98,7 +98,7 @@ public class RPGClass
 		this.unlocked = b;
 	}
 
-	public static int getXPRequiredForLevel(int level)
+	public static double getXPRequiredForLevel(int level)
 	{
 		if (level < 0 || level >= xpTable.size())
 			return -1;
@@ -118,25 +118,34 @@ public class RPGClass
 		switch (classType)
 		{
 		case WARRIOR:
-			player.skills.add(PowerPierce.skillName);
-			player.skills.add(IronBody.skillName);
+			if (!player.skills.contains(PowerPierce.skillName))
+				player.skills.add(PowerPierce.skillName);
+			if (!player.skills.contains(IronBody.skillName))
+				player.skills.add(IronBody.skillName);
 			break;
 		case MAGE:
-			player.skills.add(ArcaneBolt.skillName);
-			player.skills.add(WindDrive.skillName);
+			if (!player.skills.contains(ArcaneBolt.skillName))
+				player.skills.add(ArcaneBolt.skillName);
+			if (!player.skills.contains(WindDrive.skillName))
+				player.skills.add(WindDrive.skillName);
 			break;
 		case PRIEST:
-			player.skills.add(HolyBolt.skillName);
-			player.skills.add(Heal1.skillName);
+			if (!player.skills.contains(HolyBolt.skillName))
+				player.skills.add(HolyBolt.skillName);
+			if (!player.skills.contains(Heal1.skillName))
+				player.skills.add(Heal1.skillName);
 			break;
 		case ASSASSIN:
-			player.skills.add(ShadowStab1.skillName);
+			if (!player.skills.contains(ShadowStab1.skillName))
+				player.skills.add(ShadowStab1.skillName);
+			if (!player.skills.contains(Leap.skillName))
+				player.skills.add(Leap.skillName);
 			break;
 		case ALL:
 			break;
 		}
 	}
-	
+
 	public static void unlockLevelSkills(RPlayer player)
 	{
 		int level = player.getCurrentClass().lastCheckedLevel;
@@ -155,8 +164,8 @@ public class RPGClass
 				player.learnSkill(RPGSkill.getSkill(Vitality2.skillName));
 			if (level >= 7)
 				player.learnSkill(RPGSkill.getSkill(Enrage.skillName));
-			
-			
+
+
 			if (level >= 11)
 				player.learnSkill(RPGSkill.getSkill(Vitality3.skillName));
 			break;
@@ -171,7 +180,7 @@ public class RPGClass
 				player.learnSkill(RPGSkill.getSkill(MagicMastery1.skillName));
 			if (level >= 8)
 				player.learnSkill(RPGSkill.getSkill(IceBolt.skillName));
-			
+
 			if (level >= 10)
 				player.learnSkill(RPGSkill.getSkill(Teleport1.skillName));
 			if (level >= 11)

@@ -12,6 +12,7 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.inventory.meta.SkullMeta;
@@ -31,6 +32,7 @@ import rpgcore.main.RPGCore;
 public class RItem
 {
 	public String databaseName;
+	public File file;
 
 	// BASE STATS
 	public int levelRequirement, magicDamage, bruteDamage, cooldownReduction, critChance, critDamage, damageReduction, recoverySpeed;
@@ -98,7 +100,7 @@ public class RItem
 
 	static final boolean tierLore = false;
 
-	static final float tierStatMultiplier = 1.2F;
+	static final float tierStatMultiplier = 1.3F;
 
 	public RItem(ItemStack is)
 	{
@@ -127,17 +129,17 @@ public class RItem
 	{
 		return (new RItem(createBaseItem())).compare(new RItem(other.createBaseItem()));
 	}
-
-	public boolean compare(RItem other)
+	
+	public static boolean compare(ItemStack item1, ItemStack item2)
 	{
-		if (!itemVanilla.getType().equals(other.itemVanilla.getType()))
+		if (!item1.getType().equals(item2.getType()))
 			return false;
 
-		if (itemVanilla.getDurability() != other.itemVanilla.getDurability())
+		if (item1.getDurability() != item2.getDurability())
 			return false;
 
-		ItemMeta im = itemVanilla.getItemMeta();
-		ItemMeta imOther = other.itemVanilla.getItemMeta();
+		ItemMeta im = item1.getItemMeta();
+		ItemMeta imOther = item2.getItemMeta();
 
 		if ((im.getDisplayName() == null) != (imOther.getDisplayName() == null))
 			return false;
@@ -152,11 +154,16 @@ public class RItem
 				return false;
 
 			for (int i = 0; i < im.getLore().size(); i++)
-				if (!CakeLibrary.removeColorCodes(im.getLore().get(i)).equals(CakeLibrary.removeColorCodes(imOther.getLore().get(i))))
+				if (!CakeLibrary.removeColorCodes(im.getLore().get(i).replaceAll(" ", ""))
+						.equals(CakeLibrary.removeColorCodes(imOther.getLore().get(i).replaceAll(" ", ""))))
 					return false;
 		}
-
 		return true;
+	}
+
+	public boolean compare(RItem other)
+	{
+		return compare(itemVanilla, other.itemVanilla);
 	}
 
 	public void setItemStats(ItemStack is)
@@ -684,12 +691,12 @@ public class RItem
 		addedBruteDamage = (int) b - bruteDamage;
 	}
 
-	public void saveItemToFile(String fileName)
+	public void saveToFile(String fileName)
 	{
-		saveItemToFile(new File("plugins/RPGCore/items/" + fileName + ".yml"));
+		saveToFile(new File("plugins/RPGCore/items/" + fileName + ".yml"));
 	}
 
-	public void saveItemToFile(File file)
+	public void saveToFile(File file)
 	{
 		ArrayList<String> lines = new ArrayList<String>();
 		lines.add("id: " + itemVanilla.getTypeId());
@@ -705,8 +712,11 @@ public class RItem
 		ItemMeta im = itemVanilla.getItemMeta();
 		if (im != null)
 		{
-			if (im.spigot().isUnbreakable())
-				lines.add("unbreakable: " + true);
+			try
+			{
+				if (im.spigot().isUnbreakable())
+					lines.add("unbreakable: " + true);
+			} catch (Exception e) {}
 			lines.add("");
 			String name = im.getDisplayName();
 			if (name != null)
@@ -716,12 +726,25 @@ public class RItem
 			{
 				lines.add("lore: ");
 				for (String s: lore)
-					lines.add(" " + (CakeLibrary.removeColorCodes(s).length() <= 0 ? s + " " : s));
+				{
+					if (CakeLibrary.removeColorCodes(s).equals(" "))
+						s = s.replaceAll(" ", "");
+					lines.add(" " + s);
+				}
 			}
 			if (im instanceof LeatherArmorMeta)
 			{
 				Color c = ((LeatherArmorMeta) im).getColor();
 				lines.add("leatherArmorColor: " + c.getRed() + ", " + c.getGreen() + ", " + c.getBlue());
+			}
+			if (im instanceof BookMeta)
+			{
+				BookMeta bm = (BookMeta) im;
+				lines.add("bookAuthor: " + bm.getAuthor());
+				lines.add("bookTitle: " + bm.getTitle());
+				lines.add("bookPages: ");
+				for (String page: bm.getPages())
+					lines.add(" " + page);
 			}
 		}
 
@@ -774,7 +797,7 @@ public class RItem
 		return (int) damage;
 	}
 
-	public static RItem readRItemFile(File file)
+	public static RItem readFromFile(File file)
 	{
 		try
 		{
@@ -788,6 +811,9 @@ public class RItem
 			int green = -1;
 			int blue = -1;
 			String headTexture = null;
+			List<String> bookPages = new ArrayList<String>();
+			String bookTitle = null;
+			String bookAuthor = null;
 
 			String name = null;
 			ArrayList<String> lore = new ArrayList<String>();
@@ -805,38 +831,47 @@ public class RItem
 					split[0] = split[0].substring(1);
 					line = line.substring(1);
 					if (header.equals("lore: "))
+					{
+						if (CakeLibrary.removeColorCodes(line).equals(" "))
+							line = line.replaceAll(" ", "");
 						lore.add(line);
+					}
 					else if (header.equals("enchantments: "))
 					{
 						enchs.add(Enchantment.getById(Integer.valueOf(split[0])));
 						levels.add(Integer.valueOf(split[1]));
-					}
+					} else if (header.equals("bookPages: "))
+						bookPages.add(line);
 				} else
 				{
 					header = line;
 					if (line.startsWith("id: "))
 						id = Integer.valueOf(split[1]);
-					if (line.startsWith("amount: "))
+					else if (line.startsWith("amount: "))
 						amount = Integer.valueOf(split[1]);
-					if (line.startsWith("durability: "))
+					else if (line.startsWith("durability: "))
 						durability = Short.valueOf(split[1]);
-					if (line.startsWith("unbreakable: "))
+					else if (line.startsWith("unbreakable: "))
 						unbreakable = Boolean.valueOf(split[1]);
-					if (line.startsWith("tier: "))
+					else if (line.startsWith("tier: "))
 						tier = Integer.valueOf(split[1]);
-					if (line.startsWith("dropRoll: "))
+					else if (line.startsWith("dropRoll: "))
 						dropRoll = Integer.valueOf(split[1]);
-					if (line.startsWith("headTexture: "))
+					else if (line.startsWith("headTexture: "))
 						headTexture = split[1];
-					if (line.startsWith("name: "))
+					else if (line.startsWith("name: "))
 						name = split[1];
-					if (line.startsWith("leatherArmorColor: "))
+					else if (line.startsWith("leatherArmorColor: "))
 					{
 						String[] args = split[1].split(", ");
 						red = Integer.valueOf(args[0]);
 						green = Integer.valueOf(args[1]);
 						blue = Integer.valueOf(args[2]);
 					}
+					else if (line.startsWith("bookTitle: "))
+						bookTitle = split[1];
+					else if (line.startsWith("bookAuthor: "))
+						bookAuthor = split[1];
 				}
 			}
 
@@ -865,11 +900,21 @@ public class RItem
 				lim.setColor(Color.fromRGB(red, green, blue));
 				item.setItemMeta(lim);
 			}
+			
+			if (bookPages.size() > 0)
+			{
+				BookMeta bm = (BookMeta) im;
+				bm.setPages(bookPages);
+				bm.setAuthor(bookAuthor);
+				bm.setTitle(bookTitle);
+				item.setItemMeta(bm);
+			}
 
 			for (int i = 0; i < enchs.size(); i++)
 				item.addUnsafeEnchantment(enchs.get(i), levels.get(i));
 
 			RItem ri = new RItem(item, file.getName().substring(0, file.getName().length() - 4));
+			ri.file = file;
 			ri.setTier(tier);
 			ri.headTexture = headTexture;
 			ri.dropRoll = dropRoll;
@@ -890,13 +935,13 @@ public class RItem
 		{
 		case STAT_ADDER:
 		{
+			if (tier < 3)
+				return false;
 			if (bonusStat != null)
 				return false;
 			ArrayList<BonusStatType> list = new ArrayList<BonusStatType>();
 			ArrayList<Boolean> listLower = new ArrayList<Boolean>();
 			list.add(BonusStatType.rollRandomStat());
-			list.add(BonusStatType.rollRandomStat());
-			listLower.add(BonusStat.rand.nextBoolean());
 			listLower.add(BonusStat.rand.nextBoolean());
 			bonusStat = new BonusStat(1, list, listLower);
 			return true;
@@ -915,9 +960,9 @@ public class RItem
 		}
 		case LINE_AMOUNT_ADDER:
 		{
-			if (bonusStat == null)
+			if (tier - 3 - bonusStat.statLines.size() < 0)
 				return false;
-			if (bonusStat.statLines.size() >= 3)
+			if (bonusStat == null)
 				return false;
 			bonusStat.statLines.add(BonusStatType.rollRandomStat());
 			bonusStat.statLower.add(BonusStat.rand.nextBoolean());
@@ -927,9 +972,20 @@ public class RItem
 		{
 			if (bonusStat == null)
 				return false;
-			if (bonusStat.tier == 5)
+			if (bonusStat.tier >= 3)
 				return false;
 			if (rand.nextInt(BonusStat.tierIncreaseRoll) != 0)
+				return true;
+			bonusStat.tier++;
+			return true;
+		}
+		case TIER_REROLL_GREATER:
+		{
+			if (bonusStat == null)
+				return false;
+			if (bonusStat.tier >= 5)
+				return false;
+			if (rand.nextInt(BonusStat.tierIncreaseRollGreater) != 0)
 				return true;
 			bonusStat.tier++;
 			return true;

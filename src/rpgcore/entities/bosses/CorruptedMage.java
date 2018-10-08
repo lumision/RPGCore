@@ -30,7 +30,7 @@ import rpgcore.skills.RPGSkill.SkillEffect;
 
 public class CorruptedMage extends RPGMonster
 {
-	public static double maxHealth = 35280.0D;
+	public static double maxHealth = 70000.0D;
 	public static String name = "§3Corrupted Mage §7Lv. 42";
 
 	public static final int arcaneBeamDamage = 6;
