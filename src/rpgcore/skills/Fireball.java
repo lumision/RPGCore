@@ -25,25 +25,15 @@ public class Fireball extends RPGSkill
 	public final static ClassType classType = ClassType.MAGE;
 	public final static float damage = 2.4F;
 	public final static int debuffLength = 10 * 20;
-	public Fireball(RPlayer caster)
+	public Fireball()
 	{
-		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new Fireball(rp));
+		new FireballE(this, player);
 	}
 
 	@Override
@@ -67,7 +57,6 @@ public class Fireball extends RPGSkill
 	
 	public void activate()
 	{
-		new FireballE(this);
 	}
 	
 	public static class FireballE extends SkillEffect
@@ -75,15 +64,15 @@ public class Fireball extends RPGSkill
 		Location origin;
 		Vector vector;
 		ArrayList<LivingEntity> hit;
-		public FireballE(RPGSkill skill)
+		public FireballE(RPGSkill skill, RPlayer player)
 		{
-			super(skill);
+			super(skill, player);
 			
-			origin = skill.player.getEyeLocation();
-			vector = skill.player.getLocation().getDirection().normalize().multiply(0.75F).clone();
+			origin = player.getPlayer().getEyeLocation();
+			vector = player.getPlayer().getLocation().getDirection().normalize().multiply(0.75F).clone();
 			hit = new ArrayList<LivingEntity>();
 			
-			skill.player.getWorld().playSound(skill.player.getEyeLocation(), Sound.ENTITY_GHAST_SHOOT, 0.2F, 0.8F);
+			player.getPlayer().getWorld().playSound(player.getPlayer().getEyeLocation(), Sound.ENTITY_GHAST_SHOOT, 0.2F, 0.8F);
 		}
 
 		@Override
@@ -107,7 +96,7 @@ public class Fireball extends RPGSkill
 					new RPGEvents.ParticleEffect(EnumParticle.FLAME, point, 0.5F, 32).run();
 					for (LivingEntity entity: splash)
 					{
-						new RPGEvents.ApplyDamage(skill.player, entity, RPlayer.varyDamage(skill.getUnvariedDamage())).run();
+						new RPGEvents.ApplyDamage(player.getPlayer(), entity, RPlayer.varyDamage(skill.getUnvariedDamage(player))).run();
 						new RPGEvents.PlayEffect(Effect.STEP_SOUND, entity, 11).run();
 						entity.setFireTicks(debuffLength);
 					}

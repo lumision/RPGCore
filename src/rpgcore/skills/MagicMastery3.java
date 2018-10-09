@@ -16,7 +16,7 @@ public class MagicMastery3 extends RPGSkill
 	
 	public MagicMastery3()
 	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override

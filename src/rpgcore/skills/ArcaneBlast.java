@@ -22,47 +22,15 @@ public class ArcaneBlast extends RPGSkill
 	public final static ClassType classType = ClassType.MAGE;
 	public final static float damage = 1.7F;
 	public final static int radius = 4;
-	public ArcaneBlast(RPlayer caster)
+	public ArcaneBlast()
 	{
-		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new ArcaneBlast(rp));
-	}
-
-	@Override
-	public ItemStack getSkillItem()
-	{
-		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.INK_SACK, 1, (short) 15), 
-				"&dArcane Blast"),
-				"&7Damage: " + (int) (damage * 100.0D) + "%",
-				"&7Radius: " + radius + " blocks",
-				"&7Interval: " + (castDelay / 20.0F) + "s",
-				"&f",
-				"&8&oBlast a plane of arcane energy",
-				"&8&ounto the target area.",
-				"&f",
-				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
-				"&7Class: " + classType.getClassName());
-	}
-
-	@Override
-	public void activate()
-	{
-		Location target = player.getTargetBlock(CakeLibrary.getPassableBlocks(), 32).getLocation();
+		Location target = player.getPlayer().getTargetBlock(CakeLibrary.getPassableBlocks(), 32).getLocation();
 		
 		int x = -radius;
 		int z = 0;
@@ -93,7 +61,23 @@ public class ArcaneBlast extends RPGSkill
 			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, l, 20), -x + radius);
 		}
 		
-		new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(new ArrayList<LivingEntity>(), target, radius, getUnvariedDamage(), player, 20).run();
+		new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(new ArrayList<LivingEntity>(), target, radius, getUnvariedDamage(player), player.getPlayer(), 20).run();
 
+	}
+
+	@Override
+	public ItemStack getSkillItem()
+	{
+		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.INK_SACK, 1, (short) 15), 
+				"&dArcane Blast"),
+				"&7Damage: " + (int) (damage * 100.0D) + "%",
+				"&7Radius: " + radius + " blocks",
+				"&7Interval: " + (castDelay / 20.0F) + "s",
+				"&f",
+				"&8&oBlast a plane of arcane energy",
+				"&8&ounto the target area.",
+				"&f",
+				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
+				"&7Class: " + classType.getClassName());
 	}
 }

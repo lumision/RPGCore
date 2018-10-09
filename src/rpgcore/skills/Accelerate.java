@@ -24,25 +24,21 @@ public class Accelerate extends RPGSkill
 	public final static Stats buffStats = Stats.createStats("&bAccelerate", new ItemStack(Material.FEATHER, 1))
 			.setAttackSpeedMultiplier(1.2F)
 			.setBuffDuration(5 * 60 * 20);
-	public Accelerate(RPlayer caster)
+	public Accelerate()
 	{
-		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new Accelerate(rp));
+		super.applyCooldown(player, cooldown);
+		Buff b = Buff.createBuff(buffStats);
+		if (player.partyID == -1)
+			applyEffect(player, b);
+		else
+			for (RPlayer partyMember: RPGCore.partyManager.getParty(player.partyID).players)
+				applyEffect(partyMember, b);
 	}
 
 	@Override
@@ -64,25 +60,13 @@ public class Accelerate extends RPGSkill
 				"&7Class: " + classType.getClassName());
 	}
 
-	@Override
-	public void activate()
+	public static void applyEffect(RPlayer player, Buff b)
 	{
-		super.applyCooldown(cooldown);
-		Buff b = Buff.createBuff(buffStats);
-		if (caster.partyID == -1)
-			applyEffect(caster, b);
-		else
-			for (RPlayer partyMember: RPGCore.partyManager.getParty(caster.partyID).players)
-				applyEffect(partyMember, b);
-	}
-
-	public static void applyEffect(RPlayer rp, Buff b)
-	{
-		Player p = rp.getPlayer();
+		Player p = player.getPlayer();
 		if (p == null)
 			return;
 		RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 20), 0);
-		b.applyBuff(rp);
-		rp.updateScoreboard = true;
+		b.applyBuff(player);
+		player.updateScoreboard = true;
 	}
 }

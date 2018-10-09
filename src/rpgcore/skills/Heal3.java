@@ -1,5 +1,6 @@
 package rpgcore.skills;
 
+import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -19,25 +20,20 @@ public class Heal3 extends RPGSkill
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.PRIEST;
 	public final static float healAmount = 4;
-	public Heal3(RPlayer caster)
+	public Heal3()
 	{
-		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier, "Heal");
+		super(skillName, passiveSkill, castDelay, 0, classType, skillTier, "Heal");
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new Heal3(rp));
+		super.applyCooldown(player, 3);
+		if (player.partyID == -1)
+			applyEffect(player, player.getPlayer(), healAmount);
+		else
+			for (RPlayer partyMember: RPGCore.partyManager.getParty(player.partyID).players)
+				applyEffect(partyMember, player.getPlayer(), healAmount);
 	}
 
 	@Override
@@ -55,29 +51,16 @@ public class Heal3 extends RPGSkill
 				"&7Class: " + classType.getClassName());
 	}
 
-	@Override
-	public void activate()
+	public static void applyEffect(RPlayer player, Player caster, double healAmount)
 	{
-		super.applyCooldown(3);
-		if (caster.partyID == -1)
-			applyEffect(caster, player, healAmount);
-		else
-			for (RPlayer partyMember: RPGCore.partyManager.getParty(caster.partyID).players)
-				applyEffect(partyMember, player, healAmount);
-	}
-
-	public static void applyEffect(RPlayer rp, Player caster, double healAmount)
-	{
-		Player player = rp.getPlayer();
-		if (player == null)
-			return;
-		if (player.getLocation().distance(caster.getLocation()) > 16.0D)
+		Location l = player.getPlayer().getLocation();
+		if (l.distance(caster.getLocation()) > 16.0D)
 			return;
 		for (int i = 0; i < 3; i++)
-			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.2F, 0.8F + (i * 0.2F)), i * 2);
-		new RPGEvents.ParticleEffect(EnumParticle.BLOCK_CRACK, player.getLocation().add(0, 1.25D, 0), 0.5F, 32, 0, 35).run();
-		double health = player.getHealth();
+			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(l, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.2F, 0.8F + (i * 0.2F)), i * 2);
+		new RPGEvents.ParticleEffect(EnumParticle.BLOCK_CRACK, l.add(0, 1.25D, 0), 0.5F, 32, 0, 35).run();
+		double health = player.getPlayer().getHealth();
 		health += healAmount;
-		player.setHealth(health > player.getMaxHealth() ? player.getMaxHealth() : health);
+		player.getPlayer().setHealth(health > player.getPlayer().getMaxHealth() ? player.getPlayer().getMaxHealth() : health);
 	}
 }

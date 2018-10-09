@@ -16,7 +16,7 @@ public class Vigor5 extends RPGSkill
 	
 	public Vigor5()
 	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override

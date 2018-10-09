@@ -23,25 +23,15 @@ public class ArcaneBeam extends RPGSkill
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.MAGE;
 	public final static float damage = 2.2F;
-	public ArcaneBeam(RPlayer caster)
+	public ArcaneBeam()
 	{
-		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new ArcaneBeam(rp));
+		new ArcaneBeamE(this, player);
 	}
 
 	@Override
@@ -59,25 +49,20 @@ public class ArcaneBeam extends RPGSkill
 				"&7Class: " + classType.getClassName());
 	}
 	
-	public void activate()
-	{
-		new ArcaneBeamE(this);
-	}
-	
 	public static class ArcaneBeamE extends SkillEffect
 	{
 		Location origin;
 		Vector vector;
 		ArrayList<LivingEntity> hit;
-		public ArcaneBeamE(RPGSkill skill)
+		public ArcaneBeamE(RPGSkill skill, RPlayer player)
 		{
-			super(skill);
+			super(skill, player);
 			
-			origin = skill.player.getEyeLocation();
-			vector = skill.player.getLocation().getDirection().normalize().multiply(0.75F).clone();
+			origin = player.getPlayer().getEyeLocation();
+			vector = player.getPlayer().getLocation().getDirection().normalize().multiply(0.75F).clone();
 			hit = new ArrayList<LivingEntity>();
 			
-			skill.player.getWorld().playSound(skill.player.getEyeLocation(), Sound.BLOCK_ANVIL_LAND, 0.05F, 1.0F);
+			player.getPlayer().getWorld().playSound(player.getPlayer().getEyeLocation(), Sound.BLOCK_ANVIL_LAND, 0.05F, 1.0F);
 		}
 
 		@Override
@@ -99,7 +84,7 @@ public class ArcaneBeam extends RPGSkill
 				{
 					for (LivingEntity entity: splash)
 					{
-						new RPGEvents.ApplyDamage(skill.player, entity, RPlayer.varyDamage(skill.getUnvariedDamage())).run();
+						new RPGEvents.ApplyDamage(player.getPlayer(), entity, RPlayer.varyDamage(skill.getUnvariedDamage(player))).run();
 						new RPGEvents.PlayEffect(Effect.STEP_SOUND, entity, 20).run();
 					}
 					return true;

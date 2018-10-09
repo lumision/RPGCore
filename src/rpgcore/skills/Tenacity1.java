@@ -15,7 +15,7 @@ public class Tenacity1 extends RPGSkill
 	
 	public Tenacity1()
 	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override

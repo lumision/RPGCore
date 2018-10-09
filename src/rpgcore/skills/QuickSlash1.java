@@ -24,25 +24,46 @@ public class QuickSlash1 extends RPGSkill
 	public final static float damage = 2.6F;
 	public final static int cooldown = 2;
 	public final static int size = 7;
-	public QuickSlash1(RPlayer caster)
+	public QuickSlash1()
 	{
-		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new QuickSlash1(rp));
+		super.applyCooldown(player, 2);
+		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
+		
+		Location horizon = player.getPlayer().getLocation();
+		horizon.setYaw(horizon.getYaw() - 100F);
+		horizon.setPitch(25F);
+		
+		Vector slashDirection = horizon.getDirection().normalize().multiply(0.5D);
+		Vector direction = player.getPlayer().getLocation().getDirection().normalize();
+		Location startPointCenter = player.getPlayer().getEyeLocation();
+		
+		int multiplier = 1;
+		while (multiplier < 5)
+		{
+			startPointCenter = startPointCenter.add(direction);
+			if (CakeLibrary.getNearbyLivingEntitiesExcludePlayers(startPointCenter, 1.0D).size() > 0)
+				break;
+			multiplier++;
+		}
+		
+		Location startPoint = startPointCenter.clone().add(slashDirection.clone().multiply(-size));
+		
+		multiplier = 1;
+        player.getPlayer().getWorld().playSound(player.getPlayer().getEyeLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.4F, 0.8F);
+		while (multiplier < size * 2)
+		{
+			multiplier++;
+			Location point = startPoint.clone().add(slashDirection.clone().multiply(multiplier));
+			new RPGEvents.FireworkTrail(point, 0, 1).run();
+			if (multiplier % 2 == 0)
+			new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, getUnvariedDamage(player), player.getPlayer(), 20).run();
+		}
 	}
 
 	@Override
@@ -57,42 +78,5 @@ public class QuickSlash1 extends RPGSkill
 				"&f",
 				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
-	}
-
-	@Override
-	public void activate()
-	{
-		super.applyCooldown(2);
-		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
-		
-		Location horizon = player.getLocation();
-		horizon.setYaw(horizon.getYaw() - 100F);
-		horizon.setPitch(25F);
-		
-		Vector slashDirection = horizon.getDirection().normalize().multiply(0.5D);
-		Vector direction = player.getLocation().getDirection().normalize();
-		Location startPointCenter = player.getEyeLocation();
-		
-		int multiplier = 1;
-		while (multiplier < 5)
-		{
-			startPointCenter = startPointCenter.add(direction);
-			if (CakeLibrary.getNearbyLivingEntitiesExcludePlayers(startPointCenter, 1.0D).size() > 0)
-				break;
-			multiplier++;
-		}
-		
-		Location startPoint = startPointCenter.clone().add(slashDirection.clone().multiply(-size));
-		
-		multiplier = 1;
-        player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.4F, 0.8F);
-		while (multiplier < size * 2)
-		{
-			multiplier++;
-			Location point = startPoint.clone().add(slashDirection.clone().multiply(multiplier));
-			new RPGEvents.FireworkTrail(point, 0, 1).run();
-			if (multiplier % 2 == 0)
-			new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, getUnvariedDamage(), player, 20).run();
-		}
 	}
 }

@@ -18,7 +18,7 @@ public class LightFeet extends RPGSkill
 	
 	public LightFeet()
 	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override

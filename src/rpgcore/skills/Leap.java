@@ -18,25 +18,21 @@ public class Leap extends RPGSkill
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.WARRIOR;
 	public final static int cooldown = 2;
-	public Leap(RPlayer caster)
+	public Leap()
 	{
-		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new Leap(rp));
+		Location location = player.getPlayer().getLocation();
+		Vector vector = location.getDirection();
+		vector.setY(0.5f);
+		player.getPlayer().setVelocity(vector);
+		player.getPlayer().setFallDistance(0);
+		location.getWorld().playEffect(location, Effect.STEP_SOUND, 20);
+		super.applyCooldown(player, cooldown);
 	}
 
 	@Override
@@ -52,17 +48,5 @@ public class Leap extends RPGSkill
 				"&f",
 				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
-	}
-
-	@Override
-	public void activate()
-	{
-		Location location = player.getLocation();
-		Vector vector = location.getDirection();
-		vector.setY(0.5f);
-		player.setVelocity(vector);
-		player.setFallDistance(0);
-		location.getWorld().playEffect(location, Effect.STEP_SOUND, 20);
-		super.applyCooldown(cooldown);
 	}
 }

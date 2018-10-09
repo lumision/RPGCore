@@ -24,25 +24,17 @@ public class Enrage extends RPGSkill
 			.setBruteDamageMultiplier(1.3F)
 			.setAttackSpeedMultiplier(1.3F)
 			.setBuffDuration(60 * 20);
-	public Enrage(RPlayer caster)
+	public Enrage()
 	{
-		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new Enrage(rp));
+		super.applyCooldown(player, cooldown);
+		Buff b = Buff.createBuff(buffStats);
+		applyEffect(player, b);
 	}
 
 	@Override
@@ -64,21 +56,13 @@ public class Enrage extends RPGSkill
 				"&7Class: " + classType.getClassName());
 	}
 
-	@Override
-	public void activate()
+	public static void applyEffect(RPlayer player, Buff b)
 	{
-		super.applyCooldown(cooldown);
-		Buff b = Buff.createBuff(buffStats);
-		applyEffect(caster, b);
-	}
-
-	public static void applyEffect(RPlayer rp, Buff b)
-	{
-		Player p = rp.getPlayer();
+		Player p = player.getPlayer();
 		if (p == null)
 			return;
 		RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 152), 0);
-		b.applyBuff(rp);
-		rp.updateScoreboard = true;
+		b.applyBuff(player);
+		player.updateScoreboard = true;
 	}
 }

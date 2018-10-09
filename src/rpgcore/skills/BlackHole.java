@@ -16,25 +16,14 @@ public class BlackHole extends RPGSkill
 	public final static ClassType classType = ClassType.MAGE;
 	public final static float damage = 12.86F;
 	public final static int radius = 16;
-	public BlackHole(RPlayer caster)
+	public BlackHole()
 	{
-		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new BlackHole(rp));
 	}
 
 	@Override
@@ -56,6 +45,5 @@ public class BlackHole extends RPGSkill
 	@Override
 	public void activate()
 	{
-		super.applyCooldown(60);
 	}
 }

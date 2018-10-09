@@ -23,25 +23,41 @@ public class TripleKunai extends RPGSkill
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.ASSASSIN;
 	public final static float damage = 2.8F;
-	public TripleKunai(RPlayer caster)
+	public TripleKunai()
 	{
-		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new TripleKunai(rp));
+		super.applyCooldown(player, 2);
+
+		Vector vector1 = player.getPlayer().getLocation().getDirection();
+		for (int i = 0; i < 3; i++)
+		{
+			ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
+			Vector vector = i == 0 ? vector1.clone() :
+				i == 1 ? vector1.clone().setX(vector1.getX() - 0.25D).setZ(vector1.getZ() - 0.25D) :
+					vector1.clone().setX(vector1.getX() + 0.25D).setZ(vector1.getZ() + 0.25D);
+				vector.normalize().multiply(0.5D);
+				int multiplier = 0;
+				player.getPlayer().getWorld().playSound(player.getPlayer().getEyeLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.2F, 1.0F);
+				while (multiplier < 24)
+				{
+					multiplier++;
+					Location point = player.getPlayer().getEyeLocation().add(vector.clone().multiply(multiplier));
+					if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
+					{
+						RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()), multiplier);
+						break;
+					}
+					RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0, 1), multiplier / 3);
+					if (i == 0)
+						RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.1F, 1.25F), multiplier/ 3);
+					RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 0.75D, getUnvariedDamage(player), player.getPlayer(), 20), multiplier / 3);
+				}
+		}
 	}
 
 	@Override
@@ -56,37 +72,5 @@ public class TripleKunai extends RPGSkill
 				"&f",
 				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
-	}
-
-	@Override
-	public void activate()
-	{
-		super.applyCooldown(2);
-
-		Vector vector1 = player.getLocation().getDirection();
-		for (int i = 0; i < 3; i++)
-		{
-			ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
-			Vector vector = i == 0 ? vector1.clone() :
-				i == 1 ? vector1.clone().setX(vector1.getX() - 0.25D).setZ(vector1.getZ() - 0.25D) :
-					vector1.clone().setX(vector1.getX() + 0.25D).setZ(vector1.getZ() + 0.25D);
-				vector.normalize().multiply(0.5D);
-				int multiplier = 0;
-				player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.2F, 1.0F);
-				while (multiplier < 24)
-				{
-					multiplier++;
-					Location point = player.getEyeLocation().add(vector.clone().multiply(multiplier));
-					if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
-					{
-						RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()), multiplier);
-						break;
-					}
-					RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0, 1), multiplier / 3);
-					if (i == 0)
-						RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.1F, 1.25F), multiplier/ 3);
-					RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 0.75D, getUnvariedDamage(), player, 20), multiplier / 3);
-				}
-		}
 	}
 }

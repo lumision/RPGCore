@@ -30,25 +30,42 @@ public class Lightning extends RPGSkill
 	public final static int cooldown = 4;
 	public final static FireworkEffect fe = 
 			FireworkEffect.builder().with(Type.BURST).withColor(Color.YELLOW).withColor(Color.WHITE).withColor(Color.GRAY).build();
-	public Lightning(RPlayer caster)
+	public Lightning()
 	{
-		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new Lightning(rp));
+		super.applyCooldown(player, cooldown);
+		Location target = player.getPlayer().getTargetBlock(CakeLibrary.getPassableBlocks(), 16).getLocation();
+		
+		Vector direction = player.getPlayer().getLocation().getDirection().normalize();
+		int check = 0;
+		boolean b = false;
+		while (check < 16)
+		{
+			check++;
+			Location point1 = player.getPlayer().getEyeLocation().add(direction.clone().multiply(check));
+			ArrayList<LivingEntity> nearby = CakeLibrary.getNearbyLivingEntities(point1, 1.0F);
+			for (LivingEntity n: nearby)
+				if (!(n instanceof Player))	
+				{
+					b = true;
+					target = n.getEyeLocation();
+					break;
+				}
+			if (b)
+				break;
+		}
+		
+		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
+        player.getPlayer().getWorld().playSound(player.getPlayer().getEyeLocation(), Sound.BLOCK_STONE_BREAK, 1.0F, 0.5F);
+        player.getPlayer().getWorld().playSound(target, Sound.ENTITY_LIGHTNING_IMPACT, 0.3F, 1.0F);
+        player.getPlayer().getWorld().playSound(target, Sound.ENTITY_LIGHTNING_THUNDER, 0.3F, 1.0F);
+        new RPGEvents.PlayLightningEffect(target).run();
+        new RPGEvents.AOEDetectionAttackWithFireworkEffect(hit, target, 5, getUnvariedDamage(player), player.getPlayer(), fe).run();
 	}
 
 	@Override
@@ -65,37 +82,5 @@ public class Lightning extends RPGSkill
 				"&f",
 				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
-	}
-	
-	public void activate()
-	{
-		super.applyCooldown(cooldown);
-		Location target = player.getTargetBlock(CakeLibrary.getPassableBlocks(), 16).getLocation();
-		
-		Vector direction = player.getLocation().getDirection().normalize();
-		int check = 0;
-		boolean b = false;
-		while (check < 16)
-		{
-			check++;
-			Location point1 = player.getEyeLocation().add(direction.clone().multiply(check));
-			ArrayList<LivingEntity> nearby = CakeLibrary.getNearbyLivingEntities(point1, 1.0F);
-			for (LivingEntity n: nearby)
-				if (!(n instanceof Player))	
-				{
-					b = true;
-					target = n.getEyeLocation();
-					break;
-				}
-			if (b)
-				break;
-		}
-		
-		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
-        player.getWorld().playSound(player.getEyeLocation(), Sound.BLOCK_STONE_BREAK, 1.0F, 0.5F);
-        player.getWorld().playSound(target, Sound.ENTITY_LIGHTNING_IMPACT, 0.3F, 1.0F);
-        player.getWorld().playSound(target, Sound.ENTITY_LIGHTNING_THUNDER, 0.3F, 1.0F);
-        new RPGEvents.PlayLightningEffect(target).run();
-        new RPGEvents.AOEDetectionAttackWithFireworkEffect(hit, target, 5, getUnvariedDamage(), player, fe).run();;
 	}
 }

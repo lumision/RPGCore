@@ -25,49 +25,18 @@ public class BladeStorm extends RPGSkill
 	public final static float damage = 1.2F;
 	public final static int hits = 16;
 	public final static int cooldown = 6;
-	public BladeStorm(RPlayer caster)
+	public BladeStorm()
 	{
-		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new BladeStorm(rp));
-	}
-
-	@Override
-	public ItemStack getSkillItem()
-	{
-		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.GHAST_TEAR), 
-				"&4Blade Storm"),
-				"&7Damage: " + (int) (damage * 100.0F) + "% x " + hits + " Hits",
-				"&7Radius: 2 blocks",
-				"&7Cooldown: " + cooldown + "s",
-				"&f",
-				"&8&oSummon a set of blades",
-				"&8&oto fall around you.",
-				"&f",
-				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
-				"&7Class: " + classType.getClassName());
-	}
-	
-	public void activate()
-	{
-		super.applyCooldown(cooldown);
-		Location target = player.getLocation();
+		super.applyCooldown(player, cooldown);
+		Location target = player.getPlayer().getLocation();
 		int delay = 0;
-        player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_CREEPER_DEATH, 1.0F, 0.7F);
+		player.getPlayer().getWorld().playSound(player.getPlayer().getEyeLocation(), Sound.ENTITY_CREEPER_DEATH, 1.0F, 0.7F);
 		for (int i = 0; i < hits; i++)
 		{
 			ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
@@ -89,8 +58,24 @@ public class BladeStorm extends RPGSkill
 					break;
 				}
 				RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0.1F, 3), delay);
-				RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, getUnvariedDamage(), player, 20), delay);
+				RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, getUnvariedDamage(player), player.getPlayer(), 20), delay);
 			}
 		}
+	}
+
+	@Override
+	public ItemStack getSkillItem()
+	{
+		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.GHAST_TEAR), 
+				"&4Blade Storm"),
+				"&7Damage: " + (int) (damage * 100.0F) + "% x " + hits + " Hits",
+				"&7Radius: 2 blocks",
+				"&7Cooldown: " + cooldown + "s",
+				"&f",
+				"&8&oSummon a set of blades",
+				"&8&oto fall around you.",
+				"&f",
+				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
+				"&7Class: " + classType.getClassName());
 	}
 }

@@ -25,25 +25,43 @@ public class Bind1 extends RPGSkill
 	public final static float damage = 0.0F;
 	public final static int cooldown = 15;
 	public final static int bindDuration = 3 * 20;
-	public Bind1(RPlayer caster)
+	public Bind1()
 	{
-		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new Bind1(rp));
+		LivingEntity target = null;
+		
+		Vector direction = player.getPlayer().getLocation().getDirection().normalize();
+		int check = 0;
+		boolean b = false;
+		while (check < 3)
+		{
+			check++;
+			Location point1 = player.getPlayer().getEyeLocation().add(direction.clone().multiply(check));
+			ArrayList<LivingEntity> nearby = CakeLibrary.getNearbyLivingEntities(point1, 0.5F);
+			for (LivingEntity n: nearby)
+				if (!(n instanceof Player))	
+				{
+					target = n;
+					b = true;
+					break;
+				}
+			if (b)
+				break;
+		}
+		
+		if (target == null)
+		{
+			player.getPlayer().playSound(player.getPlayer().getLocation(), Sound.ENTITY_EGG_THROW, 0.2F, 0.5F);
+			return;
+		}
+		
+		Bind.bindTarget(target, bindDuration, true);
+		super.applyCooldown(player, cooldown);
 	}
 
 	@Override
@@ -60,40 +78,5 @@ public class Bind1 extends RPGSkill
 				"&f",
 				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
-	}
-
-	@Override
-	public void activate()
-	{
-		LivingEntity target = null;
-		
-		Vector direction = player.getLocation().getDirection().normalize();
-		int check = 0;
-		boolean b = false;
-		while (check < 3)
-		{
-			check++;
-			Location point1 = player.getEyeLocation().add(direction.clone().multiply(check));
-			ArrayList<LivingEntity> nearby = CakeLibrary.getNearbyLivingEntities(point1, 0.5F);
-			for (LivingEntity n: nearby)
-				if (!(n instanceof Player))	
-				{
-					target = n;
-					b = true;
-					break;
-				}
-			if (b)
-				break;
-		}
-		
-		if (target == null)
-		{
-			player.playSound(player.getLocation(), Sound.ENTITY_EGG_THROW, 0.2F, 0.5F);
-			return;
-		}
-		
-		Bind.bindTarget(target, bindDuration, true);
-		super.applyCooldown(cooldown);
-		
 	}
 }

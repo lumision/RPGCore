@@ -25,54 +25,24 @@ public class PowerSlash1 extends RPGSkill
 	public final static float damage = 2.6F;
 	public final static int cooldown = 2;
 	public final static int size = 7;
-	public PowerSlash1(RPlayer caster)
+	public PowerSlash1()
 	{
-		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new PowerSlash1(rp));
-	}
-
-	@Override
-	public ItemStack getSkillItem()
-	{
-		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.IRON_SWORD, 1), 
-				"&cPower Slash I"),
-				"&7Damage: " + (int) (damage * 100) + "%",
-				"&7Cooldown: " + cooldown + "s",
-				"&f",
-				"&8&oUnleash an almighty slash",
-				"&f",
-				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
-				"&7Class: " + classType.getClassName());
-	}
-
-	@Override
-	public void activate()
-	{
-		super.applyCooldown(2);
+		super.applyCooldown(player, 2);
 		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
 		
-		Location horizon = player.getLocation();
+		Location horizon = player.getPlayer().getLocation();
 		horizon.setYaw(horizon.getYaw() - 100F);
 		horizon.setPitch(25F);
 		
 		Vector slashDirection = horizon.getDirection().normalize();
-		Vector direction = player.getLocation().getDirection().normalize();
-		Location startPointCenter = player.getEyeLocation();
+		Vector direction = player.getPlayer().getLocation().getDirection().normalize();
+		Location startPointCenter = player.getPlayer().getEyeLocation();
 		
 		int multiplier = 1;
 		while (multiplier < 6)
@@ -87,7 +57,7 @@ public class PowerSlash1 extends RPGSkill
 		
 		multiplier = 1;
 		int delay = 0;
-        player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_GHAST_SHOOT, 0.1F, 1.5F);
+        player.getPlayer().getWorld().playSound(player.getPlayer().getEyeLocation(), Sound.ENTITY_GHAST_SHOOT, 0.1F, 1.5F);
 		while (multiplier < size * 2)
 		{
 			multiplier++;
@@ -95,7 +65,21 @@ public class PowerSlash1 extends RPGSkill
 			Location point = startPoint.clone().add(slashDirection.clone().multiply(multiplier));
 			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, 20), delay);
 			if (multiplier % 2 == 0)
-			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, getUnvariedDamage(), player, 20), delay);
+			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, getUnvariedDamage(player), player.getPlayer(), 20), delay);
 		}
+	}
+
+	@Override
+	public ItemStack getSkillItem()
+	{
+		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.IRON_SWORD, 1), 
+				"&cPower Slash I"),
+				"&7Damage: " + (int) (damage * 100) + "%",
+				"&7Cooldown: " + cooldown + "s",
+				"&f",
+				"&8&oUnleash an almighty slash",
+				"&f",
+				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
+				"&7Class: " + classType.getClassName());
 	}
 }

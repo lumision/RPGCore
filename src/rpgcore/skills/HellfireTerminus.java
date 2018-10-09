@@ -29,25 +29,42 @@ public class HellfireTerminus extends RPGSkill
 	public final static ClassType classType = ClassType.MAGE;
 	public final static float damage = 12F;
 	public final static int hits = 20;
-	public HellfireTerminus(RPlayer caster)
+	public HellfireTerminus()
 	{
-		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new HellfireTerminus(rp));
+		LivingEntity target = null;
+		
+		Vector direction = player.getPlayer().getLocation().getDirection().normalize();
+		int check = 0;
+		boolean b = false;
+		while (check < 24)
+		{
+			check++;
+			Location point1 = player.getPlayer().getEyeLocation().add(direction.clone().multiply(check));
+			ArrayList<LivingEntity> nearby = CakeLibrary.getNearbyLivingEntities(point1, 1.0F);
+			for (LivingEntity n: nearby)
+				if (!(n instanceof Player))	
+				{
+					target = n;
+					b = true;
+					break;
+				}
+			if (b)
+				break;
+		}
+		
+		if (target == null)
+		{
+			player.getPlayer().playSound(player.getPlayer().getLocation(), Sound.ENTITY_EGG_THROW, 0.2F, 0.5F);
+			return;
+		}
+		
+		new HellfireTerminusE(this, player, target);
 	}
 
 	@Override
@@ -65,39 +82,6 @@ public class HellfireTerminus extends RPGSkill
 				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
 	}
-
-	@Override
-	public void activate()
-	{
-		LivingEntity target = null;
-		
-		Vector direction = player.getLocation().getDirection().normalize();
-		int check = 0;
-		boolean b = false;
-		while (check < 24)
-		{
-			check++;
-			Location point1 = player.getEyeLocation().add(direction.clone().multiply(check));
-			ArrayList<LivingEntity> nearby = CakeLibrary.getNearbyLivingEntities(point1, 1.0F);
-			for (LivingEntity n: nearby)
-				if (!(n instanceof Player))	
-				{
-					target = n;
-					b = true;
-					break;
-				}
-			if (b)
-				break;
-		}
-		
-		if (target == null)
-		{
-			player.playSound(player.getLocation(), Sound.ENTITY_EGG_THROW, 0.2F, 0.5F);
-			return;
-		}
-		
-		new HellfireTerminusE(this, target);
-	}
 	
 	public static class HellfireTerminusE extends SkillEffect
 	{
@@ -107,15 +91,15 @@ public class HellfireTerminus extends RPGSkill
 		Location targetOrigin;
 		Location[] orbs = new Location[4];
 		
-		public HellfireTerminusE(HellfireTerminus skill, LivingEntity target)
+		public HellfireTerminusE(HellfireTerminus skill, RPlayer player, LivingEntity target)
 		{
-			super(skill);
+			super(skill, player);
 			this.target = target;
 			targetOrigin = target.getLocation();
 			for (int i = 0; i < orbs.length; i++)
 				orbs[i] = target.getLocation().add(4 - rand.nextInt(9), 6 + i * 2, 4 - rand.nextInt(9));
 			
-			skill.applyCooldown(60 * 5);
+			skill.applyCooldown(player, 60 * 5);
 		}
 
 		public boolean tick()
@@ -148,8 +132,8 @@ public class HellfireTerminus extends RPGSkill
 			float pitch;
 			if (tick >= 32 && tick % 2 == 0)
 			{
-				damage = RPlayer.varyDamage(skill.getUnvariedDamage());
-				new RPGEvents.ApplyDamage(skill.player, target, damage).run();
+				damage = RPlayer.varyDamage(skill.getUnvariedDamage(player));
+				new RPGEvents.ApplyDamage(player.getPlayer(), target, damage).run();
 				pitch = 1.5F - ((tick - 32.0F) / 38.0F);
 		        target.getWorld().playSound(target.getLocation(), Sound.ENTITY_LIGHTNING_IMPACT, 0.2F, pitch);
 		        target.getWorld().playSound(target.getLocation(), Sound.ENTITY_LIGHTNING_THUNDER, 0.2F, pitch);

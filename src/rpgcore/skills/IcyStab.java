@@ -28,25 +28,39 @@ public class IcyStab extends RPGSkill
 	public final static float damage = 1.6F;
 	public final static int debuffLevel = 1;
 	public final static int debuffLength = 10 * 20;
-	public IcyStab(RPlayer caster)
+	public IcyStab()
 	{
-		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
+		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
+		Vector vector = player.getPlayer().getLocation().getDirection().normalize();
+		int multiplier = 1;
+		player.getPlayer().getWorld().playSound(player.getPlayer().getEyeLocation(), Sound.ENTITY_GHAST_SHOOT, 0.1F, 1.5F);
+		while (multiplier < 7)
+		{
+			multiplier++;
+			Location point = player.getPlayer().getEyeLocation().add(vector.clone().multiply(multiplier));
+			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
+				break;
+			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, 79), multiplier);
+			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionCustom(hit, point, 1.25D, player.getPlayer(), new Callable<Void>()
 			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new IcyStab(rp));
+				@Override
+				public Void call() throws Exception {
+					LivingEntity e = RPGEvents.customHit;
+					int damage = RPlayer.varyDamage(getUnvariedDamage(player));
+					new RPGEvents.ApplyDamage(player.getPlayer(), e, damage).run();
+					new RPGEvents.PlayEffect(Effect.STEP_SOUND, e, 79).run();
+					CakeLibrary.addPotionEffectIfBetterOrEquivalent(e, new PotionEffect(PotionEffectType.SLOW, debuffLength, debuffLevel));
+					return null;
+				}
+				
+			}), multiplier);
+		}
 	}
 
 	@Override
@@ -66,35 +80,5 @@ public class IcyStab extends RPGSkill
 				"&f",
 				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
-	}
-
-	@Override
-	public void activate()
-	{
-		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
-		Vector vector = player.getLocation().getDirection().normalize();
-		int multiplier = 1;
-        player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_GHAST_SHOOT, 0.1F, 1.5F);
-		while (multiplier < 7)
-		{
-			multiplier++;
-			Location point = player.getEyeLocation().add(vector.clone().multiply(multiplier));
-			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
-				break;
-			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, 79), multiplier);
-			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionCustom(hit, point, 1.25D, player, new Callable<Void>()
-			{
-				@Override
-				public Void call() throws Exception {
-					LivingEntity e = RPGEvents.customHit;
-					int damage = RPlayer.varyDamage(getUnvariedDamage());
-					new RPGEvents.ApplyDamage(player, e, damage).run();
-					new RPGEvents.PlayEffect(Effect.STEP_SOUND, e, 79).run();
-					CakeLibrary.addPotionEffectIfBetterOrEquivalent(e, new PotionEffect(PotionEffectType.SLOW, debuffLength, debuffLevel));
-					return null;
-				}
-				
-			}), multiplier);
-		}
 	}
 }

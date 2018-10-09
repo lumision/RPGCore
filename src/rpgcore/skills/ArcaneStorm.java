@@ -26,56 +26,24 @@ public class ArcaneStorm extends RPGSkill
 	public final static float damage = 1.2F;
 	public final static int hits = 24;
 	public final static int cooldown = 6;
-	public ArcaneStorm(RPlayer caster)
+	public ArcaneStorm()
 	{
-		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new ArcaneStorm(rp));
-	}
-
-	@Override
-	public ItemStack getSkillItem()
-	{
-		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(351, 1, (short) 6), 
-				"&3Arcane Storm"),
-				"&7Damage: " + (int) (damage * 100.0F) + "% x " + hits + " Hits",
-				"&7Radius: 3 blocks",
-				"&7Cooldown: " + cooldown + "s",
-				"&f",
-				"&8&oSummon a storm of arcane",
-				"&8&oenergy to rain onto the",
-				"&8&otarget area.",
-				"&f",
-				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
-				"&7Class: " + classType.getClassName());
-	}
-	
-	public void activate()
-	{
-		super.applyCooldown(cooldown);
-		Location target = player.getTargetBlock(CakeLibrary.getPassableBlocks(), 16).getLocation();
+		super.applyCooldown(player, cooldown);
+		Location target = player.getPlayer().getTargetBlock(CakeLibrary.getPassableBlocks(), 16).getLocation();
 		
-		Vector direction = player.getLocation().getDirection().normalize();
+		Vector direction = player.getPlayer().getLocation().getDirection().normalize();
 		int check = 0;
 		boolean b = false;
 		while (check < 16)
 		{
 			check++;
-			Location point1 = player.getEyeLocation().add(direction.clone().multiply(check));
+			Location point1 = player.getPlayer().getEyeLocation().add(direction.clone().multiply(check));
 			ArrayList<LivingEntity> nearby = CakeLibrary.getNearbyLivingEntities(point1, 1.0F);
 			for (LivingEntity n: nearby)
 				if (!(n instanceof Player))	
@@ -88,7 +56,7 @@ public class ArcaneStorm extends RPGSkill
 				break;
 		}
 		int delay = 0;
-        player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_CREEPER_DEATH, 1.0F, 0.7F);
+		player.getPlayer().getWorld().playSound(player.getPlayer().getEyeLocation(), Sound.ENTITY_CREEPER_DEATH, 1.0F, 0.7F);
 		for (int i = 0; i < hits; i++)
 		{
 			ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
@@ -110,8 +78,25 @@ public class ArcaneStorm extends RPGSkill
 					break;
 				}
 				RPGEvents.scheduleRunnable(new RPGEvents.ParticleEffect(EnumParticle.CRIT_MAGIC, point, 0.1F, 3), delay);
-				RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, getUnvariedDamage(), player, 57), delay);
+				RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, getUnvariedDamage(player), player.getPlayer(), 57), delay);
 			}
 		}
+	}
+
+	@Override
+	public ItemStack getSkillItem()
+	{
+		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(351, 1, (short) 6), 
+				"&3Arcane Storm"),
+				"&7Damage: " + (int) (damage * 100.0F) + "% x " + hits + " Hits",
+				"&7Radius: 3 blocks",
+				"&7Cooldown: " + cooldown + "s",
+				"&f",
+				"&8&oSummon a storm of arcane",
+				"&8&oenergy to rain onto the",
+				"&8&otarget area.",
+				"&f",
+				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
+				"&7Class: " + classType.getClassName());
 	}
 }

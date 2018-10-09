@@ -19,7 +19,7 @@ public class BladeMastery3 extends RPGSkill
 	
 	public BladeMastery3()
 	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override

@@ -24,25 +24,44 @@ public class ShadowStab2 extends RPGSkill
 	public final static int castDelay = 8;
 	public final static ClassType classType = ClassType.ASSASSIN;
 	public final static float damage = 2.0F;
-	public ShadowStab2(RPlayer caster)
+	public ShadowStab2()
 	{
-		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
+		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
+		Vector vector = player.getPlayer().getLocation().getDirection().normalize().multiply(0.5D);
+		int multiplier = 0;
+        player.getPlayer().getWorld().playSound(player.getPlayer().getEyeLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.2F, 1.0F);
+        boolean resetDash = false;
+		while (multiplier < 10)
+		{
+			multiplier++;
+			Location point = player.getPlayer().getEyeLocation().add(vector.clone().multiply(multiplier));
+			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
+				break;
+			RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0, 1), 0);
+			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.05F, 1.25F), 0);
+			for (LivingEntity e: CakeLibrary.getNearbyLivingEntities(point, 0.75D))
 			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
+				if (e instanceof Player)
+					continue;
+				if (hit.contains(e))
+					continue;
+				hit.add(e);
+				RPGEvents.scheduleRunnable(new RPGEvents.ApplyDamage(player.getPlayer(), e, RPlayer.varyDamage(getUnvariedDamage(player))), 0);
+				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, e, 20), 0);
+				resetDash = true;
 			}
-		rp.skillCasts.add(new ShadowStab2(rp));
+		}
+		if (resetDash)
+		{
+			player.cooldowns.remove("Dash");
+			player.castDelays.remove("Dash");
+		}
 	}
 
 	@Override
@@ -59,41 +78,5 @@ public class ShadowStab2 extends RPGSkill
 				"&f",
 				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
-	}
-	
-	@Override
-	public void activate()
-	{
-		
-		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
-		Vector vector = player.getLocation().getDirection().normalize().multiply(0.5D);
-		int multiplier = 0;
-        player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.2F, 1.0F);
-        boolean resetDash = false;
-		while (multiplier < 10)
-		{
-			multiplier++;
-			Location point = player.getEyeLocation().add(vector.clone().multiply(multiplier));
-			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
-				break;
-			RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0, 1), 0);
-			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.05F, 1.25F), 0);
-			for (LivingEntity e: CakeLibrary.getNearbyLivingEntities(point, 0.75D))
-			{
-				if (e instanceof Player)
-					continue;
-				if (hit.contains(e))
-					continue;
-				hit.add(e);
-				RPGEvents.scheduleRunnable(new RPGEvents.ApplyDamage(player, e, RPlayer.varyDamage(getUnvariedDamage())), 0);
-				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, e, 20), 0);
-				resetDash = true;
-			}
-		}
-		if (resetDash)
-		{
-			caster.cooldowns.remove("Dash");
-			caster.castDelays.remove("Dash");
-		}
 	}
 }

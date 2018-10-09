@@ -4,19 +4,16 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import org.bukkit.Material;
-import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import rpgcore.classes.RPGClass.ClassType;
+import rpgcore.entities.mobs.RPGMonster;
 import rpgcore.main.CakeLibrary;
 import rpgcore.player.RPlayer;
 
 public class RPGSkill 
 {
-	public RPlayer caster;
-	public Player player;
 	public double baseDamageMultiplier;
-	public int casterDamage;
 	public boolean passiveSkill;
 	public String skillName;
 	public String cooldownName;
@@ -26,10 +23,10 @@ public class RPGSkill
 
 	public static final RPGSkill[] skillList = { //ADDSKILL
 
-			new HellfireTerminus(null),
-			new Armageddon(null),
-			new Heartspan(null),
-			new TripleKunai(null),
+			new HellfireTerminus(),
+			new Armageddon(),
+			new Heartspan(),
+			new TripleKunai(),
 			//new Supernova(),
 			//new BlackHole(),
 			//new Asteroid(),
@@ -37,53 +34,53 @@ public class RPGSkill
 			//MAGE TIER 1
 			new MagicMastery1(),
 			new Wisdom(),
-			new ArcaneBolt(null),
-			new WindDrive(null),
-			new ArcaneBlast(null),
-			new IceBolt(null),
-			new ArcaneSpears(null),
-			new PoisonBolt(null),
+			new ArcaneBolt(),
+			new WindDrive(),
+			new ArcaneBlast(),
+			new IceBolt(),
+			new ArcaneSpears(),
+			new PoisonBolt(),
 			
 			//MAGE TIER 2
-			new Teleport1(null),
-			new Accelerate(null),
-			new Lightning(null),
-			new ArcaneBeam(null),
-			new IceField(null),
-			new Fireball(null),
+			new Teleport1(),
+			new Accelerate(),
+			new Lightning(),
+			new ArcaneBeam(),
+			new IceField(),
+			new Fireball(),
 			
 			//MAGE TIER 3
-			new Teleport2(null),
+			new Teleport2(),
 			new MagicMastery2(),
-			new ArcaneStorm(null),
+			new ArcaneStorm(),
 			
 			//MAGE TIER 4
-			new Sunfire(null),
+			new Sunfire(),
 			
 			//MAGE TIER 5
 			new MagicMastery3(),
-			new ArcaneBarrage(null),
+			new ArcaneBarrage(),
 			
 			//--------------------
 			
 			//WARRIOR TIER 1
 			new IronBody(),
-			new PowerPierce(null),
-			new Leap(null),
-			new PowerSlash1(null),
+			new PowerPierce(),
+			new Leap(),
+			new PowerSlash1(),
 			new Tenacity1(),
-			new ShieldBash(null),
-			new IcyStab(null),
-			new Warcry(null),
+			new ShieldBash(),
+			new IcyStab(),
+			new Warcry(),
 			
 			//WARRIOR TIER 2
-			new Enrage(null),
-			new PowerSlash2(null),
-			new FieryThrust(null),
+			new Enrage(),
+			new PowerSlash2(),
+			new FieryThrust(),
 			
 			//WARRIOR TIER 3
 			new Tenacity2(),
-			new TurtleShield(null),
+			new TurtleShield(),
 			
 			//WARRIOR TIER 5
 			new Tenacity3(),
@@ -91,35 +88,35 @@ public class RPGSkill
 			//--------------------
 
 			//PRIEST TIER 1
-			new HolyBolt(null),
-			new Heal1(null),
-			new Bless(null),
-			new Protect(null),
+			new HolyBolt(),
+			new Heal1(),
+			new Bless(),
+			new Protect(),
 			
 			//PRIEST TIER 2
-			new Heal2(null),
-			new Absolve(null),
+			new Heal2(),
+			new Absolve(),
 			
 			//PRIEST TIER 4
-			new Heal3(null),
-			new Enlightenment(null),
+			new Heal3(),
+			new Enlightenment(),
 			
 			//--------------------
 			
 			//ASSASSIN TIER 1
-			new ShadowStab1(null),
-			new Dash1(null),
-			new Bind1(null),
-			new QuickSlash1(null),
+			new ShadowStab1(),
+			new Dash1(),
+			new Bind1(),
+			new QuickSlash1(),
 			new BladeMastery1(),
-			new Kunai(null),
+			new Kunai(),
 			new LightFeet(),
 
 			//ASSASSIN TIER 2
 			new BladeMastery2(),
-			new BladeStorm(null),
-			new ShadowStab2(null),
-			new Dash2(null),
+			new BladeStorm(),
+			new ShadowStab2(),
+			new Dash2(),
 
 			//ASSASSIN TIER 3
 			new BladeMastery3(),
@@ -146,7 +143,7 @@ public class RPGSkill
 			new Vigor4(),
 			new Vigor5(),
 
-			new CelestialBlessing(null),
+			new CelestialBlessing(),
 
 	};
 
@@ -175,60 +172,22 @@ public class RPGSkill
 		return null;
 	}
 
-	public RPGSkill(String skillName, RPlayer caster, boolean passiveSkill, int castDelay, double baseDamageMultiplier, ClassType classType, int skillTier)
+	public RPGSkill(String skillName, boolean passiveSkill, int castDelay, double baseDamageMultiplier, ClassType classType, int skillTier)
 	{
 		this.passiveSkill = passiveSkill;
 		this.skillName = skillName;
 		this.cooldownName = skillName;
 		this.classType = classType;
 		this.skillTier = skillTier;
-		if (caster == null)
-			return;
-		this.caster = caster;
-		this.player = caster.getPlayer();
-		this.baseDamageMultiplier = baseDamageMultiplier;
-		this.casterDamage = caster.getDamageOfClass();
-		if (this.player == null)
-			return;
-		if (this.player.getPlayer() == null)
-			return;
-
-		/*
-		if (!caster.currentClass.getAdvancementTree().contains(classType))
-			return;
-		 */
-		caster.lastSkill = skillName;
-		caster.castDelays.put(skillName, (int) (castDelay * caster.getStats().attackSpeedMultiplier));
-		caster.globalCastDelay = 1;
-		activate();
 	}
 
-	public RPGSkill(String skillName, RPlayer caster, boolean passiveSkill, int castDelay, double baseDamageMultiplier, ClassType classType, int skillTier, String cooldownName)
+	public RPGSkill(String skillName, boolean passiveSkill, int castDelay, double baseDamageMultiplier, ClassType classType, int skillTier, String cooldownName)
 	{
 		this.passiveSkill = passiveSkill;
 		this.skillName = skillName;
 		this.cooldownName = cooldownName;
 		this.classType = classType;
 		this.skillTier = skillTier;
-		if (caster == null)
-			return;
-		this.caster = caster;
-		this.player = caster.getPlayer();
-		this.baseDamageMultiplier = baseDamageMultiplier;
-		this.casterDamage = caster.getDamageOfClass();
-		if (this.player == null)
-			return;
-		if (this.player.getPlayer() == null)
-			return;
-
-		/*
-		if (!caster.currentClass.getAdvancementTree().contains(classType))
-			return;
-		 */
-		caster.lastSkill = skillName;
-		caster.castDelays.put(skillName, (int) (castDelay * caster.getStats().attackSpeedMultiplier));
-		caster.globalCastDelay = 1;
-		activate();
 	}
 	
 	public ItemStack getSkillbook()
@@ -244,25 +203,25 @@ public class RPGSkill
 		return null;
 	}
 
-	public void applyCooldown(float seconds)
+	public void applyCooldown(RPlayer player, float seconds)
 	{
-		int reduction = caster.getStats().cooldownReductionAdd;
+		int reduction = player.getStats().cooldownReductionAdd;
 		double total = seconds * 20.0F;
 		total -= total / 100.0F * reduction;
 		if (total <= 0)
 			return;
-		caster.cooldowns.put(cooldownName, (int) total);
+		player.cooldowns.put(cooldownName, (int) total);
 	}
 
-	public int getUnvariedDamage()
+	public int getUnvariedDamage(RPlayer player)
 	{
-		return (int) (casterDamage * baseDamageMultiplier);
+		return (int) (player.getDamageOfClass() * baseDamageMultiplier);
 	}
 
 	public void activate() {}
 	public ItemStack getSkillItem() { return null; }
 
-	public void instantiate(RPlayer rp) {}
+	public void instantiate(RPlayer player) {}
 	
 	public static abstract class SkillEffect 
 	{
@@ -270,11 +229,20 @@ public class RPGSkill
 		public static final Random rand = new Random();
 		
 		public RPGSkill skill;
+		public RPlayer player;
+		public RPGMonster mob;
 		public int tick;
 		
-		public SkillEffect(RPGSkill skill)
+		public SkillEffect(RPGSkill skill, RPlayer player)
 		{
 			this.skill = skill;
+			this.player = player;
+			skillEffects.add(this);
+		}
+		
+		public SkillEffect(RPGMonster mob)
+		{
+			this.mob = mob;
 			skillEffects.add(this);
 		}
 		

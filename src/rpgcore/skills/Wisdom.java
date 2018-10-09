@@ -16,7 +16,7 @@ public class Wisdom extends RPGSkill
 	
 	public Wisdom()
 	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override

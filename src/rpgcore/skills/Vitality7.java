@@ -16,7 +16,7 @@ public class Vitality7 extends RPGSkill
 	
 	public Vitality7()
 	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override

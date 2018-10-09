@@ -22,25 +22,28 @@ public class WindDrive extends RPGSkill
 	public final static ClassType classType = ClassType.MAGE;
 	public final static int radius = 5;
 	public final static int cooldown = 8;
-	public WindDrive(RPlayer caster)
+	public WindDrive()
 	{
-		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new WindDrive(rp));
+		super.applyCooldown(player, cooldown);
+		Location origin = player.getPlayer().getLocation();
+
+		new RPGEvents.PlayExplosionEffect(player.getPlayer().getLocation()).run();
+		
+		for (LivingEntity e: CakeLibrary.getNearbyLivingEntities(player.getPlayer().getLocation(), radius))
+		{
+			if (e instanceof Player)
+				continue;
+			Location end = e.getLocation();
+			Vector direction = new Vector(end.getX() - origin.getX(), 0.5D, end.getZ() - origin.getZ()).normalize().multiply(2.0D);
+			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, e, 20), 0);
+			e.setVelocity(direction);
+		}
 	}
 
 	@Override
@@ -56,24 +59,5 @@ public class WindDrive extends RPGSkill
 				"&f",
 				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
-	}
-
-	@Override
-	public void activate()
-	{
-		super.applyCooldown(cooldown);
-		Location origin = player.getLocation();
-
-		new RPGEvents.PlayExplosionEffect(player.getLocation()).run();
-		
-		for (LivingEntity e: CakeLibrary.getNearbyLivingEntities(player.getLocation(), radius))
-		{
-			if (e instanceof Player)
-				continue;
-			Location end = e.getLocation();
-			Vector direction = new Vector(end.getX() - origin.getX(), 0.5D, end.getZ() - origin.getZ()).normalize().multiply(2.0D);
-			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, e, 20), 0);
-			e.setVelocity(direction);
-		}
 	}
 }

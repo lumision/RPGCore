@@ -27,25 +27,18 @@ public class Heartspan extends RPGSkill
 	public final static ClassType classType = ClassType.ASSASSIN;
 	public final static int duration = 10 * 20;
 	public final static float damage = 4.8F;
-	public Heartspan(RPlayer caster)
+	public Heartspan()
 	{
-		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new Heartspan(rp));
+		player.heartspanTicks = duration;
+		strike(player);
+		player.getPlayer().sendMessage(CakeLibrary.recodeColorCodes("&c**HEARTSPAN ACTIVATED**"));
+		super.applyCooldown(player, 60);
 	}
 
 	@Override
@@ -65,15 +58,6 @@ public class Heartspan extends RPGSkill
 				"&f",
 				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
-	}
-	
-	@Override
-	public void activate()
-	{
-		caster.heartspanTicks = duration;
-		strike(caster);
-		caster.getPlayer().sendMessage(CakeLibrary.recodeColorCodes("&c**HEARTSPAN ACTIVATED**"));
-		super.applyCooldown(60);
 	}
 
 	public static void strike(RPlayer caster)

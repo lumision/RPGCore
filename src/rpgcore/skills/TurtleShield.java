@@ -25,25 +25,16 @@ public class TurtleShield extends RPGSkill
 			.setDamageReductionAdd(50)
 			.setRecoverySpeedAdd(50)
 			.setBuffDuration(60 * 20);
-	public TurtleShield(RPlayer caster)
+	public TurtleShield()
 	{
-		super(skillName, caster, passiveSkill, castDelay, 0, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new TurtleShield(rp));
+		Buff b = Buff.createBuff(buffStats);
+		applyEffect(player, b);
 	}
 
 	@Override
@@ -65,20 +56,13 @@ public class TurtleShield extends RPGSkill
 				"&7Class: " + classType.getClassName());
 	}
 
-	@Override
-	public void activate()
+	public static void applyEffect(RPlayer player, Buff b)
 	{
-		Buff b = Buff.createBuff(buffStats);
-		applyEffect(caster, b);
-	}
-
-	public static void applyEffect(RPlayer rp, Buff b)
-	{
-		Player p = rp.getPlayer();
+		Player p = player.getPlayer();
 		if (p == null)
 			return;
 		RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p, 152), 0);
-		b.applyBuff(rp);
-		rp.updateScoreboard = true;
+		b.applyBuff(player);
+		player.updateScoreboard = true;
 	}
 }

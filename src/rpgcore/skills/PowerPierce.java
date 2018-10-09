@@ -23,25 +23,27 @@ public class PowerPierce extends RPGSkill
 	public final static int castDelay = 15;
 	public final static ClassType classType = ClassType.WARRIOR;
 	public final static float damage = 1.4F;
-	public PowerPierce(RPlayer caster)
+	public PowerPierce()
 	{
-		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new PowerPierce(rp));
+		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
+		Vector vector = player.getPlayer().getLocation().getDirection().normalize();
+		int multiplier = 1;
+        player.getPlayer().getWorld().playSound(player.getPlayer().getEyeLocation(), Sound.ENTITY_GHAST_SHOOT, 0.1F, 1.5F);
+		while (multiplier < 7)
+		{
+			multiplier++;
+			Location point = player.getPlayer().getEyeLocation().add(vector.clone().multiply(multiplier));
+			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
+				break;
+			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, 20), multiplier);
+			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, getUnvariedDamage(player), player.getPlayer(), 20), multiplier);
+		}
 	}
 
 	@Override
@@ -56,23 +58,5 @@ public class PowerPierce extends RPGSkill
 				"&f",
 				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
-	}
-
-	@Override
-	public void activate()
-	{
-		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
-		Vector vector = player.getLocation().getDirection().normalize();
-		int multiplier = 1;
-        player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_GHAST_SHOOT, 0.1F, 1.5F);
-		while (multiplier < 7)
-		{
-			multiplier++;
-			Location point = player.getEyeLocation().add(vector.clone().multiply(multiplier));
-			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
-				break;
-			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, 20), multiplier);
-			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, getUnvariedDamage(), player, 20), multiplier);
-		}
 	}
 }

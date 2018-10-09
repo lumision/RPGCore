@@ -1,7 +1,6 @@
 package rpgcore.skills;
 
 import java.util.ArrayList;
-import java.util.concurrent.Callable;
 
 import org.bukkit.Effect;
 import org.bukkit.Location;
@@ -25,25 +24,15 @@ public class PoisonBolt extends RPGSkill
 	public final static float damage = 1.7F;
 	public final static int debuffDamage = 2;
 	public final static int debuffLength = 10 * 20;
-	public PoisonBolt(RPlayer caster)
+	public PoisonBolt()
 	{
-		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new PoisonBolt(rp));
+		new PoisonBoltE(this, player);
 	}
 
 	@Override
@@ -65,52 +54,20 @@ public class PoisonBolt extends RPGSkill
 				"&7Class: " + classType.getClassName());
 	}
 	
-	public void activate()
-	{
-		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
-		Vector vector = player.getLocation().getDirection().normalize().multiply(0.75D);
-		int multiplier = 0;
-        player.getWorld().playSound(player.getEyeLocation(), Sound.BLOCK_ANVIL_LAND, 0.1F, 1.0F);
-		while (multiplier < 20)
-		{
-			multiplier++;
-			Location point = player.getEyeLocation().add(vector.clone().multiply(multiplier));
-			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
-			{
-				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()), multiplier);
-				break;
-			}
-			RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0, 1), multiplier);
-			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_SLIME_BREAK, 0.1F, 1.25F), multiplier);
-			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionCustom(hit, point, 1.25D, player, new Callable<Void>()
-					{
-						@Override
-						public Void call() throws Exception {
-							int damage = RPlayer.varyDamage(getUnvariedDamage());
-							new RPGEvents.ApplyDamage(player, RPGEvents.customHit, damage).run();
-							new RPGEvents.PlayEffect(Effect.STEP_SOUND, RPGEvents.customHit, 165).run();
-							new RPGEvents.DamageOverTime(debuffLength, 20, debuffDamage, player, RPGEvents.customHit);
-							return null;
-						}
-						
-					}), multiplier);
-		}
-	}
-	
 	public static class PoisonBoltE extends SkillEffect
 	{
 		Location origin;
 		Vector vector;
 		ArrayList<LivingEntity> hit;
-		public PoisonBoltE(RPGSkill skill)
+		public PoisonBoltE(RPGSkill skill, RPlayer player)
 		{
-			super(skill);
+			super(skill, player);
 			
-			origin = skill.player.getEyeLocation();
-			vector = skill.player.getLocation().getDirection().normalize().multiply(0.75F).clone();
+			origin = player.getPlayer().getEyeLocation();
+			vector = player.getPlayer().getLocation().getDirection().normalize().multiply(0.75F).clone();
 			hit = new ArrayList<LivingEntity>();
 			
-			skill.player.getWorld().playSound(skill.player.getEyeLocation(), Sound.BLOCK_ANVIL_LAND, 0.05F, 1.0F);
+			player.getPlayer().getWorld().playSound(player.getPlayer().getEyeLocation(), Sound.BLOCK_ANVIL_LAND, 0.05F, 1.0F);
 		}
 
 		@Override
@@ -132,9 +89,9 @@ public class PoisonBolt extends RPGSkill
 				{
 					for (LivingEntity entity: splash)
 					{
-						new RPGEvents.ApplyDamage(skill.player, entity, RPlayer.varyDamage(skill.getUnvariedDamage())).run();
+						new RPGEvents.ApplyDamage(player.getPlayer(), entity, RPlayer.varyDamage(skill.getUnvariedDamage(player))).run();
 						new RPGEvents.PlayEffect(Effect.STEP_SOUND, entity, 165).run();
-						new RPGEvents.DamageOverTime(debuffLength, 20, debuffDamage, skill.player, entity);
+						new RPGEvents.DamageOverTime(debuffLength, 20, debuffDamage, player.getPlayer(), entity);
 					}
 					return true;
 				}

@@ -27,25 +27,15 @@ public class IceBolt extends RPGSkill
 	public final static float damage = 1.6F;
 	public final static int debuffLevel = 1;
 	public final static int debuffLength = 10 * 20;
-	public IceBolt(RPlayer caster)
+	public IceBolt()
 	{
-		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new IceBolt(rp));
+		new IceBoltE(this, player);
 	}
 
 	@Override
@@ -67,25 +57,20 @@ public class IceBolt extends RPGSkill
 				"&7Class: " + classType.getClassName());
 	}
 	
-	public void activate()
-	{
-		new IceBoltE(this);
-	}
-	
 	public static class IceBoltE extends SkillEffect
 	{
 		Location origin;
 		Vector vector;
 		ArrayList<LivingEntity> hit;
-		public IceBoltE(RPGSkill skill)
+		public IceBoltE(RPGSkill skill, RPlayer player)
 		{
-			super(skill);
+			super(skill, player);
 			
-			origin = skill.player.getEyeLocation();
-			vector = skill.player.getLocation().getDirection().normalize().multiply(0.75F).clone();
+			origin = player.getPlayer().getEyeLocation();
+			vector = player.getPlayer().getLocation().getDirection().normalize().multiply(0.75F).clone();
 			hit = new ArrayList<LivingEntity>();
 			
-			skill.player.getWorld().playSound(skill.player.getEyeLocation(), Sound.BLOCK_ANVIL_LAND, 0.05F, 1.0F);
+			player.getPlayer().getWorld().playSound(player.getPlayer().getEyeLocation(), Sound.BLOCK_ANVIL_LAND, 0.05F, 1.0F);
 		}
 
 		@Override
@@ -107,7 +92,7 @@ public class IceBolt extends RPGSkill
 				{
 					for (LivingEntity entity: splash)
 					{
-						new RPGEvents.ApplyDamage(skill.player, entity, RPlayer.varyDamage(skill.getUnvariedDamage())).run();
+						new RPGEvents.ApplyDamage(player.getPlayer(), entity, RPlayer.varyDamage(skill.getUnvariedDamage(player))).run();
 						new RPGEvents.PlayEffect(Effect.STEP_SOUND, entity, 79).run();
 						CakeLibrary.addPotionEffectIfBetterOrEquivalent(entity, new PotionEffect(PotionEffectType.SLOW, debuffLength, debuffLevel));
 					}

@@ -26,54 +26,24 @@ public class ArcaneSpears extends RPGSkill
 	public final static float damage = 0.7F;
 	public final static int hits = 4;
 	public final static int cooldown = 4;
-	public ArcaneSpears(RPlayer caster)
+	public ArcaneSpears()
 	{
-		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new ArcaneSpears(rp));
-	}
-
-	@Override
-	public ItemStack getSkillItem()
-	{
-		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.ARROW, 1), 
-				"&dArcane Spears"),
-				"&7Damage: " + (int) (damage * 100.0F) + "% x " + hits + " Hits",
-				"&7Cooldown: " + cooldown + "s",
-				"&f",
-				"&8&oRain arcane spears on",
-				"&8&othe target area.",
-				"&f",
-				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
-				"&7Class: " + classType.getClassName());
-	}
-	
-	public void activate()
-	{
-		super.applyCooldown(cooldown);
-		Location target = player.getTargetBlock(CakeLibrary.getPassableBlocks(), 16).getLocation();
+		super.applyCooldown(player, cooldown);
+		Location target = player.getPlayer().getTargetBlock(CakeLibrary.getPassableBlocks(), 16).getLocation();
 		
-		Vector direction = player.getLocation().getDirection().normalize();
+		Vector direction = player.getPlayer().getLocation().getDirection().normalize();
 		int check = 0;
 		boolean b = false;
 		while (check < 16)
 		{
 			check++;
-			Location point1 = player.getEyeLocation().add(direction.clone().multiply(check));
+			Location point1 = player.getPlayer().getEyeLocation().add(direction.clone().multiply(check));
 			ArrayList<LivingEntity> nearby = CakeLibrary.getNearbyLivingEntities(point1, 1.0F);
 			for (LivingEntity n: nearby)
 				if (!(n instanceof Player))	
@@ -86,7 +56,7 @@ public class ArcaneSpears extends RPGSkill
 				break;
 		}
 
-        player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_ARROW_SHOOT, 0.3F, 0.5F);
+		player.getPlayer().getWorld().playSound(player.getPlayer().getEyeLocation(), Sound.ENTITY_ARROW_SHOOT, 0.3F, 0.5F);
 		for (int i = 0; i < hits; i++)
 		{
 			ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
@@ -110,8 +80,23 @@ public class ArcaneSpears extends RPGSkill
 				}
 				RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0, 1), delay);
 				RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.05F, 1.25F), delay);
-				RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.0D, getUnvariedDamage(), player, 20), delay);
+				RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.0D, getUnvariedDamage(player), player.getPlayer(), 20), delay);
 			}
 		}
+	}
+
+	@Override
+	public ItemStack getSkillItem()
+	{
+		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.ARROW, 1), 
+				"&dArcane Spears"),
+				"&7Damage: " + (int) (damage * 100.0F) + "% x " + hits + " Hits",
+				"&7Cooldown: " + cooldown + "s",
+				"&f",
+				"&8&oRain arcane spears on",
+				"&8&othe target area.",
+				"&f",
+				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
+				"&7Class: " + classType.getClassName());
 	}
 }

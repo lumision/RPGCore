@@ -30,25 +30,15 @@ public class Sunfire extends RPGSkill
 	public final static float damage = 24.8F;
 	public final static int radius = 16;
 	public final static int cooldown = 60;
-	public Sunfire(RPlayer caster)
+	public Sunfire()
 	{
-		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new Sunfire(rp));
+		new SunfireE(this, player);
 	}
 
 	@Override
@@ -67,12 +57,6 @@ public class Sunfire extends RPGSkill
 				"&7Class: " + classType.getClassName());
 	}
 
-	@Override
-	public void activate()
-	{
-		new SunfireE(this);
-	}
-
 	public static class SunfireE extends SkillEffect
 	{
 		public static FireworkEffect fe = FireworkEffect.builder().with(Type.BURST).withColor(Color.WHITE).withColor(Color.RED).withColor(Color.YELLOW).build();
@@ -80,11 +64,11 @@ public class Sunfire extends RPGSkill
 		public Location origin;
 		public ArrayList<Location> offset = new ArrayList<Location>();
 
-		public SunfireE(Sunfire skill)
+		public SunfireE(Sunfire skill, RPlayer player)
 		{
-			super(skill);
-			ArrayList<LivingEntity> nearby = CakeLibrary.getNearbyLivingEntities(skill.player.getLocation(), Sunfire.radius);
-			this.origin = skill.player.getLocation().clone().add(0, 5, 0);
+			super(skill, player);
+			ArrayList<LivingEntity> nearby = CakeLibrary.getNearbyLivingEntities(player.getPlayer().getLocation(), Sunfire.radius);
+			this.origin = player.getPlayer().getLocation().clone().add(0, 5, 0);
 			for (LivingEntity e: nearby)
 			{
 				if (hit.size() > 16)
@@ -94,14 +78,14 @@ public class Sunfire extends RPGSkill
 				if (hit.contains(e))
 					continue;
 				hit.add(e);
-				offset.add(new Location(skill.player.getWorld(), rand.nextInt(5) - 2, rand.nextInt(3) + 8, rand.nextInt(5) - 2));
+				offset.add(new Location(player.getPlayer().getWorld(), rand.nextInt(5) - 2, rand.nextInt(3) + 8, rand.nextInt(5) - 2));
 			}
 			if (hit.size() <= 0)
 			{
-				skill.player.playSound(skill.player.getLocation(), Sound.ENTITY_EGG_THROW, 0.2F, 0.5F);
+				player.getPlayer().playSound(player.getPlayer().getLocation(), Sound.ENTITY_EGG_THROW, 0.2F, 0.5F);
 				return;
 			}
-			skill.applyCooldown(cooldown);
+			skill.applyCooldown(player, cooldown);
 		}
 
 		@Override
@@ -109,7 +93,7 @@ public class Sunfire extends RPGSkill
 		{
 			if (tick <= 60 && tick % 2 == 0)
 			{
-				new RPGEvents.PlaySoundEffect(skill.player, Sound.BLOCK_ANVIL_LAND, 0.2F, 0.5F + (tick / 60F)).run();
+				new RPGEvents.PlaySoundEffect(player.getPlayer(), Sound.BLOCK_ANVIL_LAND, 0.2F, 0.5F + (tick / 60F)).run();
 				new RPGEvents.FireworkTrail(origin, tick / 60.0F, tick).run();
 			}
 			else if (tick == 61)
@@ -121,7 +105,7 @@ public class Sunfire extends RPGSkill
 					if (e.isDead() || e.getHealth() <= 0)
 						continue;
 					Location l = e.getLocation();
-					damage = skill.getUnvariedDamage();
+					damage = skill.getUnvariedDamage(player);
 					Location line = l.clone().subtract(origin);
 					Vector vector = line.toVector().normalize().multiply(0.5D);
 					int length = (int) (line.getX() / vector.getX());
@@ -144,7 +128,7 @@ public class Sunfire extends RPGSkill
 					if (!cancel)
 					{
 						impact(l);
-						new RPGEvents.ApplyDamage(skill.player, e, damage).run();
+						new RPGEvents.ApplyDamage(player.getPlayer(), e, damage).run();
 					}
 				}
 			}

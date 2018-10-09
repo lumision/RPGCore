@@ -22,25 +22,15 @@ public class HolyBolt extends RPGSkill
 	public final static int castDelay = 10;
 	public final static ClassType classType = ClassType.PRIEST;
 	public final static float damage = 1.2F;
-	public HolyBolt(RPlayer caster)
+	public HolyBolt()
 	{
-		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new HolyBolt(rp));
+		new HolyBoltE(this, player);
 	}
 
 	@Override
@@ -57,25 +47,50 @@ public class HolyBolt extends RPGSkill
 				"&7Class: " + classType.getClassName());
 	}
 	
-	@Override
-	public void activate()
+	public static class HolyBoltE extends SkillEffect
 	{
-		ArrayList<LivingEntity> hit = new ArrayList<LivingEntity>();
-		Vector vector = player.getLocation().getDirection().normalize().multiply(0.75D);
-		int multiplier = 0;
-        player.getWorld().playSound(player.getEyeLocation(), Sound.BLOCK_ANVIL_LAND, 0.05F, 1.0F);
-		while (multiplier < 20)
+		Location origin;
+		Vector vector;
+		ArrayList<LivingEntity> hit;
+		public HolyBoltE(RPGSkill skill, RPlayer player)
 		{
-			multiplier++;
-			Location point = player.getEyeLocation().add(vector.clone().multiply(multiplier));
-			if (!CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
+			super(skill, player);
+			
+			origin = player.getPlayer().getEyeLocation();
+			vector = player.getPlayer().getLocation().getDirection().normalize().multiply(0.75F).clone();
+			hit = new ArrayList<LivingEntity>();
+			
+			player.getPlayer().getWorld().playSound(player.getPlayer().getEyeLocation(), Sound.BLOCK_ANVIL_LAND, 0.05F, 1.0F);
+		}
+
+		@Override
+		public boolean tick() 
+		{
+			if (tick < 24)
 			{
-				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()), multiplier);
-				break;
-			}
-			RPGEvents.scheduleRunnable(new RPGEvents.FireworkTrail(point, 0, 1), multiplier);
-			RPGEvents.scheduleRunnable(new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.05F, 1.25F), multiplier);
-			RPGEvents.scheduleRunnable(new RPGEvents.AOEDetectionAttackWithBlockBreakEffect(hit, point, 1.25D, getUnvariedDamage(), player, 20), multiplier);
+				tick++;
+				Location point = origin.clone().add(vector.clone().multiply(tick));
+				if (hit.size() > 0 || !CakeLibrary.getPassableBlocks().contains(point.getBlock().getType()))
+				{
+					new RPGEvents.PlayEffect(Effect.STEP_SOUND, point, point.getBlock().getTypeId()).run();
+					return true;
+				}
+				new RPGEvents.FireworkTrail(point, 0, 1).run();
+				new RPGEvents.PlaySoundEffect(point, Sound.BLOCK_GLASS_BREAK, 0.05F, 1.25F).run();
+				ArrayList<LivingEntity> splash = CakeLibrary.getNearbyLivingEntitiesExcludePlayers(point, 1.25D);
+				if (splash.size() > 0)
+				{
+					for (LivingEntity entity: splash)
+					{
+						new RPGEvents.ApplyDamage(player.getPlayer(), entity, RPlayer.varyDamage(skill.getUnvariedDamage(player))).run();
+						new RPGEvents.PlayEffect(Effect.STEP_SOUND, entity, 20).run();
+					}
+					return true;
+				}
+			} else
+				return true;
+			tick++;
+			return false;
 		}
 	}
 }

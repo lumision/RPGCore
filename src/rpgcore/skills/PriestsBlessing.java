@@ -16,7 +16,7 @@ public class PriestsBlessing extends RPGSkill
 	
 	public PriestsBlessing()
 	{
-		super(skillName, null, passiveSkill, castDelay, 0, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, 0, classType, skillTier);
 	}
 
 	@Override

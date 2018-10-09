@@ -28,53 +28,16 @@ public class IceField extends RPGSkill
 	public final static int debuffLevel = 1;
 	public final static int debuffLength = 10 * 20;
 	public final static int cooldown = 4;
-	public IceField(RPlayer caster)
+	public IceField()
 	{
-		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new IceField(rp));
-	}
-
-	@Override
-	public ItemStack getSkillItem()
-	{
-		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.ICE), 
-				"&bIce Field"),
-				"&7Damage: " + (int) (damage * 100) + "%",
-				"&7Radius: " + radius + " blocks",
-				"&7Cooldown: " + cooldown + "s",
-				"&f",
-				"&7Debuff:",
-				"&7 * Slow " + CakeLibrary.convertToRoman(debuffLevel + 1),
-				"&7 * Duration: " + (debuffLength / 20) + "s",
-				"&f",
-				"&8&oRelease a surge of ice energy,",
-				"&8&odamaging and slowing anyone in",
-				"&8&othe vicinity.",
-				"&f",
-				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
-				"&7Class: " + classType.getClassName());
-	}
-
-	@Override
-	public void activate()
-	{
-		super.applyCooldown(cooldown);
-		Location target = player.getLocation();
+		super.applyCooldown(player, cooldown);
+		Location target = player.getPlayer().getLocation();
 		
 		int x = -radius;
 		int z = 0;
@@ -105,18 +68,38 @@ public class IceField extends RPGSkill
 			RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, l, 79), -x + radius);
 		}
 
-		new RPGEvents.AOEDetectionCustom(new ArrayList<LivingEntity>(), target, radius, player, new Callable<Void>()
+		new RPGEvents.AOEDetectionCustom(new ArrayList<LivingEntity>(), target, radius, player.getPlayer(), new Callable<Void>()
 				{
 					@Override
 					public Void call() throws Exception {
 						LivingEntity e = RPGEvents.customHit;
-						int damage = RPlayer.varyDamage(getUnvariedDamage());
-						new RPGEvents.ApplyDamage(player, e, damage).run();
+						int damage = RPlayer.varyDamage(getUnvariedDamage(player));
+						new RPGEvents.ApplyDamage(player.getPlayer(), e, damage).run();
 						new RPGEvents.PlayEffect(Effect.STEP_SOUND, e, 79).run();
 						CakeLibrary.addPotionEffectIfBetterOrEquivalent(e, new PotionEffect(PotionEffectType.SLOW, debuffLength, debuffLevel));
 						return null;
 					}
 				}).run();
+	}
 
+	@Override
+	public ItemStack getSkillItem()
+	{
+		return CakeLibrary.addLore(CakeLibrary.renameItem(new ItemStack(Material.ICE), 
+				"&bIce Field"),
+				"&7Damage: " + (int) (damage * 100) + "%",
+				"&7Radius: " + radius + " blocks",
+				"&7Cooldown: " + cooldown + "s",
+				"&f",
+				"&7Debuff:",
+				"&7 * Slow " + CakeLibrary.convertToRoman(debuffLevel + 1),
+				"&7 * Duration: " + (debuffLength / 20) + "s",
+				"&f",
+				"&8&oRelease a surge of ice energy,",
+				"&8&odamaging and slowing anyone in",
+				"&8&othe vicinity.",
+				"&f",
+				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
+				"&7Class: " + classType.getClassName());
 	}
 }

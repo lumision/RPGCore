@@ -29,25 +29,15 @@ public class Armageddon extends RPGSkill
 	public final static ClassType classType = ClassType.MAGE;
 	public final static float damage = 24.8F;
 	public final static int radius = 16;
-	public Armageddon(RPlayer caster)
+	public Armageddon()
 	{
-		super(skillName, caster, passiveSkill, castDelay, damage, classType, skillTier);
+		super(skillName, passiveSkill, castDelay, damage, classType, skillTier);
 	}
 
 	@Override
-	public void instantiate(RPlayer rp)
+	public void instantiate(RPlayer player)
 	{
-		for (RPGSkill skill: rp.skillCasts)
-			if (skill.skillName.equals(skillName))
-			{
-				skill.casterDamage = rp.getDamageOfClass();
-				skill.caster.lastSkill = skillName;
-				skill.caster.castDelays.put(skillName, (int) (castDelay * skill.caster.getStats().attackSpeedMultiplier));
-				skill.caster.globalCastDelay = 1;
-				skill.activate();
-				return;
-			}
-		rp.skillCasts.add(new Armageddon(rp));
+		new ArmageddonE(this, player);
 	}
 
 	@Override
@@ -65,12 +55,6 @@ public class Armageddon extends RPGSkill
 				"&7Skill Tier: " + RPGSkill.skillTierNames[skillTier],
 				"&7Class: " + classType.getClassName());
 	}
-
-	@Override
-	public void activate()
-	{
-		new ArmageddonE(this);
-	}
 	
 	public static class ArmageddonE extends SkillEffect
 	{
@@ -79,11 +63,11 @@ public class Armageddon extends RPGSkill
 		public Location origin;
 		public ArrayList<Location> offset = new ArrayList<Location>();
 
-		public ArmageddonE(Armageddon skill)
+		public ArmageddonE(Armageddon skill, RPlayer player)
 		{
-			super(skill);
-			ArrayList<LivingEntity> nearby = CakeLibrary.getNearbyLivingEntities(skill.player.getLocation(), Armageddon.radius);
-			this.origin = skill.player.getLocation().clone().add(0, 3, 0);
+			super(skill, player);
+			ArrayList<LivingEntity> nearby = CakeLibrary.getNearbyLivingEntities(player.getPlayer().getLocation(), Armageddon.radius);
+			this.origin = player.getPlayer().getLocation().clone().add(0, 3, 0);
 			for (LivingEntity e: nearby)
 			{
 				if (hit.size() > 16)
@@ -93,22 +77,22 @@ public class Armageddon extends RPGSkill
 				if (hit.contains(e))
 					continue;
 				hit.add(e);
-				offset.add(new Location(skill.player.getWorld(), rand.nextInt(5) - 2, rand.nextInt(3) + 8, rand.nextInt(5) - 2));
+				offset.add(new Location(player.getPlayer().getWorld(), rand.nextInt(5) - 2, rand.nextInt(3) + 8, rand.nextInt(5) - 2));
 			}
 			if (hit.size() <= 0)
 			{
-				skill.player.sendMessage(CakeLibrary.recodeColorCodes("&cNo nearby monsters."));
+				player.getPlayer().sendMessage(CakeLibrary.recodeColorCodes("&cNo nearby monsters."));
 				tick = 32767;
 				return;
 			}
-			skill.applyCooldown(60);
+			skill.applyCooldown(player, 60);
 		}
 
 		@Override
 		public boolean tick()
 		{
 			if (tick <= 40 && tick % 2 == 0)
-				new RPGEvents.PlaySoundEffect(skill.player, Sound.BLOCK_ANVIL_LAND, 0.2F, 0.5F + (tick / 40F)).run();
+				new RPGEvents.PlaySoundEffect(player.getPlayer(), Sound.BLOCK_ANVIL_LAND, 0.2F, 0.5F + (tick / 40F)).run();
 			
 			int damage;
 			for (int index = 0; index < hit.size(); index++)
@@ -125,8 +109,8 @@ public class Armageddon extends RPGSkill
 						new RPGEvents.ParticleEffect(EnumParticle.BLOCK_DUST, point, 0.2F, 32, 0, 155).run();
 					}
 				} else if (tick == 43) {
-					damage = RPlayer.varyDamage(skill.getUnvariedDamage());
-					new RPGEvents.ApplyDamage(skill.player, e, damage).run();
+					damage = RPlayer.varyDamage(skill.getUnvariedDamage(player));
+					new RPGEvents.ApplyDamage(player.getPlayer(), e, damage).run();
 					new RPGEvents.PlayLightningEffect(e).run();
 					new InstantFirework(fe, e.getLocation());
 				} else if (tick % 2 == 0) {
