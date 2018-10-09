@@ -291,6 +291,7 @@ public class RPlayerManager
 				rp.cooldownDisplayMode = cooldownDisplayMode;
 				rp.globalGiftIndex = globalGiftIndex;
 				rp.lastRecipeBookPage = lastRecipeBookPage;
+				rp.recipes = recipes;
 			} catch (Exception e)
 			{
 				RPGCore.msgConsole("&4Error reading RPlayer file: " + file.getName());

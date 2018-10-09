@@ -213,10 +213,9 @@ public class CorruptedMage extends RPGMonster
 
 	public static class MobArcaneStormE extends SkillEffect
 	{
-		public RPGMonster mob;
 		public MobArcaneStormE(RPGMonster mob)
 		{
-			super(null);
+			super(mob);
 			this.mob = mob;
 		}
 		
@@ -290,12 +289,10 @@ public class CorruptedMage extends RPGMonster
 		public Location origin;
 		public Location bindLocation;
 		public ArrayList<Location> offset = new ArrayList<Location>();
-		public RPGMonster mob;
 
 		public MobSunfireE(RPGMonster mob)
 		{
-			super(null);
-			this.mob = mob;
+			super(mob);
 			ArrayList<LivingEntity> nearby = CakeLibrary.getNearbyLivingEntities(mob.entity.getLocation(), 32);
 			this.origin = mob.entity.getLocation().clone().add(0, 5, 0);
 			for (LivingEntity e: nearby)

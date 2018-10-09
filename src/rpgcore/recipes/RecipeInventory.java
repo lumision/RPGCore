@@ -10,17 +10,80 @@ import org.bukkit.inventory.ItemStack;
 import rpgcore.item.EnhancementInventory;
 import rpgcore.item.RItem;
 import rpgcore.main.CakeLibrary;
+import rpgcore.main.RPGCore;
 import rpgcore.player.RPlayer;
 
 public class RecipeInventory 
 {
 	static final String inventoryName = CakeLibrary.recodeColorCodes("&eRecipe Book");
 
+	public static void handleRecipeUnlock(ItemStack obtain, RPlayer rp)
+	{
+		int size = rp.recipes.size();
+		String name = CakeLibrary.getItemName(obtain);
+		boolean hasColor = CakeLibrary.hasColor(name);
+		name = CakeLibrary.removeColorCodes(name);
+		if (obtain.getType().equals(Material.IRON_INGOT))
+		{
+			for (RPGRecipe recipe: RPGRecipe.recipes)
+				if (recipe.requiresUnlock)
+					if (!recipe.cannotUnlock)
+						if (recipe.result.databaseName.startsWith("Iron")
+								&& !rp.recipes.contains(recipe.result.databaseName))
+							rp.recipes.add(recipe.result.databaseName);
+		} else if (hasColor && name.equals("Calcite"))
+		{
+			for (RPGRecipe recipe: RPGRecipe.recipes)
+				if (recipe.requiresUnlock)
+					if (!recipe.cannotUnlock)
+						if (recipe.result.databaseName.startsWith("Calcite")
+								&& !rp.recipes.contains(recipe.result.databaseName))
+					rp.recipes.add(recipe.result.databaseName);
+		} else if (hasColor && name.equals("Platinum"))
+		{
+			for (RPGRecipe recipe: RPGRecipe.recipes)
+				if (recipe.requiresUnlock)
+					if (!recipe.cannotUnlock)
+						if (recipe.result.databaseName.startsWith("Platinum")
+								&& !rp.recipes.contains(recipe.result.databaseName))
+					rp.recipes.add(recipe.result.databaseName);
+		} else if (hasColor && name.equals("Topaz"))
+		{
+			for (RPGRecipe recipe: RPGRecipe.recipes)
+				if (recipe.requiresUnlock)
+					if (!recipe.cannotUnlock)
+						if (recipe.result.databaseName.startsWith("Topaz")
+								&& !rp.recipes.contains(recipe.result.databaseName))
+					rp.recipes.add(recipe.result.databaseName);
+		} else if (obtain.getType().equals(Material.DIAMOND))
+		{
+			for (RPGRecipe recipe: RPGRecipe.recipes)
+				if (recipe.requiresUnlock)
+					if (!recipe.cannotUnlock)
+						if (recipe.result.databaseName.startsWith("Diamond")
+								&& !rp.recipes.contains(recipe.result.databaseName))
+					rp.recipes.add(recipe.result.databaseName);
+		}else if (hasColor && name.equals("Sapphire"))
+		{
+			for (RPGRecipe recipe: RPGRecipe.recipes)
+				if (recipe.requiresUnlock)
+					if (!recipe.cannotUnlock)
+						if (recipe.result.databaseName.startsWith("Sapphire")
+								&& !rp.recipes.contains(recipe.result.databaseName))
+					rp.recipes.add(recipe.result.databaseName);
+		}
+		if (rp.recipes.size() != size)
+		{
+			RPGCore.msg(rp.getPlayer(), "There are new recipes in your recipe book!");
+			RPGCore.playerManager.writeData(rp);
+		}
+	}
+
 	public static ArrayList<RPGRecipe> getPlayerRecipes(RPlayer rp)
 	{
 		ArrayList<RPGRecipe> recipes = new ArrayList<RPGRecipe>();
 		for (RPGRecipe recipe: RPGRecipe.recipes)
-			if (!recipe.requiresUnlock || rp.recipes.contains(recipe.result.databaseName))
+			if (!recipe.cannotUnlock && (!recipe.requiresUnlock || rp.recipes.contains(recipe.result.databaseName)))
 				recipes.add(recipe);
 		return recipes;
 	}
@@ -97,7 +160,7 @@ public class RecipeInventory
 	static ItemStack getNextPageItem(ArrayList<RPGRecipe> viewableRecipes, int page)
 	{
 		return CakeLibrary.editNameAndLore(new ItemStack(Material.BOOK), 
-				(page >= ((viewableRecipes.size() / 9) + 1) ? "&8" : "&6&n") + "Next Page -->",
+				(page >= (((viewableRecipes.size() - 1) / 9) + 1) ? "&8" : "&6&n") + "Next Page -->",
 				"&7 * Page " + page + "/" + ((viewableRecipes.size() / 9) + 1));
 	}
 

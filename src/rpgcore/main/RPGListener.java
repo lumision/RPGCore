@@ -61,6 +61,7 @@ import org.bukkit.inventory.CraftingInventory;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.Vector;
 
@@ -541,6 +542,7 @@ public class RPGListener implements Listener
 		}
 		if (RPGEvents.itemDropTrails.contains(event.getItem()))
 			RPGEvents.itemDropTrails.remove(event.getItem());
+		RecipeInventory.handleRecipeUnlock(item, RPGCore.playerManager.getRPlayer(event.getPlayer().getUniqueId()));
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
@@ -579,6 +581,14 @@ public class RPGListener implements Listener
 						return;
 					p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 1.0F);
 					p.openInventory(rp.mailbox.getMailboxInventory());
+					return;
+				} else if (event.getRawSlot() == 27) //Recipe Book
+				{
+					event.setCancelled(true);
+					if (!CakeLibrary.isItemStackNull(event.getCursor()))
+						return;
+					p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 1.0F);
+					RecipeInventory.handleRecipeBookOpen(rp);
 					return;
 				} else if (event.getRawSlot() == 17) //Accessories
 				{
@@ -651,7 +661,7 @@ public class RPGListener implements Listener
 		if (RPGCore.inventoryButtons && 
 				(!(inv instanceof CraftingInventory) || 
 						((inv instanceof CraftingInventory) && event.getView().getTopInventory().getSize() != 5)))
-			if (invSlot == 0 || invSlot == 8 || invSlot == 17 || invSlot == 26) //Accessories
+			if (invSlot == 0 || invSlot == 8 || invSlot == 17 || invSlot == 26 || invSlot == 18)
 			{
 				event.setCancelled(true);
 				if ((hasColor 
@@ -661,22 +671,29 @@ public class RPGListener implements Listener
 						&& !name.startsWith("Conversation - ")) 
 						|| !hasColor)
 				{
-					int check = invSlot + 9;
-					if (check == 9) //Mailbox
+					int invButtonCheck = invSlot + 9;
+					if (invButtonCheck == 9) //Mailbox
 					{
 						if (!CakeLibrary.isItemStackNull(event.getCursor()))
 							return;
 						p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 1.0F);
 						p.openInventory(rp.mailbox.getMailboxInventory());
 						return;
-					} else if (check == 17) //Accessories
+					} else if (invButtonCheck == 17) //Accessories
 					{
 						if (!CakeLibrary.isItemStackNull(event.getCursor()))
 							return;
 						p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 1.0F);
 						p.openInventory(rp.accessoryInventory.getInventory());
 						return;
-					} else if (check == 26) //Buffs / Stats
+					} else if (invButtonCheck == 27) //Recipe Book
+					{
+						if (!CakeLibrary.isItemStackNull(event.getCursor()))
+							return;
+						p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.2F, 1.0F);
+						RecipeInventory.handleRecipeBookOpen(rp);
+						return;
+					} else if (invButtonCheck == 26) //Buffs / Stats
 					{
 						if (!CakeLibrary.isItemStackNull(event.getCursor()))
 							return;
@@ -684,7 +701,7 @@ public class RPGListener implements Listener
 						rp.buffInventory.updateInventory();
 						p.openInventory(rp.buffInventory.getInventory());
 						return;
-					} else if (check == 35) //Skills
+					} else if (invButtonCheck == 35) //Skills
 					{
 						if (!CakeLibrary.isItemStackNull(event.getCursor()))
 							return;
@@ -1106,7 +1123,9 @@ public class RPGListener implements Listener
 				}
 				rp.giveItem(si.item);
 				rp.addGold(-cost);
-				RPGCore.msgNoTag(p, "&6You've bought " + CakeLibrary.getItemName(si.item.createItem()) + "&6 for &e&n" + cost + " Gold&6.");
+				ItemStack create = si.item.createItem();
+				RPGCore.msgNoTag(p, "&6You've bought " + CakeLibrary.getItemName(create) + "&6 for &e&n" + cost + " Gold&6.");
+				RecipeInventory.handleRecipeUnlock(create, rp);
 				RPGEvents.scheduleRunnable(new RPGEvents.PlayEffect(Effect.STEP_SOUND, p.getLocation().add(0, 2, 0), 41), 0);
 				return;
 			}
@@ -1762,7 +1781,7 @@ public class RPGListener implements Listener
 			if (event.getSlot() < 27)
 				return;
 			String itemName = CakeLibrary.removeColorCodes(CakeLibrary.getItemName(is));
-			int maxPage = (rp.viewableRecipes.size() / 9) + 1;
+			int maxPage = ((rp.viewableRecipes.size() - 1) / 9) + 1;
 			if (itemName.startsWith("Page: "))
 				return;
 			else if (itemName.startsWith("<-- Previous Page"))

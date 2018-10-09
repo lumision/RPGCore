@@ -44,6 +44,7 @@ public class RPGRecipe
 	public static final File recipesFolder = new File("plugins/RPGCore/recipes");
 
 	public boolean requiresUnlock;
+	public boolean cannotUnlock;
 	public RItem result;
 	public int resultAmount;
 	public String[] shape;
@@ -98,6 +99,7 @@ public class RPGRecipe
 				float volume = 0;
 				float pitch = 0;
 				boolean requiresUnlock = false;
+				boolean cannotUnlock = false;
 				int resultAmount = 1;
 
 				for (String line: lines)
@@ -133,6 +135,8 @@ public class RPGRecipe
 						pitch = Float.valueOf(split[1]);
 					else if (split[0].equalsIgnoreCase("requiresUnlock"))
 						requiresUnlock = Boolean.valueOf(split[1]);
+					else if (split[0].equalsIgnoreCase("cannotUnlock"))
+						cannotUnlock = Boolean.valueOf(split[1]);
 					else if (split[0].equalsIgnoreCase("amount"))
 						resultAmount = Integer.valueOf(split[1]);
 				}
@@ -140,6 +144,7 @@ public class RPGRecipe
 				if (result != null && shape != null && ingredients.size() > 0)
 				{
 					RPGRecipe recipe = new RPGRecipe(result, shape, ingredients, sound, volume, pitch);
+					recipe.cannotUnlock = cannotUnlock;
 					recipe.requiresUnlock = requiresUnlock;
 					recipe.resultAmount = resultAmount;
 				}

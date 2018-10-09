@@ -386,7 +386,7 @@ public class CustomNPC extends EntityPlayer
 		co.sendPacket(rotation);
 
 		PacketPlayOutPlayerInfo po = new PacketPlayOutPlayerInfo(EnumPlayerInfoAction.REMOVE_PLAYER, this);
-		RPGEvents.scheduleRunnable(new RPGEvents.SendDespawnPacket(po, co), 3 * 20);
+		RPGEvents.scheduleRunnable(new RPGEvents.SendDespawnPacket(po, co), 8 * 20);
 	}
 
 	public void despawnFor(Player p)

@@ -115,7 +115,6 @@ public class RPlayer
 	public int uiClickDelay;
 	public int globalGiftIndex;
 	public Mailbox mailbox;
-	public ArrayList<RPGSkill> skillCasts;
 	public Area lastArea;
 	public ArrayList<String> recipes;
 	public ArrayList<RPGRecipe> viewableRecipes;
@@ -128,6 +127,7 @@ public class RPlayer
 	public static ItemStack invAccessories = CakeLibrary.renameItem(new ItemStack(Material.TOTEM), "&d&nAccessories");
 	public static ItemStack invBuffsStats = CakeLibrary.renameItem(new ItemStack(Material.PAPER), "&c&nBuffs / Stats");
 	public static ItemStack invSkills = CakeLibrary.renameItem(new ItemStack(Material.BOOK), "&b&nSkills");
+	public static ItemStack invRecipes = CakeLibrary.renameItem(new ItemStack(Material.ENCHANTED_BOOK), "&e&nCustom Recipes");
 
 	public RPlayer(UUID uuid)
 	{
@@ -142,7 +142,6 @@ public class RPlayer
 		//this.skillLevels = new ArrayList<Integer>();
 		this.cooldowns = new HashMap<String, Integer>();
 		this.cooldownBars = new HashMap<BossBar, Integer>();
-		this.skillCasts = new ArrayList<RPGSkill>();
 		this.castDelays = new HashMap<String, Integer>();
 		this.buffs = new ArrayList<Buff>();
 		this.titleQueue = new ArrayList<Title>();
@@ -201,7 +200,6 @@ public class RPlayer
 		this.castDelays = new HashMap<String, Integer>();
 		this.cooldowns = new HashMap<String, Integer>();
 		this.cooldownBars = new HashMap<BossBar, Integer>();
-		this.skillCasts = new ArrayList<RPGSkill>();
 		this.buffs = new ArrayList<Buff>();
 		this.titleQueue = new ArrayList<Title>();
 		this.lastSkill = "";
@@ -257,20 +255,25 @@ public class RPlayer
 		if (getPlayer() == null || !RPGCore.inventoryButtons)
 			return;
 		Inventory inv = getPlayer().getInventory();
-		for (int i = 0; i < 4; i++)
+		for (int i = 0; i < 5; i++)
 		{
-			int slot = i == 0 ? 9 : i == 1 ? 17 : i == 2 ? 26 : 35;
+			int slot = i == 0 ? 9 : i == 1 ? 17 : i == 2 ? 26 : i == 3 ? 27 : 35;
 			ItemStack item = inv.getItem(slot);
 			if (CakeLibrary.isItemStackNull(item))
 				continue;
 			String name = CakeLibrary.removeColorCodes(CakeLibrary.getItemName(item));
-			if (!name.equals("Mailbox") && !name.equals("Accessories") && !name.equals("Buffs / Stats") && !name.equals("Skills"))
+			if (!name.equals("Mailbox") 
+					&& !name.equals("Accessories") 
+					&& !name.equals("Buffs / Stats") 
+					&& !name.equals("Custom Recipes")
+					&& !name.equals("Skills"))
 				mailbox.items.add(new RItem(item.clone()));
 		}
 		int items = mailbox.items.size();
 		ItemStack mailboxItem = invMailbox.clone();
 		mailboxItem = CakeLibrary.addLore(mailboxItem, "&7 * " + (items == 0 ? "Empty" : items == 1 ? "1 item" : items + " items"));
 		inv.setItem(9, mailboxItem);
+		inv.setItem(27, invRecipes.clone());
 		inv.setItem(17, invAccessories.clone());
 		inv.setItem(26, invBuffsStats.clone());
 		inv.setItem(35, invSkills.clone());
